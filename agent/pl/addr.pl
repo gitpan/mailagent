@@ -1,4 +1,4 @@
-;# $Id: addr.pl,v 3.0.1.4 1995/02/03 17:59:19 ram Exp $
+;# $Id: addr.pl,v 3.0.1.5 1997/01/07 18:32:15 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: addr.pl,v $
+;# Revision 3.0.1.5  1997/01/07  18:32:15  ram
+;# patch52: slight mis-parsing of user names with '-' in them
+;#
 ;# Revision 3.0.1.4  1995/02/03  17:59:19  ram
 ;# patch30: ensure domain name matches are made after the '@' delimiter
 ;#
@@ -50,10 +53,11 @@ sub simplify {
 	return &simplify($_) if s/^@[\w-.]+://;			# @b.c:x -> x and retry
 	return "$2\@$1.uucp" if /^([\w-]+)!(\w+)$/;		# b!u -> u@b.uucp
 	return "$2\@$1" if /^([\w-.]+)!(\w+)$/;			# b.c!u -> u@b.c
-	return $_ if /^\w+@[\w-.]+$/;					# u@b.c
+	return $_ if /^[\w.-]+@[\w-.]+$/;				# u@b.c
 	return &simplify("$2!$3")
 		if /([^%@]+)!([\w-.]+)!(\w+)$/;				# ...!b!u -> b!u
-	return "$1\@$2" if /^(\w+)%([\w-.]+)@[\w-.]+/;	# u%b.c@d.e -> u@b.c
+	return "$1\@$2"
+		if /^([\w.-]+)%([\w-.]+)@[\w-.]+/;			# u%b.c@d.e -> u@b.c
 	return &simplify($1) if s/(.*)@[\w-.]+$//;		# x@b.c -> x and retry
 	return &simplify("$1\@$2")
 		if /^([\w-.%!]+)%([\w-.]+)$/;				# x%b -> x@b and retry

@@ -1,4 +1,4 @@
-;# $Id: read_conf.pl,v 3.0.1.9 1996/12/24 14:59:00 ram Exp $
+;# $Id: read_conf.pl,v 3.0.1.10 1997/01/07 18:33:25 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: read_conf.pl,v $
+;# Revision 3.0.1.10  1997/01/07  18:33:25  ram
+;# patch52: new execsafe variable defaults to OFF when missing
+;#
 ;# Revision 3.0.1.9  1996/12/24  14:59:00  ram
 ;# patch45: default for locksafe is now OFF
 ;#
@@ -150,6 +153,7 @@ EOM
 	$compspec = "$spool/compressors" unless defined $compspec;
 	$comptag = 'compress' unless defined $comptag;
 	$locksafe = 'OFF' unless defined $locksafe;
+	$execsafe = 'OFF' unless defined $execsafe;
 
 	# For backward compatibility, we force a .lock locking on mailboxes.
 	# For system ones (name = login), there's no problem because the lock

@@ -1,6 +1,6 @@
 # This MUST be the first test ever run
 
-# $Id: config.t,v 3.0.1.5 1996/12/24 15:01:24 ram Exp $
+# $Id: config.t,v 3.0.1.6 1997/01/07 18:36:24 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: config.t,v $
+# Revision 3.0.1.6  1997/01/07  18:36:24  ram
+# patch52: force execsafe to OFF when running tests
+#
 # Revision 3.0.1.5  1996/12/24  15:01:24  ram
 # patch45: added locksafe, set to OFF
 #
@@ -79,6 +82,7 @@ maxsize  : 150000
 plsave   : \$spool/plsave
 authfile : \$spool/auth
 secure   : ON
+execsafe : OFF			# Don't be too paranoid while running tests
 sendmail : msend
 sendnews : nsend
 EOF

@@ -1,4 +1,4 @@
-;# $Id: secure.pl,v 3.0.1.4 1996/12/24 15:00:39 ram Exp $
+;# $Id: secure.pl,v 3.0.1.5 1997/01/07 18:35:52 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: secure.pl,v $
+;# Revision 3.0.1.5  1997/01/07  18:35:52  ram
+;# patch52: now only perform extended exec() checks iff execsafe is ON
+;#
 ;# Revision 3.0.1.4  1996/12/24  15:00:39  ram
 ;# patch45: extended security checks and created exec_secure()
 ;#
@@ -242,7 +245,7 @@ sub exec_secure {
 		return 0;
 	}
 
-	local($cf'secure) = "ON";	# Override user settings for their own good
+	local($cf'secure) = $cf'execsafe;	# Use exec settings for file_secure()
 
 	unless (&file_secure($file, 'program', 1)) {
 		&add_log("ERROR cannot execute unsecure $file") if $loglvl > 1;

@@ -1,3 +1,87 @@
+Wed Jan  8 09:43:56 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	Must use get_confstr() to get at the execsafe variable.
+	Otherwise, the string value is converted into an integer (0)
+	and the following strcasecmp() core dumps.
+
+	It did not happen on my HP-UX machine because dereferencing
+	NULL is not a segfault unless some special compiler flag
+	is given!!
+
+. Files changed:
+
+	* agent/filter/parser.c: Must use get_confstr() to get at the
+	execsafe variable.
+
+Tue Jan  7 19:42:56 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	New execsafe configuration variable to disable extended exec()
+	checks when OFF.
+
+	Regenerated agent/filter/Makefile.SH with newer jmake.
+
+	The "no change" optimization was overzealous in package, when
+	dealing with 'badaddress' requests (via the new patbounce action).
+
+	Allow for @SH help to be understood, whatever the case.
+
+	Slight mis-parsing of user names with '-' in them could cause
+	'package' to not send correct closest addresses.
+
+	Now pre-extend memory in mailagent for large messages to avoid
+	many realloc() from stealing all the core! Patch contributed
+	by Thomas Richter <richter@chemie.fu-berlin.de>. Thanks!
+
+	Enhanced Received: lines parsing to be less strict on the
+	first line (inserted locally).
+
+	Strip out trailing > on addresses, since matching is greedy.
+	Patbounce would fail when dealing with <addr@somewhere> since
+	the pattern used was matching the trailing '>'.
+
+. Files changed:
+
+	* agent/files/mailagent.cf: New execsafe configuration variable.
+
+	* agent/filter/main.c: Don't use my_exit() when printing version
+	number.
+
+	* agent/filter/parser.c: Don't perform extended exec() checks when
+	execsafe is OFF.
+
+	* agent/filter/parser.h: New get_confstr() and get_confstr_opt().
+
+	* agent/man/mailagent.SH: Documented new execsafe configuration
+	variable.
+
+	* agent/package.SH: The "no change" optimization was overzealous.
+
+	* agent/pl/actions.pl: Allow for @SH help to be understood, whatever
+	the case.
+
+	* agent/pl/addr.pl: Slight mis-parsing of user names with '-' in them.
+
+	* agent/pl/emergency.pl: Now pre-extend memory by using existing
+	message size.
+
+	* agent/pl/parse.pl: Now pre-extend memory by using existing message
+	size.  Enhanced Received: lines parsing.
+
+	* agent/pl/read_conf.pl: New execsafe variable defaults to OFF when
+	missing.
+
+	* agent/pl/secure.pl: Now only perform extended exec() checks iff
+	execsafe is ON.
+
+	* agent/test/basic/config.t: Force execsafe to OFF when running tests.
+
+	* misc/pbounce/patbounce.pl: Strip out trailing > on addresses, since
+	matching is greedy.
+
 Thu Dec 26 11:52:50 MET 1996   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

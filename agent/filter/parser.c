@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.8 1996/12/26 10:46:35 ram Exp $
+ * $Id: parser.c,v 3.0.1.10 1997/01/08 08:42:31 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,12 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
+ * Revision 3.0.1.10  1997/01/08  08:42:31  ram
+ * patch53: must use get_confstr() to get at the execsafe variable
+ *
+ * Revision 3.0.1.9  1997/01/07  18:27:57  ram
+ * patch52: don't perform extended exec() checks when execsafe is OFF
+ *
  * Revision 3.0.1.8  1996/12/26  10:46:35  ram
  * patch51: include <unistd.h> for X_OK and define fallbacks
  *
@@ -211,7 +217,7 @@ char *file;
 	 * with the user's privileges.
 	 */
 
-	rules = ht_value(&symtab, "rules");	/* Fetch rules location */
+	rules = get_confstr_opt("rules");	/* Fetch rules location */
 	if (rules)							/* No rule file is perfectly fine */
 		check_perm(rules, MUST_OWN | MAY_PANIC);	/* Might not exist */
 
@@ -249,15 +255,11 @@ private void start_log()
 	char *value;					/* Symbol value */
 	int level = 0;					/* Logging level wanted */
 
-	value = ht_value(&symtab, "logdir");	/* Fetch logging directory */
-	if (value == (char *) 0)
-		fatal("logging directory not defined");
+	value = get_confstr("logdir", CF_MANDATORY);
 	strcpy(logfile, value);
-	strcat(logfile, "/");
+	strcat(logfile, "/");						/* Logging directory */
 
-	value = ht_value(&symtab, "log");		/* Basename of the log file */
-	if (value == (char *) 0)
-		fatal("logfile not defined");
+	value = get_confstr("log", CF_MANDATORY);	/* Log file basename*/
 	strcat(logfile, value);
 
 	level = get_confval("level", CF_MANDATORY);
@@ -295,10 +297,17 @@ char *file;
 public int exec_secure(file)
 char *file;
 {
-	/* Same checks as secure(), but without file/directory ownership */
+	/* Same checks as secure(), but without file/directory ownership.
+	 * We propagate SECURE_ON only when execsafe is ON or when the
+	 * user is the superuser.
+	 */
+
+	char *execsafe = get_confstr("execsafe", CF_DEFAULT, "OFF");
+	int flag = (0 == strcasecmp(execsafe, "ON") || ROOTID == geteuid()) ?
+		SECURE_ON : 0;
 
 	stat_check(file);
-	return check_perm(file, SECURE_ON);		/* Check permissions */
+	return check_perm(file, flag);		/* Check permissions */
 }
 
 /* VARARGS3 */
@@ -370,7 +379,7 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 		}
 	}
 
-	cfsecure = ht_value(&symtab, "secure");	/* Do we need extra security? */
+	cfsecure = get_confstr_opt("secure");	/* Do they want extra security? */
 	if (
 		(flags & SECURE_ON) ||				/* They want secure checks anyway */
 		(cfsecure != (char *) 0 &&			/* Ok, secure is defined */
@@ -483,14 +492,14 @@ char **envp;				/* The environment pointer */
 	 * present, we'll simply prepend the added path 'p_host' to the existing
 	 * value provided by sendmail, cron, or whoever invoked us.
 	 */
-	path_val = ht_value(&symtab, "path");
+	path_val = get_confstr_opt("path");
 	if (path_val != (char *) 0) {
 		if (-1 == set_env("PATH", path_val))
 			fatal("cannot initialize PATH");
 	}
 
 	sprintf(name, "p_%s", machine);		/* Name of field in ~/.mailagent */
-	path_val = ht_value(&symtab, name);	/* Exists ? */
+	path_val = get_confstr_opt(name);	/* Exists ? */
 	if (path_val != (char *) 0) {		/* Yes, prepend its value */
 		add_log(19, "updating PATH with '%s' from config file", name);
 		if (-1 == prepend_env("PATH", ":"))
@@ -504,25 +513,25 @@ char **envp;				/* The environment pointer */
 		fatal("cannot set HOME variable");
 
 	/* If there is a 'timezone' variable, set TZ accordingly */
-	tz = ht_value(&symtab, "timezone");	/* Exists ? */
+	tz = get_confval("timezone", CF_DEFAULT, (char *) 0);	/* Exists ? */
 	if (tz != (char *) 0) {
 		if (-1 == set_env("TZ", tz))
 			add_log(1, "ERROR cannot set TZ variable");
 	}
 }
 
-public int get_confval(name, type, dflt)
+public char *get_confstr(name, type, dflt)
 char *name;		/* Option name */
 int type;		/* Type: mandatory or may be defaulted */
-int dflt;		/* Default value to be used if option not defined */
+char *dflt;		/* Default value to be used if option not defined */
 {
-	/* Return value for option and use default if not defined, or yield a
-	 * fatal error when option is mandatory.
+	/* Return string value for option and use default if not defined, or
+	 * raise a fatal error when option is mandatory.
 	 */
 
 	char buffer[MAX_STRING];
 	char *namestr;		/* String in H table */
-	int val;			/* Returned value */
+	char *val;			/* Returned value */
 
 	namestr = ht_value(&symtab, name);
 	if (namestr == (char *) 0) {
@@ -538,10 +547,31 @@ int dflt;		/* Default value to be used if option not defined */
 			fatal("BUG: get_confval");
 		}
 	} else
-		sscanf(namestr, "%d", &val);
+		val = namestr;
 
 	return val;
 }
+
+public int get_confval(name, type, dflt)
+char *name;		/* Option name */
+int type;		/* Type: mandatory or may be defaulted */
+int dflt;		/* Default value to be used if option not defined */
+{
+	/* Return int value for option and use default if not defined, or yield a
+	 * fatal error when option is mandatory.
+	 */
+
+	char *namestr;		/* String in H table */
+	int val;			/* Returned value */
+
+	namestr = get_confstr(name, type, (char *) 0);
+	if (namestr == (char *) 0)		/* get_confstr() panics if CF_MANDATORY */
+		return dflt;
+
+	sscanf(namestr, "%d", &val);
+	return val;
+}
+
 
 private void substitute(value)
 char *value;

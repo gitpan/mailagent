@@ -1,4 +1,4 @@
-;# $Id: emergency.pl,v 3.0.1.1 1996/12/24 14:51:14 ram Exp $
+;# $Id: emergency.pl,v 3.0.1.2 1997/01/07 18:32:40 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: emergency.pl,v $
+;# Revision 3.0.1.2  1997/01/07  18:32:40  ram
+;# patch52: now pre-extend memory by using existing message size
+;#
 ;# Revision 3.0.1.1  1996/12/24  14:51:14  ram
 ;# patch45: don't dataload the emergency routine to avoid malloc problems
 ;# patch45: now log the signal trapping even when invoked manually
@@ -40,26 +43,56 @@ sub emergency {
 # In case something got wrong
 sub fatal {
 	local($reason) = shift;		# Why did we get here ?
+	local($preext) = 0;
+	local($added) = 0;
+	local($curlen) = 0;
+
 	# Make sure the lock file does not last. We don't need any lock now, as
 	# we are going to die real soon anyway.
 	unlink $lockfile if $locked;
+
 	# Assume the whole message has not been read yet
 	$fd = STDIN;				# Default input
 	if ($file_name ne '') {
 		$Header{'All'} = '';	# We're about to re-read the whole message
 		open(MSG, $file_name);	# Ignore errors
 		$fd = MSG;
+		$preext = -s MSG;
 	}
+	if ($preext <= 0) {
+		$preext = 100000;
+		&add_log ("preext uses fixed value ($preext)") if $loglvl > 19;
+	} else {
+		&add_log ("preext uses file size ($preext)") if $loglvl > 19;
+	}
+
+	# We have to careful here, because when reading from STDIN
+	# $Header{'All'} might not be empty
+	$curlen = length($Header{'All'});
+	&add_log ("pre-extended retaining $curlen old bytes") if $loglvl > 19;
+	$Header{'All'} .= ' ' x $preext;
+	substr($Header{'All'}, $curlen) = '';
+
 	unless (-t $fd) {			# Do not get mail if connected to a tty
 		while (<$fd>) {
+			$added += length($_);
+			if ($added > $preext) {
+				$curlen = length($Header{'All'});
+				&add_log ("extended after $curlen bytes") if $loglvl > 19;
+				$Header{'All'} .= ' ' x $preext;
+				substr($Header{'All'}, $curlen) = '';
+				$added = $added - $preext;
+			}
 			$Header{'All'} .= $_;
 		}
 	}
+
 	# It can happen that we get here before configuration file was read
 	if (defined $loglvl) {
 		&add_log("FATAL $reason") if $loglvl;
 		-t STDIN && print STDERR "$prog_name: $reason\n";
 	}
+
 	# Try an emergency save, if mail is not empty
 	if ($Header{'All'} ne '' && 0 == &emergency_save) {
 		# The stderr should be redirected to some file
@@ -73,6 +106,7 @@ sub fatal {
 			$year,++$mon,$mday,$hour,$min,$sec);
 		print STDERR "---- $date ----\n";
 	}
+
 	&resync;			# Resynchronize waiting file if necessary
 	# Give an error exit status to filter
 	exit 1;

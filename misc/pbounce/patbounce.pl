@@ -1,4 +1,4 @@
-# $Id: patbounce.pl,v 3.0.1.1 1996/12/26 10:47:38 ram Exp $
+# $Id: patbounce.pl,v 3.0.1.2 1997/01/07 18:37:43 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -9,6 +9,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: patbounce.pl,v $
+# Revision 3.0.1.2  1997/01/07  18:37:43  ram
+# patch52: strip out trailing > on addresses, since matching is greedy
+#
 # Revision 3.0.1.1  1996/12/26  10:47:38  ram
 # patch51: created
 #
@@ -44,7 +47,7 @@ sub patbounce {
 	local($bl) = 'patbounce';
 
 	# If special logfile must be used, then open it right now. Otherwise,
-	# logs will be redirected to agentlog. The 'bouncelog' logfile (that's the
+	# logs will be redirected to agentlog. The 'patbounce' logfile (that's the
 	# user-level name, which has "no" link to the x_pbounce_log name specified)
 	# does not cc to the 'default' log agentlog.
 
@@ -150,14 +153,16 @@ sub pbounce_failaddr {
 	local($*) = 1;
 	if ($header{'Body'} =~ /^5\d\d\s+(\d+\s+)?<?(\S+)>?\.\.\.\s/) {
 		$addr = $2;
+		$addr =~ s/>$//g;
 		$addr =~ s/\.JIS$//;	# Remove trailing .JIS indication
 		# If the name is not fully qualified at this point, parse RCPT
 		unless ($addr =~ /\.\w{2,4}$/) {
 			$addr = $1 if $header{'Body'} =~ /^>>>\s+RCPT\s+To:\s*<?(\S+)>?/;
 		}
-		return $addr;
+	} else {
+		$addr = $1 if $header{'Body'} =~ /^SMTP\s+<?(\S+)>?/;
 	}
-	$addr = $1 if $header{'Body'} =~ /^SMTP\s+<?(\S+)>?/;
+	$addr =~ s/>$//g;
 	return $addr;
 }
 

@@ -2,7 +2,7 @@
 # Configuration file for mailagent
 #
 
-# $Id: mailagent.cf,v 3.0.1.8 1995/09/15 13:39:50 ram Exp $
+# $Id: mailagent.cf,v 3.0.1.9 1997/01/07 18:26:06 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
+# Revision 3.0.1.9  1997/01/07  18:26:06  ram
+# patch52: new execsafe configuration variable
+#
 # Revision 3.0.1.8  1995/09/15  13:39:50  ram
 # patch43: added locksafe, compspecs and comptag config variables
 # patch43: new "folder compression" section
@@ -99,6 +102,7 @@ rulecache: $spool/rulecache		# Cache for compiled rules (optional)
 nfslock  : OFF					# NFS-secure locking (optional)
 secure   : ON					# Make extended checks on sensitive files
 linkdirs : ON					# Also carefully check symlinks to dirs
+execsafe : OFF					# Make extended checks on exec()ed files
 
 # Mailbox parameters
 maildrop : /usr/mail			# System mail drop directory (optional)

@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.16 1996/12/24 14:12:58 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.17 1997/01/07 18:29:18 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,9 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.17  1997/01/07  18:29:18  ram
+''' patch52: documented new execsafe configuration variable
+'''
 ''' Revision 3.0.1.16  1996/12/24  14:12:58  ram
 ''' patch45: examples are now shown in constant-width font if possible
 ''' patch45: big emphasis about security issues, for RUN commands & filter
@@ -398,6 +401,11 @@ to the user (you!). (suggested: specify your e-mail address).
 .I emergdir
 Name of the directory which should be used for dumps, preferably. This is
 optional. (suggested: ~/tmp/lost+mail)
+.TP
+.I execsafe
+Whether to be strict before using \fIexec()\fR to launch a new process or
+not. The value of this variable is used in place of \fIsecure\fR when checking
+executable files. (defaults to OFF, suggested: ON if possible).
 .TP
 .I fromall
 Whether or not \fImailagent\fR should escape all the \fIFrom\fR lines in the
@@ -4486,17 +4494,22 @@ be able to assume your identity.
 Versions after 3.0 PL44 come with an improved (from a security point of view) C
 \fIfilter\fR that will not only perform the aforementionned checks but will
 also ensure that the \fIperl\fR executable and the \fImailagent\fR script
-it is about to exec are not loosely protected. Furthermore, if the \fIfilter\fR
+it is about to exec are not loosely protected (when \fIexecsafe\fR is ON or
+when running with superuser privileges).
+Furthermore, if the \fIfilter\fR
 is set up in your \fI.forward\fR as described in this man page, it will be
 able to check itself for safety and will warn you loundly if it can be
 tampered with, which could defeat all security checks.
 .PP
 Mailagent was also extended so that all programs executed via RUN and friends,
 as well as mail hooks, are checked for obvious protection flaws before being
-actually run. Interpreted scripts (starting with the #! magic token) and
+actually run
+Interpreted scripts (starting with the #! magic token) and
 perl scripts following the magic "exec perl if \$under_shell" incantation are
 specially checked for further security of the relevant interpretor. Those
-checks are performed systematically, even if the \fIsecure\fR parameter was
+checks are performed systematically
+(when \fIexecsafe\fR is ON or when running with superuser privileges)
+even if the \fIsecure\fR parameter was
 not set to ON. Also, all files about to be \fIexec()\fRed are checked using
 the same extended check method used when \fIsecure\fR is ON (ownership tests
 are skipped however when checking for \fIexec()\fR-ness of a file).

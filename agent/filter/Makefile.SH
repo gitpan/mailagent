@@ -1,5 +1,6 @@
-: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL53]
+: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL60]
 : $X-Id: Jmake.tmpl,v 3.0.1.2 1995/01/11 14:50:21 ram Exp ram $
+
 case $CONFIG in
 '')
 	if test -f config.sh; then TOP=.;
@@ -54,8 +55,9 @@ SED = $sed
 ########################################################################
 # Automatically generated parameters -- do not edit
 
-SOURCES =  \$(SRC)
+USRINC = $usrinc
 OBJECTS =  \$(OBJ)
+SOURCES =  \$(SRC)
 
 ########################################################################
 # New suffixes and associated building rules -- edit with care
@@ -67,7 +69,8 @@ OBJECTS =  \$(OBJ)
 $spitshell >>Makefile <<'!NO!SUBS!'
 ########################################################################
 # Jmake rules for building libraries, programs, scripts, and data files
-# $X-Id: Jmake.rules,v 3.0.1.3 1995/03/21 08:35:28 ram Exp ram $
+# $X-Id: Jmake.rules,v 3.0.1.5 1995/09/25 09:07:19 ram Exp ram $
+
 ########################################################################
 # Force 'make depend' to be performed first -- do not edit
 
@@ -125,7 +128,9 @@ depend:: ../../mkdep
 depend::
 	($(SED) '/^# DO NOT DELETE/q' Makefile && \
 	$(MKDEP) $(SOURCES) | \
-	$(SED) 's/: \.\//: /; /\/usr\/include/d' \
+	$(SED) -e 's:/usr/include[^ ]*::g; s:$(USRINC)[^ ]*::g; ' \
+	-e '/: / b print' -e 'H; d; n; : print' -e 'x; s/\\\n//g' \
+	-e 's/  */ /g; s/ :/:/;' -e '/: *$$/d' \
 	) > Makefile.new
 	cp Makefile Makefile.bak
 	cp Makefile.new Makefile
@@ -207,6 +212,7 @@ install.man::
 
 deinstall.man::
 	@echo "deinstall.man in $(CURRENT) done."
+
 Makefiles::
 
 Makefiles.SH::

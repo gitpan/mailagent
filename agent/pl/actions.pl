@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.13 1996/12/24 14:46:16 ram Exp $
+;# $Id: actions.pl,v 3.0.1.14 1997/01/07 18:31:14 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.14  1997/01/07  18:31:14  ram
+;# patch52: allow for @SH help to be understood, whatever the case
+;#
 ;# Revision 3.0.1.13  1996/12/24  14:46:16  ram
 ;# patch45: now reads 'help' as 'mailhelp' in command messages
 ;# patch45: locate and perform security checks on launched executables
@@ -280,7 +283,7 @@ sub process {
 			s/^mial(\w*)/mail$1/;		# Common mis-spellings
 			s/^mailpath/mailpatch/;
 			s/^mailist/maillist/;
-			s/^help/mailhelp/;
+			s/^help/mailhelp/i;
 			# Now fetch command's name (first symbol)
 			if (/^([^ \t]+)[ \t]/) {
 				$first = $1;

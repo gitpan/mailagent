@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.7 1996/12/24 14:57:30 ram Exp $
+;# $Id: parse.pl,v 3.0.1.8 1997/01/07 18:33:09 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.8  1997/01/07  18:33:09  ram
+;# patch52: now pre-extend memory by using existing message size
+;# patch52: enhanced Received: lines parsing
+;#
 ;# Revision 3.0.1.7  1996/12/24  14:57:30  ram
 ;# patch45: new relay_list() routine to parse Received lines
 ;# patch45: now creates two pseudo headers: Envelope and Relayed
@@ -54,6 +58,9 @@ sub parse_mail {
 	local($fd) = STDIN;				# Where does the mail come from ?
 	local($field, $value);			# Field and value for current line
 	local($_);
+	local($preext) = 0;
+	local($added) = 0;
+	local($curlen) = 0;
 	undef %Header;					# Reset the whole structure holding message
 
 	if ($file_name ne '') {			# Mail spooled in a file
@@ -62,12 +69,21 @@ sub parse_mail {
 			return;
 		}
 		$fd = MAIL;
+		$preext = -s MAIL;
 	}
 	$Userpath = "";					# Reset path from possible previous @PATH 
 
 	# Pre-extend 'All', 'Body' and 'Head'
-	$Header{'All'} = ' ' x 5000;
-	$Header{'Body'} = ' ' x 4500;
+	if ($preext <= 0) {
+		$preext = 100_000;
+		&add_log("preext uses fixed value ($preext)") if $loglvl > 19;
+	} else {
+		&add_log("preext uses file size ($preext)") if $loglvl > 19;
+	}
+	$preext += 500;					# Extra room for From --> >From, etc...
+
+	$Header{'All'} = ' ' x $preext;
+	$Header{'Body'} = ' ' x $preext;
 	$Header{'Head'} = ' ' x 500;
 	$Header{'All'} = '';
 	$Header{'Body'} = '';
@@ -75,6 +91,21 @@ sub parse_mail {
 
 	&add_log ("parsing mail") if $loglvl > 18;
 	while (<$fd>) {
+		$added += length($_);
+
+		# If string extension goes beyond the pre-allocated space, re-extend
+		# by a big amount instead of letting perl realloc space.
+		if ($added > $preext) {
+			$curlen = length($Header{'All'});
+			&add_log ("extended after $curlen bytes") if $loglvl > 19;
+			$Header{'All'} .= ' ' x $preext;
+			substr($Header{'All'}, $curlen) = '';
+			$curlen = length($Header{'Body'});
+			$Header{'Body'} .= ' ' x $preext;
+			substr($Header{'Body'}, $curlen) = '';
+			$added = $added - $preext;
+		}
+
 		$Header{'All'} .= $_;
 		if (1../^$/) {						# EOH is a blank line
 			next if /^$/;					# Skip EOH marker
@@ -220,6 +251,7 @@ sub header_check {
 #	Received: from host1 (host2 [xx.yy.zz.tt]) by host3
 #	Received: from host1 ([xx.yy.zz.tt]) by host3
 #	Received: from host1 by host3
+#	Received: from (user@host1) by host3
 #
 # The host2, when present, is the reverse DNS mapping of the IP address.
 # It can be different from host1 in case of local /etc/host aliasing for
@@ -241,8 +273,12 @@ sub relay_list {
 	local(@hosts);					# List of relaying hosts
 	local($host, $real);
 	local($islast) = 1;				# First line we see is the "last" inserted
-	foreach $received (@received) {
-		local($_) = $received;
+	local($received);				# Received line, verbatim
+	local($i);
+	local($_);
+
+	for ($i = 0; $i < @received; $i++) {
+		$received = $_ = $received[$i];
 
 		# Handle first Received line (the last one added) specially.
 		if ($islast) {
@@ -267,6 +303,8 @@ sub relay_list {
 		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s+//) {
 			$host = $1;				# IP address [xx.yy.zz.tt]
 		} elsif (s/^([\w-.]+)(\(\S+\))?\s+//) {
+			$host = $1;				# host name
+		} elsif (s/^\(\w+\@([\w-.]+)\)\s+//) {
 			$host = $1;				# host name
 		} else {
 			&add_log("WARNING invalid from in Received: line '$received'")
@@ -296,8 +334,11 @@ sub relay_list {
 		# This is not as bad as not being able to deduce host1 or host2.
 		# The full line is logged, so that we may improve our fuzzy matching
 		# policy.
+		#
+		# Note: the lack of 'by' is only allowed for the first Received line
+		# stacked, i.e. the last one we parse here...
 
-		unless (/\s*by\s+/i || /^\s*$/) {
+		unless (/\s*by\s+/i || /^\s*$/ || $i == $#received) {
 			&add_log("WARNING weird Received: line '$received'") if $loglvl > 5;
 		}
 

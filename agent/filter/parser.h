@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.h,v 3.0.1.2 1996/12/24 14:01:26 ram Exp $
+ * $Id: parser.h,v 3.0.1.3 1997/01/07 18:28:23 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.h,v $
+ * Revision 3.0.1.3  1997/01/07  18:28:23  ram
+ * patch52: new get_confstr() and get_confstr_opt()
+ *
  * Revision 3.0.1.2  1996/12/24  14:01:26  ram
  * patch45: declared exec_secure()
  *
@@ -40,15 +43,22 @@ extern struct htable symtab;		/* Symbol table */
 extern void read_conf();			/* Read configuration file */
 extern void set_env_vars();			/* Set correct environment variables */
 extern char *homedir();				/* Location of the home directory */
-extern int get_confval();			/* Get configuration value */
+extern int get_confval();			/* Get configuration value (integer) */
+extern char *get_confstr();			/* Get configuration value (string) */
 extern int exec_secure();			/* Can we safely exec() this file? */
 
 /*
- * Parameters for get_confval().
+ * Parameters for get_confval() and get_confstr().
  */
 
 #define CF_MANDATORY	0			/* Must be there, or fatal error */
 #define CF_DEFAULT		1			/* Use default value if not there */
+
+/*
+ * Acccess macro for optional parameters.
+ */
+
+#define get_confstr_opt(x)		get_confstr(x, CF_DEFAULT, (char *) 0)
 
 #endif
 

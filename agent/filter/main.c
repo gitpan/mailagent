@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: main.c,v 3.0.1.3 1996/12/24 13:58:44 ram Exp $
+ * $Id: main.c,v 3.0.1.4 1997/01/07 18:26:49 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: main.c,v $
+ * Revision 3.0.1.4  1997/01/07  18:26:49  ram
+ * patch52: don't use my_exit() when printing version number
+ *
  * Revision 3.0.1.3  1996/12/24  13:58:44  ram
  * patch45: use more portable real uid/gid setting
  *
@@ -112,7 +115,7 @@ char **envp;
 			env_home();					/* Get HOME from environment */
 		} else if (0 == strcmp(argv[1], "-V")) {
 			printf("filter %.1f PL%d\n", VERSION, PATCHLEVEL);
-			my_exit(EX_OK);
+			exit(EX_OK);
 		}
 	}
 
