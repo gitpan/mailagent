@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.8 1995/08/31 16:19:17 ram Exp $
+ * $Id: io.c,v 3.0.1.10 1996/12/26 10:46:11 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,16 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.10  1996/12/26  10:46:11  ram
+ * patch51: include <unistd.h> for R_OK and define fallbacks
+ * patch51: declared strsave() in case it's not done in <string.h>
+ * patch51: fixed an incredible typo while declaring progpath[]
+ *
+ * Revision 3.0.1.9  1996/12/24  13:57:08  ram
+ * patch45: message is now read in a pool, instead of one big chunk
+ * patch45: attempt to locate mailagent and perl
+ * patch45: perform basic security checks on exec()ed programs
+ *
  * Revision 3.0.1.8  1995/08/31  16:19:17  ram
  * patch42: new routine write_fd() to write mail onto an opened file
  * patch42: write_file() now relies on new write_fd() to do its main job
@@ -70,6 +80,10 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#ifdef I_UNISTD
+#include <unistd.h>		/* R_OK and friends */
+#endif
+
 #ifdef I_SYS_WAIT
 #include <sys/wait.h>
 #endif
@@ -103,17 +117,31 @@
 #ifndef S_IFMT
 #define S_IFMT	0170000		/* Type of file */
 #endif
+#ifndef S_IFREG
+#define S_IFREG	0100000		/* Regular file */
+#endif
 #ifndef S_IFCHR
 #define S_IFCHR	0020000		/* Character special (ttys fall into that) */
 #endif
 #ifndef S_ISCHR
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
 #endif
+#ifndef S_ISREG
+#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
+#endif
+
+#ifndef X_OK
+#define X_OK	1			/* Test for execute (search) permission */
+#endif
+#ifndef R_OK
+#define R_OK	4			/* Test for read permission */
+#endif
 
 #include "confmagic.h"
 
 #define BUFSIZE		1024			/* Amount of bytes read in a single call */
 #define CHUNK		(10 * BUFSIZE)	/* Granularity of pool */
+#define CHUNKSIZE	(10 * CHUNK)	/* Maximum size of realloc()ed pool */
 #define MAX_STRING	2048			/* Maximum string's length */
 #define MAX_TRYS	1024			/* Maximum attempts for unique queue file */
 #define QUEUE_WAIT	60				/* Default waiting time in queue */
@@ -134,7 +162,6 @@ private FILE *stream_by_fd[] = {
 #define STDIO_FDS	(sizeof(stream_by_fd) / sizeof(FILE *))
 
 private char *agent_lockfile();	/* Name of the mailagent lock */
-private void pool_realloc();	/* Extend pool zone */
 private int get_lock();			/* Attempt to get a lockfile */
 private void release_agent();	/* Remove mailagent's lock if needed */
 private int process_mail();		/* Process mail by feeding the mailagent */
@@ -144,15 +171,157 @@ private int write_fd();			/* Write mail onto file descriptor */
 private char *save_file();		/* Emergency saving into a file */
 private void goto_daemon();		/* Disassociate process from tty */
 
-private char *mail = (char *) 0;	/* Where mail is stored */
-private int len;					/* Mail length in bytes */
-private int queued = 0;				/* True when mail queued safely */
+/*
+ * Mail is stored in a linked list of chunks, each chunk being able to
+ * contain at most CHUNKSIZE bytes. This prevents exponential memory
+ * consumption when facing messages two or three order of magnitude bigger
+ * than the basic CHUNK granularity.
+ */
+struct mail {
+	struct pool *first;			/* Data description in successive pools */
+	struct pool *last;			/* Last created pool */
+	int len;					/* Mail length in bytes */
+};
+struct pool {
+	struct pool *next;			/* Pool data */
+	char *arena;				/* Data for this pool chunk */
+	int size;					/* Size of data that can be held in arena */
+	int offset;					/* Filling offset */
+};
+private int queued = 0;			/* True when mail queued safely */
+private struct mail mail;		/* Where mail is expected to lie */
 
 extern int errno;				/* System call error status */
 extern char *malloc();			/* Memory allocation */
 extern char *realloc();			/* Re-allocation of memory pool */
 extern char *logname();			/* User's login name */
+extern char *strsave();			/* Save string somewhere in core */
 extern int loglvl;				/* Logging level */
+
+private struct pool *pool_alloc(size)
+{
+	/* Allocate a new pool of given size, or fail if not enough memory */
+
+	struct pool *lp;
+
+	lp = (struct pool *) malloc(sizeof(struct pool));
+	if (!lp)
+		goto failed;
+	
+	lp->arena = malloc(size);
+	if (!lp->arena)
+		goto failed;
+	
+	lp->size = size;
+	lp->offset = 0;				/* Nothing read yet */
+	lp->next = 0;				/* Assume we're at the end of chain */
+
+	return lp;
+
+failed:
+	fatal("out of memory");
+}
+
+private struct pool *pool_init(size)
+int size;
+{
+	/* Initialize mail by creating the first pool */
+
+	mail.first = mail.last = pool_alloc(size);
+	mail.len = 0;
+
+	return mail.last;
+}
+
+private void pool_extend(pool, size)
+struct pool **pool;
+int size;
+{
+	/* Make more room in pool and update parameters accordingly. If we
+	 * can extend the size of the pool because we're under the CHUNKSIZE
+	 * limit, then do so. Otherwise, allocate a new pool and link it to
+	 * the current one, then update our caller's view to point to the new
+	 * pool so new allocation is quasi-transparent.
+	 */
+
+	struct pool *lp = *pool;	/* Current pool */
+	struct pool *np;			/* New pool, if necessary */
+
+	if (lp->size < CHUNKSIZE) {
+		lp->size += size;
+		lp->arena = realloc(lp->arena, lp->size);
+		if (!lp->arena)
+			fatal("out of memory");
+		return;
+	}
+
+	/* Need to create a new pool */
+
+	mail.last = np = pool_alloc(size);
+	lp->next = np;
+	*pool = np;					/* Update our caller's view */
+}
+
+private void pool_read(pool, buf, len)
+struct pool **pool;
+char *buf;				/* Where data lie */
+int len;				/* Amount of data in buf to transfer */
+{
+	struct pool *lp = *pool;		/* Local pool pointer */
+	int fit;						/* Amount of data that can fit */
+
+	while (fit = len) {				/* Assume everything will fit */
+		if ((lp->offset + len) > lp->size)
+			fit = lp->size - lp->offset;
+
+		bcopy(buf, lp->arena + lp->offset, fit);
+		lp->offset += fit;
+		mail.len += fit;
+
+		len -= fit;
+		if (len == 0)
+			return;					/* Everything fitted in pool */
+
+		pool_extend(&lp, CHUNK);	/* Resize it or fail */
+		*pool = lp;					/* Update our caller's view */
+	}
+}
+
+private int pool_write(fd, pool)
+int fd;
+struct pool *pool;
+{
+	/* Write the pool onto fd. We do not call a single write on the pool areana
+	 * as in "write(fd, buf, len)" in case the pool length exceeds the maximum
+	 * amount of bytes the system can atomically write.
+	 *
+	 * Returns the amount of bytes written, or -1 on error.
+	 */
+
+	register1 char *mailptr;		/* Pointer into arena buffer */
+	register2 int length;			/* Number of bytes already written */
+	register3 int amount;			/* Amount of bytes written by last call */
+	register4 int n;				/* Result from the write system call */
+	register5 int len;				/* Bytes remaining to be written */
+	
+	for (
+		mailptr = pool->arena, length = 0, len = pool->offset;
+		length < len;
+		mailptr += amount, length += amount
+	) {
+		amount = len - length;
+		if (amount > BUFSIZ)		/* Do not write more than BUFSIZ */
+			amount = BUFSIZ;
+		n = write(fd, mailptr, amount);
+		if (n == -1 || n != amount) {
+			if (n == -1)
+				add_log(1, "SYSERR write: %m (%e)");
+			return -1;
+		}
+	}
+
+	return length;
+}
 
 private void read_stdin()
 {
@@ -164,38 +333,31 @@ private void read_stdin()
 	 * run once, for obvious reasons...
 	 */
 
-	int size;					/* Current size of memory pool */
 	int amount = 0;				/* Total amount of data read */
 	int n;						/* Bytes read by last system call */
-	char *pool;					/* Where input is stored */
+	struct pool *pool;			/* Current pool where input is stored */
 	char buf[BUFSIZE];
 	static int done = 0;		/* Ensure routine is run once only */
 
 	if (done++) return;
 
-	size = CHUNK;
-	pool = malloc(size);
-	if (pool == (char *) 0)
-		fatal("out of memory");
-
 	add_log(19, "reading mail");
+
+	pool = pool_init(CHUNK);
 
 	while (n = read(0, buf, BUFSIZE)) {
 		if (n == -1) {
 			add_log(1, "SYSERR read: %m (%e)");
 			fatal("I/O error while reading mail");
 		}
-		if (size - amount < n)				/* Pool not big enough */
-			pool_realloc(&pool, &size);		/* Resize it or fail */
-		bcopy(buf, pool + amount, n);		/* Copy read bytes */
-		amount += n;						/* Update amount of bytes read */
+		pool_read(&pool, buf, n);		/* Copy read bytes */
+		amount += n;					/* Update amount of bytes read */
 	}
 
-	len = amount;				/* Indicate how many bytes where read */
+	if (amount != mail.len)
+		fatal("corrupted mail: read %d bytes, now has %d", amount, mail.len);
 
 	add_log(16, "got mail (%d bytes)", amount);
-
-	mail = pool;				/* Where mail is stored */
 }
 
 public void process()
@@ -266,23 +428,6 @@ private int is_main()
 	return 0;
 }
 
-private void pool_realloc(pool, size)
-char **pool;
-int *size;
-{
-	/* Make more room in pool and update parameters accordingly */
-
-	char *cpool = *pool;	/* Current location */
-	int csize = *size;		/* Current size */
-
-	csize += CHUNK;
-	cpool = realloc(cpool, csize);
-	if (cpool == (char *) 0)
-		fatal("out of memory");
-	*pool = cpool;
-	*size = csize;
-}
-
 private int get_lock()
 {
 	/* Try to get a filter lock in the spool directory. Propagate the return
@@ -348,6 +493,9 @@ char *queue;				/* Location of the queue directory */
 	char *base;				/* Pointer to base name */
 	struct stat buf;		/* To make sure queued file remains */
 	int try = 0;			/* Count attempts to find a unique queue name */
+	char *type;				/* "qm" or "fm" mails */
+	char trailer;			/* Trailer character after pid */
+	int alternate = 0;		/* True when alternate naming was chosen */
 
 	where = write_file(queue, "Tm");
 	if (where == (char *) 0) {
@@ -360,14 +508,23 @@ char *queue;				/* Location of the queue directory */
 	 * immediately. Because of my paranoid nature, we loop at least MAX_TRYS
 	 * to get a unique queue filename (duplicates may happen if mail is
 	 * delivered on distinct machines simultaneously with an NFS-mounted queue).
+	 * If that's not enough. we try again once for each letter in the alphabet,
+	 * adding it as a trailer character for better uniqueness.
 	 */
 
+	type = is_main() ? "qm" : "fm";
+	trailer = '\0';
+
 	for (;;) {
-		sprintf(real, "%s/%s%d", queue, is_main() ? "qm":"fm", progpid+try);
+		sprintf(real, "%s/%s%d%c", queue, type, progpid + try, trailer);
 		if (-1 == stat(real, &buf))		/* File does not exist */
 			break;
-		if (++try > MAX_TRYS)
-			fatal("unable to find unique queue filename");
+		if (++try > MAX_TRYS) {
+			if (alternate > ('z' - 'a'))
+				fatal("unable to find unique queue filename");
+			try = 0;
+			trailer = 'a' + alternate++;	/* ASCII-dependant */
+		}
 	}
 
 	if (-1 == rename(where, real)) {
@@ -381,7 +538,7 @@ char *queue;				/* Location of the queue directory */
 	if (base++ == (char *) 0)
 		base = real;
 
-	add_log(4, "QUEUED [%s] %d bytes", base, len);
+	add_log(4, "QUEUED [%s] %d bytes", base, mail.len);
 	queued = 1;
 
 	/* If we got a lock, then no mailagent is running and we may process the
@@ -417,6 +574,56 @@ char *queue;				/* Location of the queue directory */
 	}
 }
 
+private char *locate(prog, path)
+char *prog;			/* Program to locate within path */
+char *path;			/* The path under which we should look for program */
+{
+	/* Locate specified program within the `path' and return pointer to static
+	 * data with the full path of the program when found, or a null pointer
+	 * otherwise.
+	 */
+	
+	static char progpath[MAX_STRING + 1];
+	char *cp;					/* Current path pointer */
+	char *ep;					/* End of current path component */
+	int len;					/* Length of current path component */
+	struct stat buf;			/* Stat buffer */
+	int proglen = strlen(prog);
+
+	/*
+	 * Loop over the path and extract components between `:'. The `cp'
+	 * variable points to the beginning of the place to look for the next
+	 * component.
+	 */
+
+	for (ep = cp = path; ep && *cp; cp = ep ? (ep + 1) : ep) {
+		ep = index(cp, ':');				/* Lookup next `:' separator */
+		len = ep ? (ep - cp) : strlen(cp);	/* Slurp remaining if not found */
+		if ((len + proglen + 1) > MAX_STRING) {
+			add_log(4, "WARNING skipping directory while looking for %s", prog);
+			continue;
+		}
+		if (len) {
+			strncpy(progpath, cp, len);		/* Will not add trailing '\0' */
+			progpath[len] = '\0';
+		} else
+			strcpy(progpath, ".");			/* Good old "null" path field */
+		strcat(progpath, "/");
+		strcat(progpath, prog);
+		if (-1 == stat(progpath, &buf))		/* No entry in file system */
+			continue;
+		if (!S_ISREG(buf.st_mode))			/* Not a regular file */
+			continue;
+		if (-1 == access(progpath, R_OK|X_OK)) {
+			add_log(4, "WARNING no read and/or execute rights on %s", progpath);
+			continue;
+		}
+		return progpath;		/* Ok, we found it */
+	}
+
+	return (char *) 0;			/* Program not found */
+}
+
 private int process_mail(location)
 char *location;
 {
@@ -437,6 +644,9 @@ char *location;
 	int pid;				/* Pid of our children */
 	int res;				/* Result from wait */
 	int delay;				/* Delay in seconds before invoking mailagent */
+	char *perl;				/* perl path */
+	char *mailagent;		/* mailagent path */
+	char *path = get_env("PATH");
 
 	if (loglvl <= 20) {		/* Loggging level higher than 20 is for tests */
 		pid = fork();
@@ -444,9 +654,9 @@ char *location;
 			release_lock();
 			add_log(1, "SYSERR fork: %m (%e)");
 			add_log(6, "NOTICE exiting to save resources");
-			exit(EX_OK);	/* Exiting will also release sendmail process */
+			my_exit(EX_OK);	/* Exiting will also release sendmail process */
 		} else if (pid != 0)
-			exit(EX_OK);	/* Release waiting sendmail */
+			my_exit(EX_OK);	/* Release waiting sendmail */
 		else
 			goto_daemon();	/* Remaining child is to disassociate from tty */
 	}
@@ -470,6 +680,41 @@ char *location;
 	progpid = getpid();		/* This may be the child (if fork succeded) */
 	envp = make_env();		/* Build new environment */
 
+	/*
+	 * We locate both mailagent and perl in the specified path. Not finding
+	 * mailagent is a fatal error, but not finding perl simply means we
+	 * fall back to the hardwired perl path (determined by Configure).
+	 *
+	 * Given the sensitive nature of mailagent processing, it is vital to
+	 * make sure both perl and mailagent cannot be tampered with by ordinary
+	 * users, or that would defeat all sanity checks performed on the config
+	 * and rule files.
+	 */
+	
+	mailagent = locate("mailagent", path);
+	if (!mailagent) {
+		add_log(1, "ERROR cannot locate mailagent anywhere in PATH");
+		if (path)
+			add_log(6, "NOTICE looked for mailagent under %s", path);
+		return -1;
+	} else
+		mailagent = strsave(mailagent);		/* Save static data for perusal */
+
+	perl = locate("perl", path);			/* Override hardwired default */
+	if (!perl) perl = PERLPATH;				/* ...if possible */
+
+	add_log(12, "perl at %s", perl);
+	add_log(12, "mailagent at %s", mailagent);
+
+	if (!(exec_secure(perl) && exec_secure(mailagent))) {
+		add_log(1, "ERROR running mailagent would be unsecure");
+		return -1;
+	}
+
+	/*
+	 * Issue a virtual fork and let the child execute mailagent...
+	 */
+
 	pid = vfork();			/* Virtual fork this time... */
 	if (pid == -1) {
 		add_log(1, "SYSERR vfork: %m (%e)");
@@ -478,67 +723,69 @@ char *location;
 	}
 
 	if (pid == 0) {			/* This is the child */
-		execle(PERLPATH, "perl", "-S", "mailagent", location, (char *) 0, envp);
+		execle(perl, "perl", mailagent, location, (char *) 0, envp);
 		add_log(1, "SYSERR execle: %m (%e)");
-		add_log(1, "ERROR cannot run perl to start mailagent");
-		exit(EX_UNAVAILABLE);
-	} else {				/* Parent process */
-		while (pid != (res = wait(&status)))
-			if (res == -1) {
-				add_log(1, "SYSERR wait: %m (%e)");
-				return -1;
-			}
+		add_log(1, "ERROR cannot run perl to start %s", mailagent);
+		my_exit(EX_UNAVAILABLE);
+	}
+	
+	/* Parent process */
+
+	while (pid != (res = wait(&status)))
+		if (res == -1) {
+			add_log(1, "SYSERR wait: %m (%e)");
+			return -1;
+		}
 
 #ifdef USE_WIFSTAT
-		if (WIFEXITED(status)) {			/* Exited normally */
-			xstat = WEXITSTATUS(status);
-			if (xstat != 0) {
-				add_log(3, "ERROR mailagent returned status %d", xstat);
-				return -1;
-			}
-		} else if (WIFSIGNALED(status)) {	/* Signal received */
-			xstat = WTERMSIG(status);
-			add_log(3, "ERROR mailagent terminated by signal %d", xstat);
+	if (WIFEXITED(status)) {			/* Exited normally */
+		xstat = WEXITSTATUS(status);
+		if (xstat != 0) {
+			add_log(3, "ERROR mailagent returned status %d", xstat);
 			return -1;
-		} else if (WIFSTOPPED(status)) {	/* Process stopped */
-			xstat = WSTOPSIG(status);
-			add_log(3, "WARNING mailagent stopped by signal %d", xstat);
-			add_log(6, "NOTICE terminating mailagent, pid %d", pid);
-			if (-1 == kill(pid, 15))
-				add_log(1, "SYSERR kill: %m (%e)");
-			return -1;
-		} else
-			add_log(1, "BUG please report bug 'posix-wait' to author");
+		}
+	} else if (WIFSIGNALED(status)) {	/* Signal received */
+		xstat = WTERMSIG(status);
+		add_log(3, "ERROR mailagent terminated by signal %d", xstat);
+		return -1;
+	} else if (WIFSTOPPED(status)) {	/* Process stopped */
+		xstat = WSTOPSIG(status);
+		add_log(3, "WARNING mailagent stopped by signal %d", xstat);
+		add_log(6, "NOTICE terminating mailagent, pid %d", pid);
+		if (-1 == kill(pid, 15))
+			add_log(1, "SYSERR kill: %m (%e)");
+		return -1;
+	} else
+		add_log(1, "BUG please report bug 'posix-wait' to author");
 #else
 #ifdef UNION_WAIT
-		xstat = status.w_status;
+	xstat = status.w_status;
 #else
-		xstat = status;
+	xstat = status;
 #endif
-		if ((xstat & 0xff) == 0177) {		/* Process stopped */
-			xstat >>= 8;
-			add_log(3, "WARNING mailagent stopped by signal %d", xstat);
-			add_log(6, "NOTICE terminating mailagent, pid %d", pid);
-			if (-1 == kill(pid, 15))
-				add_log(1, "SYSERR kill: %m (%e)");
+	if ((xstat & 0xff) == 0177) {		/* Process stopped */
+		xstat >>= 8;
+		add_log(3, "WARNING mailagent stopped by signal %d", xstat);
+		add_log(6, "NOTICE terminating mailagent, pid %d", pid);
+		if (-1 == kill(pid, 15))
+			add_log(1, "SYSERR kill: %m (%e)");
+		return -1;
+	} else if ((xstat & 0xff) != 0) {	/* Signal received */
+		xstat &= 0xff;
+		if (xstat & 0200) {				/* Dumped a core ? */
+			xstat &= 0177;
+			add_log(3, "ERROR mailagent dumped core on signal %d", xstat);
+		} else
+			add_log(3, "ERROR mailagent terminated by signal %d", xstat);
+		return -1;
+	} else {
+		xstat >>= 8;
+		if (xstat != 0) {
+			add_log(3, "ERROR mailagent returned status %d", xstat);
 			return -1;
-		} else if ((xstat & 0xff) != 0) {	/* Signal received */
-			xstat &= 0xff;
-			if (xstat & 0200) {				/* Dumped a core ? */
-				xstat &= 0177;
-				add_log(3, "ERROR mailagent dumped core on signal %d", xstat);
-			} else
-				add_log(3, "ERROR mailagent terminated by signal %d", xstat);
-			return -1;
-		} else {
-			xstat >>= 8;
-			if (xstat != 0) {
-				add_log(3, "ERROR mailagent returned status %d", xstat);
-				return -1;
-			}
 		}
-#endif
 	}
+#endif
 	
 	add_log(19, "mailagent ok");
 
@@ -571,7 +818,7 @@ public int emergency_save()
 
 	read_stdin();		/* Read mail if not already done yet */
 
-	if (mail == (char *) 0) {
+	if (mail.len == 0) {
 		say("mail not read, cannot dump");
 		return -1;	/* Failed */
 	}
@@ -710,9 +957,9 @@ char *template;			/* First part of the file name */
 	if (-1 == stat(path, &buf))		/* No entry in file system, probably */
 		return (char *) 0;			/* Saving failed */
 
-	if (buf.st_size != len) {		/* Not written entirely */
+	if (buf.st_size != mail.len) {	/* Not written entirely */
 		add_log(2, "ERROR mail truncated to %d bytes (had %d)",
-			buf.st_size, len);
+			buf.st_size, mail.len);
 		goto error;					/* Remove file and report error */
 	}
 
@@ -732,30 +979,15 @@ private int write_fd(fd, path)
 int fd;					/* On which file descriptor saving occurs */
 char *path;				/* Path name associated with that fd (may be NULL) */
 {
-	/* Write mail to the specified fd and return 0 if OK, -1 on error */
-
-	register1 char *mailptr;		/* Pointer into mail buffer */
-	register2 int length;			/* Number of bytes already written */
-	register3 int amount;			/* Amount of bytes written by last call */
-	register4 int n;				/* Result from the write system call */
-
-	/* Write the mail onto fd. We do not call a single write on the mail buffer
-	 * as in "write(fd, mail, len)" in case the mail length exceeds the maximum
-	 * amount of bytes the system can atomically write.
+	/* Write mail to the specified fd and return 0 if OK, -1 on error.
+	 * Since mail is scattered amongst various pools of at most CHUNKSIZE
+	 * bytes, we loop against all pools and write them in turn.
 	 */
-	
-	for (
-		mailptr = mail, length = 0;
-		length < len;
-		mailptr += amount, length += amount
-	) {
-		amount = len - length;
-		if (amount > BUFSIZ)		/* Do not write more than BUFSIZ */
-			amount = BUFSIZ;
-		n = write(fd, mailptr, amount);
-		if (n == -1 || n != amount) {
-			if (n == -1)
-				add_log(1, "SYSERR write: %m (%e)");
+
+	struct pool *lp;
+
+	for (lp = mail.first; lp; lp = lp->next) {
+		if (-1 == pool_write(fd, lp)) {
 			if (path != (char *) 0)
 				add_log(2, "ERROR cannot write to file %s", path);
 			return -1;	/* Failed */

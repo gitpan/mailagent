@@ -1,4 +1,4 @@
-;# $Id: hook.pl,v 3.0.1.1 1995/01/03 18:11:45 ram Exp $
+;# $Id: hook.pl,v 3.0.1.2 1996/12/24 14:52:38 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: hook.pl,v $
+;# Revision 3.0.1.2  1996/12/24  14:52:38  ram
+;# patch45: perform security checks on hook programs
+;#
 ;# Revision 3.0.1.1  1995/01/03  18:11:45  ram
 ;# patch24: routine &perl now calls &main'perl directly to do its job
 ;# patch24: no longer pre-extend variable when reading top 128 bytes
@@ -116,6 +119,7 @@ sub program {
 sub rules {
 	local($hook) = @_;
 	&'add_log("hook contains mailagent rules") if $'loglvl > 17;
+	die("unsecure hook") unless &'file_secure($hook, 'rule hook');
 	local($wmode) = 'INITIAL';		# Force working mode of INITIAL
 	local($failed, $saved) = &'apply($hook);
 	die("cannot apply rules") if $failed;
@@ -129,6 +133,7 @@ sub rules {
 sub perl {
 	local($hook) = @_;
 	&'add_log("hook is a perl script") if $'loglvl > 17;
+	die("unsecure hook") unless &'exec_secure($hook, 'perl hook');
 	local($failed) = &'perl($hook);
 	die("cannot run perl hook") if $failed;
 }
@@ -142,6 +147,7 @@ sub perl {
 sub audit {
 	local($hook) = @_;
 	&'add_log("hook is an audit script") if $'loglvl > 17;
+	die("unsecure hook") unless &'exec_secure($hook, 'audit hook');
 	local($pid) = fork;
 	$pid = -1 unless defined $pid;
 	if ($pid == 0) {				# Child process
@@ -163,6 +169,7 @@ sub audit {
 sub deliver {
 	local($hook) = @_;
 	&'add_log("hook is a deliver script") if $'loglvl > 17;
+	die("unsecure hook") unless &'exec_secure($hook, 'deliver hook');
 	# Fork and let the child do all the work. The parent simply captures the
 	# output from child's stdout.
 	local($pid);

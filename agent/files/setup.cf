@@ -2,7 +2,7 @@
 # Setup file for mailagent
 #
 
-# $Id: setup.cf,v 3.0.1.2 1995/09/15 13:40:37 ram Exp $
+# $Id: setup.cf,v 3.0.1.3 1996/12/24 13:49:42 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,10 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: setup.cf,v $
+# Revision 3.0.1.3  1996/12/24  13:49:42  ram
+# patch45: can now say that a file is expected under some directory
+# patch45: applied that to mailbox, which is a file expected under maildrop
+#
 # Revision 3.0.1.2  1995/09/15  13:40:37  ram
 # patch43: maildrop now defaults to the configured value at first install
 # patch43: new compspecs optional file in configuration
@@ -42,6 +46,21 @@ timezone  : $main'ENV{'TZ'} || 'MET'
 # optional file/directory, or one that will be created on demand. An uppercase
 # F/D means a mandatory file/directory that should exist.
 #
+# It is possible to further specify an underlying directory for the file
+# or directory by following the type with a value between parenthesis, as in:
+#
+#        mailbox = f ($maildrop)
+#
+# to say for instance that the mailbox setting in the config file really
+# indicates a file lying under the maildrop setting. A variable name is
+# interpreted in the cf package, NOT in the cfset, since it is assummed to
+# be a configuration variable. It can be fully qualified if it is not.
+# It is also possible to put a plain string here, since the value will
+# be interpolated in "" context.
+#
+# By default, files are anchored under the home directory unless they start
+# with a /.
+#
 # When using 'mailagent -I', a mandatory directory will be created, while a
 # mandatory file will be copied from a template lying in the privlib directory
 # when specified; otherwise, it is created with a null size.
@@ -58,7 +77,7 @@ rules     = f
 rulecache = f
 
 maildrop  = d
-mailbox   = f
+mailbox   = f ($maildrop)
 
 compress  = f
 compspecs = f

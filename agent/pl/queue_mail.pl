@@ -1,4 +1,4 @@
-;# $Id: queue_mail.pl,v 3.0.1.2 1995/01/25 15:27:19 ram Exp $
+;# $Id: queue_mail.pl,v 3.0.1.3 1996/12/24 14:58:35 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: queue_mail.pl,v $
+;# Revision 3.0.1.3  1996/12/24  14:58:35  ram
+;# patch45: add as many trailing 'x' as necessary for unique queue file
+;#
 ;# Revision 3.0.1.2  1995/01/25  15:27:19  ram
 ;# patch27: ported to perl 5.0 PL0
 ;#
@@ -94,7 +97,7 @@ sub queue_mail {
 	# and is incremented each time a mail is successfully queued.
 	$queue_file = "$type$$";		# Append PID for uniqueness
 	$queue_file = "$type${$}x" . $queue_count if -f "$queue_file";
-	$queue_file = "${queue_file}x" if -f "$queue_file";	# Paranoid
+	$queue_file = "${queue_file}x" while -f "$queue_file";	# Paranoid
 	++$queue_count;					# Counts amount of queued mails
 	&add_log("queue file is $queue_file") if $loglvl > 19;
 

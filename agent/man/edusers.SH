@@ -20,7 +20,7 @@ $spitshell >edusers.$manext <<!GROK!THIS!
 .TH EDUSERS $manext
 ''' @(#) Manual page for mailagent's edusers command
 '''
-''' $Id: edusers.SH,v 3.0.1.3 1995/08/07 16:13:00 ram Exp $
+''' $Id: edusers.SH,v 3.0.1.4 1996/12/24 14:08:52 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,9 @@ $spitshell >edusers.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: edusers.SH,v $
+''' Revision 3.0.1.4  1996/12/24  14:08:52  ram
+''' patch45: examples are now shown in constant-width font if possible
+'''
 ''' Revision 3.0.1.3  1995/08/07  16:13:00  ram
 ''' patch37: updated my e-mail address
 '''
@@ -44,11 +47,13 @@ $spitshell >edusers.$manext <<!GROK!THIS!
 .de Ex		\" Start of Example
 .sp
 .in +5
+.ft CW
 .nf
 ..
 .de Ef		\" End of Example
 .sp
 .in -5
+.ft R
 .fi
 ..
 .SH NAME
@@ -105,7 +110,7 @@ Log/agentlog
 mailagent's log file.
 .PD
 .SH AUTHOR
-Raphael Manfredi <ram@hptnos02.grenoble.hp.com>
+Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 .SH "SEE ALSO"
 mailagent($manext), metaconfig($manext), package($manext), packinit($manext).
 !GROK!THIS!

@@ -1,4 +1,4 @@
-;# $Id: rules.pl,v 3.0.1.6 1995/08/07 16:24:53 ram Exp $
+;# $Id: rules.pl,v 3.0.1.7 1996/12/24 15:00:11 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rules.pl,v $
+;# Revision 3.0.1.7  1996/12/24  15:00:11  ram
+;# patch45: forgot to unlock rulecache on errors
+;# patch45: don't dataload hashkey(), used as a sort routine
+;#
 ;# Revision 3.0.1.6  1995/08/07  16:24:53  ram
 ;# patch37: skip possible spaces before trailing command ';' terminator
 ;#
@@ -315,6 +319,7 @@ sub write_cache {
 	unless (open(CACHE, ">$cf'rulecache")) {
 		&'add_log("ERROR cannot create rule cache $cf'rulecache: $!")
 			if $'loglvl;
+		&'free_file($cf'rulecache);	# Unlock cache
 		unlink $cf'rulecache;
 		return 0;
 	}
@@ -418,12 +423,17 @@ sub writevar_fd {
 	$error ? 0 : 1;		# Success when no error reported
 }
 
+# Perload OFF
+# (Used as a sort function, causes perl5 to dump core with native AUTOLOAD)
+
 # Sorting for hash keys used by %Rule
 sub hashkey {
 	local($c) = $a =~ /^H(\d+)/;
 	local($d) = $b =~ /^H(\d+)/;
 	$c <=> $d;
 }
+
+# Perload ON
 
 # The following sets-up a new rule environment and then transfers the control
 # to some other function, giving it the remaining parameters. That enables the

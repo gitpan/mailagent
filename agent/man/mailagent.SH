@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.15 1995/09/15 13:56:30 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.16 1996/12/24 14:12:58 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,13 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.16  1996/12/24  14:12:58  ram
+''' patch45: examples are now shown in constant-width font if possible
+''' patch45: big emphasis about security issues, for RUN commands & filter
+''' patch45: new Relayed: pseudo header computations
+''' patch45: documented the %-H biffing macro with more details
+''' patch45: updated my e-mail address
+'''
 ''' Revision 3.0.1.15  1995/09/15  13:56:30  ram
 ''' patch43: folder compression can now deal with various compressors
 ''' patch43: added locksafe, compspecs and comptag config variables
@@ -105,11 +112,13 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .de Ex		\" Start of Example
 .sp
 .in +5
+.ft CW
 .nf
 ..
 .de Ef		\" End of Example
 .sp
 .in -5
+.ft R
 .fi
 ..
 .SH NAME
@@ -225,6 +234,11 @@ it to suit your needs. Comments held in it should be
 self explanatory. There is only a small section at the head of the
 script which needs to be edited.  You'll have to delete shell comments
 in the \fIfilter\fR script by yourself if your shell cannot deal with them.
+.PP
+As of version 3.0 PL44, I advise you to prefer the C version if you are
+concerned about security. If you are in a position where multiple architectures
+can process your \fI.forward\fR, then a shell wrapper selecting the proper
+executable based on the architecture will be required.
 '''
 .SS "Configuring Mailagent"
 .PP
@@ -601,7 +615,8 @@ still in its queue as being old. (optional, defaults to: 86400, i.e. a day).
 .TP
 .I queuewait
 Time in seconds telling the C \fIfilter\fR program how long it must wait
-before launching \fImailagent\fR. (optional, defaults to: 60).
+before launching \fImailagent\fR. (optional, defaults to: 60, but can be
+lowered to 0 if you don't want to wait to delay getting new messages).
 .TP
 .I rulecache
 The name of the file used to cache the latest compiled rules. Since usually
@@ -1161,7 +1176,7 @@ Negative values refer to that many lines or addresses back from the end, i.e.
 The selector is then followed by a pattern within '/' or by a single name.
 In order to ease the writing of the rules, the semantic of a single name varies
 depending on the selector used. For the special selectors "From:", "To:", "Cc:",
-"Sender:", their associated "Resent-" fields, "Reply-To:"
+"Sender:", their associated "Resent-" fields, "Reply-To:", "Envelope:"
 and "Apparently-To:", a single name is understood as a match on the \fIlogin
 name\fR of the address. Note that if no "To:" field is present in the header,
 one will be forged from the "Apparently-To:" for the purpose of filtering only
@@ -1421,6 +1436,13 @@ seems a reasonable assumption :-).
 User who sent the mail. This may differ from the \fIFrom:\fR line. If no
 such field exists, then the address in the first From line is used (mail
 envelope).
+.TP
+.I Relayed:
+This computed header is a comma-separated list of all the hosts where
+the message was relayed, in the proper transmission order. Each item in
+this list can be a machine name such as \fImail.hp.com\fR or an IP address
+such as \fI[15.125.38.12]\fR. The list is derived from the \fIReceived:\fR
+lines present in the message.
 .TP
 .I Reply-To:
 Where any reply should be sent. If no \fIReply-To:\fR field is present, then
@@ -2175,11 +2197,21 @@ The full path name of the folder (or message within an MH folder) where
 the last saving operation has occurred. This is intended to be used if
 you wish to construct your own mail reception notification.
 .TP
+.I \$length
+The message length, in bytes.
+.TP
+.I \$lines
+The number of lines in the message.
+.TP
 .I \$login
 The login name of the address on the From: line.
 .TP
 .I \$precedence
 The content of the Precedence: line, if any at all.
+.TP
+.I @relayed
+The list of host names (possibly raw IP addresses if no DNS mapping) listed
+in the (computed) Relayed: header line.
 .TP
 .I \$reply_to
 The e-mail address where a reply should be sent to, with comment suppressed.
@@ -2991,7 +3023,7 @@ characters in the command fields.
 .PP
 If the file referred to by the \fIcompspecs\fR configuration variable
 cannot be accessed for whatever reason, a default entry is hard-wired
-into mailagent (knows about both \fIcompress\fR and \fIgzip\R programs):
+into mailagent (knows about both \fIcompress\fR and \fIgzip\fR programs):
 .Ex
 compress <TAB> .Z <TAB> compress <TAB> uncompress <TAB> zcat
 gzip <TAB> .gz <TAB> gzip <TAB> gunzip <TAB> gunzip -c
@@ -3065,7 +3097,11 @@ Same as writing %-H, new line, %-B
 The body part of the biffing message
 .TP
 %-H
-The header part of the biffing message
+The header part of the biffing message. If shows only From:, To: Subject: and
+Date: headers, or whatever you have set the \fIbiffhead\fR configuration
+variable to. All headers are showed as one line of text, regardless of their
+actual length. There will be three trailing dots at the end to signal that
+truncation occurred.
 .TP
 %-T
 Same as %-B, but trimming is activated. The purpose of trimming is to remove
@@ -3429,7 +3465,7 @@ copy directly, while local changes may be made with:
 .Ex
 	&env'local('umask', 0722);
 .Ef
-to set-up a new local value. The first time \fI\&env'local\fR is called on
+to set-up a new local value. The first time \fI&env'local\fR is called on
 a variable, its value is saved somewhere, and will be restored upon exiting
 the scope of the rule. Then the new value is affected to the variable.
 .PP
@@ -3929,7 +3965,7 @@ the string \fBEOF\fR on a line by itself) and those data are fed to shell
 commands via \fIstdin\fR and to perl commands via the \fI@buffer\fR variable
 set up in the environment package named \fIcmdenv\fR (in which the command is
 loaded and run).
-..PP
+.PP
 If you define your own variables (types \fIvar\fR or \fIflag\fR), you may
 use the builtin \fIset\fR command to modify their values. Note that no default
 value can be provided when defining your variable. A suitable default value
@@ -4227,7 +4263,7 @@ esac
 
 # Perhaps a shell was defined... Otherwise, use /bin/sh
 case "\$shell" in
-'') shell='/bin/sh';;
+\&'') shell='/bin/sh';;
 esac
 
 # Normally, a shell command has its output included in the transcript only in
@@ -4420,11 +4456,20 @@ mailagent is running, that mail is queued and will be processed later by the
 For the same reason, messages sent back by mailagent are queued by
 \fIsendmail\fR, to avoid the cost of mail transfer while processing commands.
 .SH "SECURITY"
-To avoid any problems, the \fIfilter\fR will refuse to run if the configuration
+First, let me discuss what \fIsecurity\fR means here. It does \fBnot\fR mean
+system safety against intruder attacks. If your system allows \fI.forward\fR
+hooks and/or \fIcron\fR jobs to be set by regular users, then your system is
+not secure at all. Period. So we're not bothering with security at the
+system level, but rather at your own account level where all sort of precious
+data is held.
+.PP
+To avoid any pernicious intrusion via Trojan horses, the C \fIfilter\fR will
+refuse to run if the configuration
 file \fI~/.mailagent\fR or the rule file specified are world writable or not
 owned by the user. Those tests are enforced even if the \fIfilter\fR does
 not run setuid, because they compromise the security of your account.
-The \fImailagent\fR will also perform those checks.
+The \fImailagent\fR will also perform some of those checks, in case it is
+not invoked via the C \fIfilter\fR.
 .PP
 Indeed, if someone can write into your \fI~/.mailagent\fR file, then he can
 easily change your \fIrules\fR configuration parameter to point to another
@@ -4437,6 +4482,24 @@ And, no surprise, the same rules apply for your \fInewcmd\fR file, which is
 used to describe extended filtering commands. Otherwise it would allow someone
 to quietly redefine a commonly used standard command like LEAVE and later
 be able to assume your identity.
+.PP
+Versions after 3.0 PL44 come with an improved (from a security point of view) C
+\fIfilter\fR that will not only perform the aforementionned checks but will
+also ensure that the \fIperl\fR executable and the \fImailagent\fR script
+it is about to exec are not loosely protected. Furthermore, if the \fIfilter\fR
+is set up in your \fI.forward\fR as described in this man page, it will be
+able to check itself for safety and will warn you loundly if it can be
+tampered with, which could defeat all security checks.
+.PP
+Mailagent was also extended so that all programs executed via RUN and friends,
+as well as mail hooks, are checked for obvious protection flaws before being
+actually run. Interpreted scripts (starting with the #! magic token) and
+perl scripts following the magic "exec perl if \$under_shell" incantation are
+specially checked for further security of the relevant interpretor. Those
+checks are performed systematically, even if the \fIsecure\fR parameter was
+not set to ON. Also, all files about to be \fIexec()\fRed are checked using
+the same extended check method used when \fIsecure\fR is ON (ownership tests
+are skipped however when checking for \fIexec()\fR-ness of a file).
 .SH FILES
 .PD 0
 .TP 20
@@ -4500,7 +4563,7 @@ Parsing of the rule file should be done by a real parser and not lexically.
 Or at least, it should be possible to escape otherwise meaningful characters
 like ';' or '}' within the rules.
 .SH AUTHOR
-Raphael Manfredi <ram@hptnos02.grenoble.hp.com>.
+Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>.
 .SH "SEE ALSO"
 maildist($manext), mailhelp($manext), maillist($manext), mailpatch($manext),
 perl(1).

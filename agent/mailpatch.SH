@@ -20,7 +20,7 @@ $startperl
 	eval "exec perl -S \$0 \$*"
 		if \$running_under_some_shell;
 
-# $Id: mailpatch.SH,v 3.0.1.4 1995/03/21 12:55:16 ram Exp $
+# $Id: mailpatch.SH,v 3.0.1.5 1996/12/24 14:08:29 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -31,6 +31,10 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailpatch.SH,v $
+# Revision 3.0.1.5  1996/12/24  14:08:29  ram
+# patch45: silently discard hostile addresses
+# patch45: added command forwarding support
+#
 # Revision 3.0.1.4  1995/03/21  12:55:16  ram
 # patch35: added pl/cdir.pl to the list of appended files
 #
@@ -89,6 +93,12 @@ $maillist = "To obtain a list of what is available, send me the following mail:
 	Subject: Command
 	\@SH maillist $path
 		^ note the l";
+
+# Silently discard hostile addresses
+unless (&addr'valid($dest)) {
+	&add_log("FAILED (HOSTILE $dest)") if $loglvl > 1;
+	exit 0;
+}
 
 if (!$System{$system}) {
 	open(MAILER, "|$cf'sendmail $cf'mailopt $path $cf'email") || &nofork;
@@ -195,6 +205,10 @@ if ($Archived{$pname}) {
 		&unpack($Location{$pname}, $tmp_loc, $Compressed{$pname});
 }
 
+# Go to the package root directory and check for possible forwarding...
+chdir($Location{$pname}) || &abort("cannot chdir to $Location{$pname}: $!");
+&check_forward;			# Returns only if command is not forwarded
+
 # Go to bugs sub-directory. It is possible to ask for patches for
 # old systems. Such systems are identified by having the `patches'
 # field from the distrib file set to "old". In that case, patches
@@ -202,16 +216,15 @@ if ($Archived{$pname}) {
 
 if ($Patch_only{$pname}) {
 	&abort("old system has no version number") if $version eq '';
-	chdir "$Location{$pname}/bugs-$version" ||
-		&abort("cannot go to $Location{$pname}/bugs-$version");
+	chdir "bugs-$version" ||
+		&abort("cannot go to $Location{$pname}/bugs-$version: $!");
 	# There is no patchlevel to look at -- compute by hand.
 	for ($maxnum = 1; ; $maxnum++) {
 		last unless -f "patch$maxnum" || -f "patch$maxnum.Z";
 	}
 	$maxnum--;		# We've gone too far
 } else {
-	chdir "$Location{$pname}/bugs" ||
-		&abort("cannot go to $Location{$pname}/bugs");
+	chdir "bugs" || &abort("cannot go to $Location{$pname}/bugs: $!");
 	open(PATCHLEVEL, "../patchlevel.h") ||
 		&abort("cannot open patchlevel.h");
 	$maxnum = 0;
@@ -379,5 +392,7 @@ $grep -v '^;#' pl/sendfile.pl >>mailpatch
 $grep -v '^;#' pl/distribs.pl >>mailpatch
 $grep -v '^;#' pl/secure.pl >>mailpatch
 $grep -v '^;#' pl/cdir.pl >>mailpatch
+$grep -v '^;#' pl/addr.pl >>mailpatch
+$grep -v '^;#' pl/forward.pl >>mailpatch
 chmod 755 mailpatch
 $eunicefix mailpatch

@@ -1,6 +1,6 @@
 # Test UMASK command
 
-# $Id: umask.t,v 3.0.1.2 1995/02/03 18:05:08 ram Exp $
+# $Id: umask.t,v 3.0.1.3 1996/12/24 15:02:36 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: umask.t,v $
+# Revision 3.0.1.3  1996/12/24  15:02:36  ram
+# patch45: fixed test for perl5
+#
 # Revision 3.0.1.2  1995/02/03  18:05:08  ram
 # patch30: fixed regexp bug that could lead the test to fail
 #
@@ -28,11 +31,21 @@ open(PERL, ">umask_is") || print "1\n";
 print PERL <<'EOP';
 $mode = $ARGV[1];
 $mode = oct($mode) if $mode =~ /^0/;
-$umask = umask;
+
+# In perl5 the sub umask declaration in the mailhook package interferes
+# with the umask built-in. Therefore, we must ensure we call the
+# right version while running this PERL hook. To avoid an eval, we
+# simply switch to package main while calling umask!
+{
+	package main;
+	$mailhook'umask = umask;
+}
+
 &exit($mode == $umask ? 0 : 1);
 EOP
 close PERL;
 
+&cleanup;
 &add_header('X-Tag: umask #1');
 `$cmd`;
 $? == 0 || print "2\n";

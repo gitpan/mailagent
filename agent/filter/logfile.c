@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: logfile.c,v 3.0.1.1 1994/07/01 14:53:21 ram Exp $
+ * $Id: logfile.c,v 3.0.1.2 1996/12/24 13:58:03 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: logfile.c,v $
+ * Revision 3.0.1.2  1996/12/24  13:58:03  ram
+ * patch45: log onto stderr if logfile not opened correctly
+ *
  * Revision 3.0.1.1  1994/07/01  14:53:21  ram
  * patch8: metaconfig now defines Strerror instead of strerror
  *
@@ -84,25 +87,26 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use long instead of int for 64 bits */
 	struct tm *ct;				/* Current time (pointer to static data) */
 	Time_t clock;				/* Number of seconds since the Epoch */
 	char buffer[MAX_STRING];	/* Buffer which holds the expanded %m string */
+	FILE *stdlog = logfile;		/* Where logging is to be done */
 
 	if (loglvl < level)			/* Logging level is not high enough */
 		return;
 
 	if (logfile == (FILE *) 0)	/* Logfile not opened for whatever reason */
-		return;
+		stdlog = stderr;		/* User stderr then -- RAM, 21/10/96 */
 
 	clock = time((Time_t *) 0);	/* Number of seconds */
 	ct = localtime(&clock);		/* Get local time from amount of seconds */
 	expand(format, buffer);		/* Expansion of %m and %e into buffer */
 
-	fprintf(logfile, "%d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
+	fprintf(stdlog, "%d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
 		ct->tm_year, ct->tm_mon + 1, ct->tm_mday,
 		ct->tm_hour, ct->tm_min, ct->tm_sec,
 		progname, progpid);
 
-	fprintf(logfile, buffer, arg1, arg2, arg3, arg4, arg5);
-	putc('\n', logfile);
-	fflush(logfile);
+	fprintf(stdlog, buffer, arg1, arg2, arg3, arg4, arg5);
+	putc('\n', stdlog);
+	fflush(stdlog);
 }
 
 public int open_log(name)

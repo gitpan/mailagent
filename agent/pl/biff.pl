@@ -1,4 +1,4 @@
-;# $Id: biff.pl,v 3.0.1.3 1995/08/07 16:17:42 ram Exp $
+;# $Id: biff.pl,v 3.0.1.4 1996/12/24 14:48:03 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: biff.pl,v $
+;# Revision 3.0.1.4  1996/12/24  14:48:03  ram
+;# patch45: long header lines are now trimmed to 79 chars max
+;#
 ;# Revision 3.0.1.3  1995/08/07  16:17:42  ram
 ;# patch37: added support for biffing regression testing
 ;# patch37: new biffing features for compact biff messages and trimming
@@ -123,7 +126,7 @@ sub custom {
 		$folddir = "$cf'home/Mail" unless $folddir;	# Default folders in ~/Mail
 	} else {
 		&mh'profile;		# Read MH profile if not already done
-		$folddir = "$cf'home/$mh'Profile{'Path'}";
+		$folddir = "$cf'home/$mh'Profile{'path'}";
 		$plus = '+';
 	}
 
@@ -184,11 +187,16 @@ sub all {
 }
 
 # Returns mail headers defined in @head, on the opened TTY
+# If the header length is greater than 79 characters, it is trimmed at 76 and
+# three dots '...' are emitted to show something was truncated.
 # Also known as the %-H macro
 sub headers {
 	local($res) = '';
 	foreach $head (@head) {
-		$res .= "$head: $'Header{$head}$n" if defined $'Header{$head};
+		next unless defined $'Header{$head};
+		local($line) = "$head: $'Header{$head}";
+		$line = substr($line, 0, 76) . '...' if length($line) >= 80;
+		$res .= "$line$n";
 	}
 	chop($res);			# Remove final \n\r for macro substitution
 	chop($res);

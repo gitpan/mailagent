@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.6 1995/03/21 12:57:06 ram Exp $
+;# $Id: parse.pl,v 3.0.1.7 1996/12/24 14:57:30 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.7  1996/12/24  14:57:30  ram
+;# patch45: new relay_list() routine to parse Received lines
+;# patch45: now creates two pseudo headers: Envelope and Relayed
+;#
 ;# Revision 3.0.1.6  1995/03/21  12:57:06  ram
 ;# patch35: now allows spaces between header field name and the ':' delimiter
 ;#
@@ -79,24 +83,24 @@ sub parse_mail {
 			if (/^\s/) {					# It is a continuation line
 				s/^\s+/ /;					# Swallow multiple spaces
 				chop;						# Remove final new-line
-				$Header{$last_header} .= "\n$_" if $last_header ne '';
+				$Header{$last_header} .= $_ if $last_header ne '';
 				&add_log("WARNING bad continuation in header, line $.")
 					if $last_header eq '' && $loglvl > 4;
-			} elsif (/^([\w-]+)\s*:\s*(.*)/) {	# We found a new header
+			} elsif (($field, $value) = /^([\w-]+)\s*:\s*(.*)/) {
+				# We found a new header field (i.e. it is not a continuation).
 				# Guarantee only one From: header line. If multiple From: are
 				# found, keep the last one.
 				# Multiple headers like 'Received' are separated by a new-
 				# line character. All headers end on a non new-line.
 				# Case is normalized before recording, so apparently-to will
 				# be recorded as Apparently-To but header is not changed.
-				($field, $value) = ($1, $2);	# Bug in perl 5.000 (dataloaded)
 				$last_header = &header'normalize($field);	# Normalize case
 				if ($last_header eq 'From' && defined $Header{$last_header}) {
 					$Header{$last_header} = $value;
 					&add_log("WARNING duplicate From in header, line $.")
 						if $loglvl > 4;
 				} elsif ($Header{$last_header} ne '') {
-					$Header{$last_header} .= "\n$value";
+					$Header{$last_header} .= "\n" . $value;
 				} else {
 					$Header{$last_header} .= $value;
 				}
@@ -126,15 +130,17 @@ sub parse_mail {
 # - if there is no From: header, fill it in with the first From
 # - if there is no To: but an Apparently-To:, copy it also as a To:
 # - if an Envelope field was defined in the header, override it (sorry)
+# - likewise for Relayed, which is the list of relaying hosts, first one first.
 #
 # We guarantee the following header entries:
+#   Envelope:     the actual sender of the message, empty if cannot compute
 #   From:         the value of the From field
 #   To:           to whom the mail was sent
 #   Lines:        number of lines in the message
 #   Length:       number of bytes in the message
+#   Relayed:      the list of relaying hosts deduced from Received: lines
 #   Reply-To:     the address we may use to reply
 #   Sender:       the value of the Sender field, same as From usually
-#   Envelope:     the actual sender of the message, empty if cannot compute
 #
 sub header_check {
 	local($first_from, $lines) = @_;	# First From line, number of lines
@@ -173,7 +179,8 @@ sub header_check {
 	# Set number of lines in body, unless there is already a Lines:
 	# header in which case we trust it. Same for Length.
 	$Header{'Lines'} = $lines unless defined($Header{'Lines'});
-	$Header{'Length'} = $length unless defined($Header{'Length'});
+	$Header{'Length'} = length($Header{'Head'}) + length($Header{'Body'}) + 1
+		unless defined($Header{'Length'});
 
 	# If there is no Reply-To: line, then take the address in From, if any.
 	# Otherwise use the address found in the return-path
@@ -196,7 +203,128 @@ sub header_check {
 	# an X-Envelope instead.
 
 	$Header{'Envelope'} = $first_from;
+
+	# Finally, compute the list of relaying hosts. The first host which saw
+	# this message comes first, the last one (normally the machine receiving
+	# the mail) coming last.
+
+	unless ($Header{'Relayed'} = &relay_list) {
+		&add_log("WARNING no valid Received: indication") if $loglvl > 4;
+	}
 }
+
+# Compute the relaying hosts by looking at the Received: lines and parsing
+# them to deduce which host saw and relayed the message. We parse things
+# like this:
+#
+#	Received: from host1 (host2 [xx.yy.zz.tt]) by host3
+#	Received: from host1 ([xx.yy.zz.tt]) by host3
+#	Received: from host1 by host3
+#
+# The host2, when present, is the reverse DNS mapping of the IP address.
+# It can be different from host1 in case of local /etc/host aliasing for
+# instance. This is used when present, otherwise we must trust host1.
+# The host3 information is never used here. It is possible for host1 to
+# be a simple IP address [xx.yy.zz.tt].
+#
+# The latest Received: line inserted in the header is the one added by
+# the host receiving the message. For local messages, it may be the
+# only line present. It is the only line for which host3 is used, since
+# it is probable we can trust our local delivery mailer.
+# 
+# The returned comma-separated list is sorted to have the first relaying
+# host come first (whilst Received headers are normally prepended, which
+# yields a reverse host chain).
+sub relay_list {
+	local(@received) = split(/\n/, $Header{'Received'});
+	return '' unless @received;
+	local(@hosts);					# List of relaying hosts
+	local($host, $real);
+	local($islast) = 1;				# First line we see is the "last" inserted
+	foreach $received (@received) {
+		local($_) = $received;
+
+		# Handle first Received line (the last one added) specially.
+		if ($islast) {
+			if (
+				/\bby\s+(\[\d+\.\d+\.\d+\.\d+\])/i	||
+				/\bby\s+([\w-.]+)/i
+			) {
+				$host = $1;
+				$host .= $mydomain if $host =~ /^\w/ && $host !~ /\.\w{2,4}$/;
+				push(@hosts, $host);
+			} else {
+				&add_log("WARNING no by in first Received: line '$received'")
+					if $loglvl > 4;
+			}
+			$islast = 0;
+		}
+
+		next unless s/^\s*from\s+//i;
+		next if s/^by\s+//i;		# Host name missing
+
+		# Look for host1, which must be there somehow since we found a 'from'
+		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s+//) {
+			$host = $1;				# IP address [xx.yy.zz.tt]
+		} elsif (s/^([\w-.]+)(\(\S+\))?\s+//) {
+			$host = $1;				# host name
+		} else {
+			&add_log("WARNING invalid from in Received: line '$received'")
+				if $loglvl > 4;
+			next;
+		}
+
+		# There may be an IP or reverse DNS mapping, which will be used to
+		# supersede the current $host if found. Note that some (local) mailers
+		# insert host as login@host, so we remove the login part.
+		# Also handle things like (really foo.com) or (actually real.host), i.e
+		# allow an adjective to qualify the real host name
+
+		$real = '';
+		$real = $1 eq '' ? $2 : $1 if
+			s/^\(([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*// ||
+			s/^\(\w+\s+([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*//;
+		$real =~ s/^.*\@//;
+		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
+
+		# At this point, we should have a 'by ' string somewhere, or an EOS.
+		# We're not checking the 'by' immediately (as in /^by/) because some
+		# mailers like inserting comments such as 'with ESMTP' or 'via xyzt'.
+		# Also, I have seen stange things like 'from xxx from xxx by yyy'.
+		#
+		# Otherwise we have an unknown Received line format.
+		# This is not as bad as not being able to deduce host1 or host2.
+		# The full line is logged, so that we may improve our fuzzy matching
+		# policy.
+
+		unless (/\s*by\s+/i || /^\s*$/) {
+			&add_log("WARNING weird Received: line '$received'") if $loglvl > 5;
+		}
+
+		# Validate the host. It must be either an internet [xx.yy.zz.tt] form,
+		# or a domain name. This also skips things like 'localhost'.
+
+		unless ($host =~ /^\[[\d.]+\]$/ || $host =~ /^[\w-.]+\.\w{2,4}$/) {
+			next if $host =~ /^[\w-]+$/;	# No message for unqualified hosts
+			&add_log("ignoring bad host $host in Received: line '$received'")
+				if $loglvl > 6;
+			next;
+		}
+
+		push(@hosts, $host);
+	}
+
+	# Remove duplicate consecutive hosts in the list, since this is probably
+	# an internal relaying (where we don't have real names but only aliases,
+	# otherwise the message would have looped forever!) and does not bring
+	# us much.
+
+	local($last, $dup);
+	local(@unique) = grep(($dup = $last ne $_, $last = $_, $dup), @hosts);
+
+	return join(', ', reverse @unique);
+}
+
 
 # Append given field to the header structure, updating the whole mail
 # text at the same time, hence keeping the %Header table.

@@ -1,6 +1,6 @@
 # This tests mathching on list selectors like To or Newsgroups.
 
-# $Id: list.t,v 3.0 1993/11/29 13:50:01 ram Exp $
+# $Id: list.t,v 3.0.1.1 1996/12/24 15:03:03 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,17 +11,27 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: list.t,v $
+# Revision 3.0.1.1  1996/12/24  15:03:03  ram
+# patch45: added new tests for Relayed processing
+#
 # Revision 3.0  1993/11/29  13:50:01  ram
 # Baseline for mailagent 3.0 netwide release.
 #
 
 do '../pl/filter.pl';
 
-for ($i = 1; $i <= 8; $i++) {
-	unlink "$user.$i";
+sub cleanup {
+	for ($i = 1; $i <= 8; $i++) {
+		unlink "$user.$i";
+	}
+	for ($i = 1; $i <= 3; $i++) {
+		unlink "ok.$i";
+	}
+	unlink 'never';
 }
 
-&add_header('X-Tag: list');
+&cleanup;
+&add_header('X-Tag: list #1');
 `$cmd`;
 $? == 0 || print "1\n";
 -f "$user.1" || print "2\n";
@@ -71,5 +81,14 @@ $? == 0 || print "15\n";
 -f "$user.8" || print "16\n";
 unlink "$user.8";
 
+&replace_header('X-Tag: list #2');
+`$cmd`;
+$? == 0 || print "17\n";
+-f 'ok.1' || print "18\n";
+-f 'ok.2' || print "19\n";
+-f 'ok.3' || print "20\n";
+-f 'never' && print "21\n";
+
+&cleanup;
 unlink 'mail';
 print "0\n";

@@ -20,7 +20,7 @@ $spitshell >package.$manext <<!GROK!THIS!
 .TH PACKAGE $manext
 ''' @(#) Manual page for mailagent's package command
 '''
-''' $Id: package.SH,v 3.0.1.2 1995/08/07 16:14:46 ram Exp $
+''' $Id: package.SH,v 3.0.1.3 1996/12/24 14:44:21 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -33,6 +33,10 @@ $spitshell >package.$manext <<!GROK!THIS!
 '''  Original Author: Graham Stoney, 1993
 '''
 ''' $Log: package.SH,v $
+''' Revision 3.0.1.3  1996/12/24  14:44:21  ram
+''' patch45: examples are now shown in constant-width font if possible
+''' patch45: mentions command forwarding
+'''
 ''' Revision 3.0.1.2  1995/08/07  16:14:46  ram
 ''' patch37: updated my e-mail address
 '''
@@ -46,11 +50,13 @@ $spitshell >package.$manext <<!GROK!THIS!
 .de Ex		\" Start of Example
 .sp
 .in +5
+.ft CW
 .nf
 ..
 .de Ef		\" End of Example
 .sp
 .in -5
+.ft R
 .fi
 ..
 .SH NAME
@@ -132,6 +138,9 @@ whatever package you name in the command line, but it will also properly lock
 the file so that the execution of \fIpackage\fR will stall for the duration
 of the manual edition (provided you have a strict locking policy defined in
 your \fI~/.mailagent\fR configuration file).
+.SH FORWARDING
+.I Package
+supports command forwarding as described in the \fImailhelp\fR($manext) page.
 .SH FILES
 .PD 0
 .TP 20
@@ -176,7 +185,7 @@ mailagent's log file
 .SH AUTHORS
 Graham Stoney <greyham@research.canon.oz.au>
 .br
-Raphael Manfredi <ram@hptnos02.grenoble.hp.com> (minor enhancements)
+Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com> (minor enhancements)
 .SH "SEE ALSO"
 edusers($manext), mailagent($manext), metaconfig($manext).
 !GROK!THIS!

@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.12 1995/09/15 13:54:28 ram Exp $
+# $Id: magent.sh,v 3.0.1.13 1996/12/24 14:06:02 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,6 +35,11 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
+# Revision 3.0.1.13  1996/12/24  14:06:02  ram
+# patch45: rule file path is now absolute, so caching can be safe
+# patch45: changed queue processing/sleeping logic for better interactivity
+# patch45: new stat constants, and updated usage line
+#
 # Revision 3.0.1.12  1995/09/15  13:54:28  ram
 # patch43: rewrote mbox_lock routine to deal with new locksafe variable
 # patch43: will now warn if configured to do flock() but can't actually
@@ -198,6 +203,7 @@ while ($ARGV[0] =~ /^-/) {
 	elsif ($_ eq '-r') {	# Specify alternate rule file
 		++$nolock;			# Immediate processing wanted
 		$rule_file = shift;
+		$rule_file = &cdir($rule_file);		# Make it an absolute path
 	}
 	elsif (/^-s(\S*)/) {	# Print statistics
 		++$has_option;		# Incompatible with other special options
@@ -364,9 +370,9 @@ unless ($test_mode) {
 	$sleep = 1;					# Give others a chance to queue their mail
 	$sleep = 0 if $loglvl > 11 || $run_queue;
 
-	while (&pqueue) {			# Eventually process the queue
+	do {						# Eventually process the queue
 		sleep 30 if $sleep;		# Wait in case new mail arrives
-	}
+	} while (&pqueue);
 } else {
 	&pqueue;					# Process the queue once in test mode
 }
@@ -386,7 +392,7 @@ exit 0;
 # Print usage and exit
 sub usage {
 	print STDERR <<EOF;
-Usage: $prog_name [-dhilqtFIV] [-s{umary}] [-f file] [-e rules] [-c config]
+Usage: $prog_name [-dhilqtFIV] [-s{umaryt}] [-f file] [-e rules] [-c config]
        [-L level] [-r file] [-o def] [mailfile]
   -c : specify alternate configuration file.
   -d : dump filter rules (special).
@@ -443,8 +449,10 @@ sub init_constants {
 	$LOCK_UN = 8;				# Unlock the file
 
 	# Stat constants for file rights
-	$S_IWOTH = 02;				# Writable by world (no .ph files here)
-	$S_IWGRP = 020;				# Writable by group
+	$S_IWOTH = 00002;			# Writable by world (no .ph files here)
+	$S_IWGRP = 00020;			# Writable by group
+	$S_ISUID = 04000;			# Set user ID on exec
+	$S_ISGID = 02000;			# Set group ID on exec
 
 	# Status used by filter
 	$FT_RESTART = 0;			# Abort current action, restart from scratch

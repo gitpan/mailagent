@@ -1,4 +1,4 @@
-;# $Id: matching.pl,v 3.0.1.2 1994/07/01 15:02:33 ram Exp $
+;# $Id: matching.pl,v 3.0.1.3 1996/12/24 14:56:12 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: matching.pl,v $
+;# Revision 3.0.1.3  1996/12/24  14:56:12  ram
+;# patch45: new Envelope and Relayed selectors
+;# patch45: protect all un-escaped @ in patterns, for perl5
+;#
 ;# Revision 3.0.1.2  1994/07/01  15:02:33  ram
 ;# patch8: allow macro substitution on patterns if rulemac is ON
 ;#
@@ -31,6 +35,7 @@
 # The %Amatcher gives the name of the fields which contains an address.
 sub init_matcher {
 	%Matcher = (
+		'Envelope',			'match_single',
 		'From',				'match_single',
 		'To',				'match_list',
 		'Cc',				'match_list',
@@ -42,9 +47,11 @@ sub init_matcher {
 		'Resent-Cc',		'match_list',
 		'Resent-Sender',	'match_single',
 		'Reply-To',			'match_single',
+		'Relayed',			'match_list',
 	);
 	%Amatcher = (
 		'From',				1,
+		'Envelope',			1,
 		'To',				1,
 		'Cc',				1,
 		'Apparently-To',	1,
@@ -105,7 +112,9 @@ sub match {
 		$matched = &apply_match($selector, $pattern, $range);
 	} else {
 		# Load patterns from file whose name is given between "quotes"
+		# All un-escaped @ in patterns are escaped for perl5.
 		local(@filepat) = &include_file($pattern, 'pattern');
+		grep(s/([^\\](\\\\)*)@/$1\\@/g && undef, @filepat);
 		# Now do the match for all the patterns. Stop as soon as one matches.
 		foreach (@filepat) {
 			$matched = &apply_match($selector, $_, $range);

@@ -25,16 +25,35 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  * that running config_h.SH again will wipe out any changes you've made.
  * For a more permanent change edit config.sh and rerun config_h.SH.
  *
- * \$Id: config_h.SH,v 3.0.1.7 1995/08/07 16:29:31 ram Exp $
+ * \$Id: config_h.SH,v 3.0.1.9 1996/12/26 10:47:12 ram Exp $
  */
 
-/* Configuration time: $cf_time
- * Configured by: $cf_by
- * Target system: $myuname
+/*
+ * Package name      : $package
+ * Source directory  : $src
+ * Configuration time: $cf_time
+ * Configured by     : $cf_by
+ * Target system     : $myuname
  */
 
 #ifndef _config_h_
 #define _config_h_
+
+/* STRINGIFY:
+ *	This macro surrounds its token with double quotes.
+ */
+#if $cpp_stuff == 1
+#define STRINGIFY(a)"a"
+#define SQuoTe(a)"a
+#define EQuoTe(a)a"
+#endif
+#if $cpp_stuff == 42
+#define StGiFy(a)# a
+#define STRINGIFY(a)StGiFy(a)
+#endif
+#if $cpp_stuff != 1 && $cpp_stuff != 42
+#include "Bletch: How does this C preprocessor catenate tokens?"
+#endif
 
 /* HAS_BCOPY:
  *	This symbol is defined if the bcopy() routine is available to
@@ -93,6 +112,18 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  */
 #$d_setpgrp HAS_SETPGRP		/**/
 #$d_bsdpgrp USE_BSDPGRP		/**/
+
+/* HAS_SETRGID:
+ *	This symbol, if defined, indicates that the setrgid routine is available
+ *	to change the real gid of the current program.
+ */
+#$d_setrgid HAS_SETRGID		/**/
+
+/* HAS_SETRUID:
+ *	This symbol, if defined, indicates that the setruid routine is available
+ *	to change the real uid of the current program.
+ */
+#$d_setruid HAS_SETRUID		/**/
 
 /* HAS_SETSID:
  *	This symbol, if defined, indicates that the setsid routine is
@@ -238,6 +269,12 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
 #$i_time I_TIME		/**/
 #$i_systime I_SYS_TIME		/**/
 #$i_systimek I_SYS_TIME_KERNEL		/**/
+
+/* I_UNISTD:
+ *	This symbol, if defined, indicates to the C program that it should
+ *	include <unistd.h>.
+ */
+#$i_unistd I_UNISTD		/**/
 
 /* INTSIZE:
  *	This symbol contains the size of an int, so that the C preprocessor

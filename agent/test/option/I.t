@@ -1,6 +1,6 @@
 # -I: install configuration and perform sanity checks.
 
-# $Id: I.t,v 3.0.1.1 1995/02/16 14:39:06 ram Exp $
+# $Id: I.t,v 3.0.1.2 1996/12/24 15:03:36 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: I.t,v $
+# Revision 3.0.1.2  1996/12/24  15:03:36  ram
+# patch45: fixed test for fast CPUs
+#
 # Revision 3.0.1.1  1995/02/16  14:39:06  ram
 # patch32: created
 #
@@ -100,7 +103,7 @@ print "32\n" if $?;
 
 print "34\n" if $ino2 == $ino;
 print "35\n" if $size2 == $size;
-print "36\n" if $mtime2 == $mtime;
+print "36\n" if $mtime2 < $mtime;	# May be equal if CPU is fast
 print "37\n" unless defined $ino;	# Make sure stat did not fail...
 
 &load_config(38);	# uses 39
@@ -136,7 +139,7 @@ sub load_config {
 			$value = $2;
 			$value =~ s/\s*$//;						# remove trailing spaces
 			$eval .= "\$$var = \"$value\";\n";
-			$eval .= "\$$var =~ s|~|$myhome|g;\n";	# ~ substitution
+			$eval .= "\$$var =~ s|~|\$myhome|g;\n";	# ~ substitution
 			$undef .= "undef \$$var;\n";			# to reset config
 		}
 	}

@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.12 1995/09/15 14:01:17 ram Exp $
+;# $Id: actions.pl,v 3.0.1.13 1996/12/24 14:46:16 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.13  1996/12/24  14:46:16  ram
+;# patch45: now reads 'help' as 'mailhelp' in command messages
+;# patch45: locate and perform security checks on launched executables
+;#
 ;# Revision 3.0.1.12  1995/09/15  14:01:17  ram
 ;# patch43: now escapes shell metacharacters for popen() on FORWARD and BOUNCE
 ;# patch43: will now make a note when delivering to an unlocked folder
@@ -276,6 +280,7 @@ sub process {
 			s/^mial(\w*)/mail$1/;		# Common mis-spellings
 			s/^mailpath/mailpatch/;
 			s/^mailist/maillist/;
+			s/^help/mailhelp/;
 			# Now fetch command's name (first symbol)
 			if (/^([^ \t]+)[ \t]/) {
 				$first = $1;
@@ -926,7 +931,7 @@ sub shell_command {
 	$SIG{'ALRM'} = 'DEFAULT';		# Restore default behaviour
 	local($msg) = $@;
 	$@ = '';						# Clear this global for our caller
-	if ($msg =~ /^failed/) {			# Something went wrong?
+	if ($msg =~ /^failed/) {		# Something went wrong?
 		&add_log("ERROR couldn't run '$program'") if $loglvl > 0;
 		return 1;					# Failed
 	} elsif ($msg =~ /^aborted/) {	# Writing to program failed
@@ -989,11 +994,17 @@ sub alarm_clock {
 # Execute the command, ran in an eval to protect against SIGPIPE signals
 sub execute_command {
 	local($program, $input, $feedback) = @_;
+
+	local($location) = &locate_program($program);
+	die "can't locate $location in PATH\n" unless $location =~ m|/|;
+	die "unsecure $location\n" unless &exec_secure($location);
+
 	local($trace) = "$cf'tmpdir/trace.run$$";	# Where output goes
 	local($error) = "failed";				# Error reported by popen_failed
 	pipe(READ, WRITE);						# Open a pipe
 	local($pid) = fork;						# We fork here
 	$pid = -1 unless defined $pid;
+
 	if ($pid == 0) {						# Child process
 		alarm 0;
 		close WRITE;						# The child reads from pipe
@@ -1014,11 +1025,13 @@ sub execute_command {
 		&add_log("ERROR couldn't fork: $!") if $loglvl;
 		return;
 	}
+
 	close READ;								# The parent writes to its child
 	$error = "aborted";						# Error reported by popen_failed
 	select(WRITE);
 	$| = 1;									# Hot pipe wanted
 	select(STDOUT);
+
 	# Now feed the program with the mail
 	if ($input == $BODY_INPUT) {			# Pipes body
 		print WRITE $Header{'Body'};
@@ -1028,6 +1041,7 @@ sub execute_command {
 		print WRITE $Header{'Head'};
 	}
 	close WRITE;							# Close input, before waiting!
+
 	wait();									# Wait for our child
 	local($status) = $? ? "failed" : "ok";
 	if ($?) {
@@ -1040,6 +1054,7 @@ sub execute_command {
 			die "feedback\n";				# Longjmp to shell_command
 		}
 	}
+
 	&handle_output;			# Take appropriate action with command output
 	unlink "$trace";		# Remove output of command
 	die "non-zero status\n" unless $status eq 'ok';

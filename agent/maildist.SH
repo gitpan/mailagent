@@ -20,7 +20,7 @@ $startperl
 	eval "exec perl -S \$0 \$*"
 		if \$running_under_some_shell;
 
-# $Id: maildist.SH,v 3.0.1.4 1995/03/21 12:54:59 ram Exp $
+# $Id: maildist.SH,v 3.0.1.5 1996/12/24 14:06:44 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -31,6 +31,10 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: maildist.SH,v $
+# Revision 3.0.1.5  1996/12/24  14:06:44  ram
+# patch45: silently discard hostile addresses
+# patch45: added command forwarding support
+#
 # Revision 3.0.1.4  1995/03/21  12:54:59  ram
 # patch35: added pl/cdir.pl to the list of appended files
 #
@@ -86,6 +90,12 @@ $maillist = "To obtain a list of what is available, send me the following mail:
 	Subject: Command
 	\@SH maillist $path
 		^ note the l";
+
+# Silently discard hostile addresses
+unless (&addr'valid($dest)) {
+	&add_log("FAILED (HOSTILE $dest)") if $loglvl > 1;
+	exit 0;
+}
 
 if (!$System{$system}) {
 	open(MAILER, "|$cf'sendmail $cf'mailopt $path $cf'email") || &nofork;
@@ -216,9 +226,9 @@ if ($Archived{$pname}) {
 	$location = $Location{$pname};
 }
 
-# Go to top-level directory
-chdir "$location" ||
-	&abort("cannot go to $location");
+# Go to the package root directory and check for possible forwarding...
+chdir($location) || &abort("cannot chdir to $location: $!");
+&check_forward;			# Returns only if command is not forwarded
 
 # We are now in the place. Look for a MANIFEST file. If none, we will
 # send *everything* held, RCS sub-directories and executable/object files
@@ -387,5 +397,7 @@ $grep -v '^;#' pl/sendfile.pl >>maildist
 $grep -v '^;#' pl/distribs.pl >>maildist
 $grep -v '^;#' pl/secure.pl >>maildist
 $grep -v '^;#' pl/cdir.pl >>maildist
+$grep -v '^;#' pl/addr.pl >>maildist
+$grep -v '^;#' pl/forward.pl >>maildist
 chmod 755 maildist
 $eunicefix maildist

@@ -1,4 +1,4 @@
-;# $Id: emergency.pl,v 3.0 1993/11/29 13:48:41 ram Exp $
+;# $Id: emergency.pl,v 3.0.1.1 1996/12/24 14:51:14 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: emergency.pl,v $
+;# Revision 3.0.1.1  1996/12/24  14:51:14  ram
+;# patch45: don't dataload the emergency routine to avoid malloc problems
+;# patch45: now log the signal trapping even when invoked manually
+;#
 ;# Revision 3.0  1993/11/29  13:48:41  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -17,15 +21,21 @@
 # Emergency situation routines
 #
 
+# Perload OFF
+# (Better not be dynamically loaded as it is a signal handler)
+
 # Emergency signal was caught
 sub emergency {
 	local($sig) = @_;			# First argument is signal name
 	if ($has_option) {			# Mailagent was invoked "manually"
 		&resync;				# Resynchronize waiting file if necessary
+		&add_log("ERROR trapped SIG$sig") if $loglvl;
 		exit 1;
 	}
 	&fatal("trapped SIG$sig");
 }
+
+# Perload ON
 
 # In case something got wrong
 sub fatal {

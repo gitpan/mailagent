@@ -2,7 +2,7 @@
 # Mailagent rules for filter regression tests
 #
 
-# $Id: rules,v 3.0.1.2 1994/07/01 15:12:23 ram Exp $
+# $Id: rules,v 3.0.1.3 1996/12/24 15:03:48 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: rules,v $
+# Revision 3.0.1.3  1996/12/24  15:03:48  ram
+# patch45: added test cases for new Relayed selector
+#
 # Revision 3.0.1.2  1994/07/01  15:12:23  ram
 # patch8: added test rules for macro substitution in patterns
 #
@@ -45,7 +48,7 @@ To Cc: root, Cc To: ram							{ SAVE %u.3; REJECT MULTIPLE };
 X-Tag: /multiple #2/, X-Other: /multiple #2/	{ SAVE %u.2 };
 
 # filter/list
-X-Tag: /list/					{ BEGIN LIST; REJECT };
+X-Tag: /list #1/				{ BEGIN LIST; REJECT };
 <LIST> To: ram					{ SAVE %u.1 };
 <LIST> To: max					{ SAVE %u.2 };
 <LIST> To: /^root@eiffel.com$/	{ SAVE %u.3 };
@@ -55,6 +58,16 @@ X-Tag: /list/					{ BEGIN LIST; REJECT };
 <LIST> To: /riot/				{ SAVE %u.6 };
 <LIST> Newsgroups: news.lists	{ SAVE %u.7 };
 <LIST> To: !ram					{ SAVE %u.8 };
+
+X-Tag: /list #2/						{ BEGIN LIST; REJECT };
+<LIST> Relayed: ursa-major.spdcc.com	{ SAVE ok.1; REJECT LIST_OK };
+<LIST> 									{ SAVE never; REJECT };
+<LIST,LIST_OK> 							{ REJECT LIST };
+<LIST> Relayed <2>: /ursa-major/ 		{ SAVE ok.2; REJECT LIST_OK };
+<LIST> 									{ SAVE never; REJECT };
+<LIST,LIST_OK> 							{ REJECT LIST };
+<LIST> Relayed <-1,->: *eiffel.com	 	{ SAVE ok.3 };
+<LIST> 									{ SAVE never };
 
 # filter/pattern
 X-T.*: "pattern-list"			{ BEGIN PAT; REJECT };

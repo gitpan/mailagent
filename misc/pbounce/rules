@@ -1,0 +1,12 @@
+#
+# Process mailder-daemon messages via PATBOUNCE when related to some pat mail.
+# Otherwise, stuff them in a low-low priority folder, for fun!
+#
+
+From: postmaster, mailer-daemon, uucp	{ REJECT BAD };
+
+<BAD> Body: /^X-Mailer:\s+dist/	{ REJECT BAD_AGENT };
+<BAD_AGENT> Body: /^Precedence: bulk/, /^Subject: .*patch/i
+					{ PATBOUNCE; DELETE };
+<BAD, BAD_AGENT>	{ SAVE bad };
+

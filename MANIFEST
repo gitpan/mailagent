@@ -121,6 +121,7 @@ agent/pl/extern.pl         Perl library to handle persistent variables
 agent/pl/fatal.pl          Perl library to deal with fatal errors
 agent/pl/file_edit.pl      File edition with extensive error checking
 agent/pl/filter.pl         Running the filtering commands
+agent/pl/forward.pl        Automatic Command forwarding support routines
 agent/pl/free_file.pl      Perl library to free file access
 agent/pl/gensym.pl         Dynamic symbol generator
 agent/pl/getdate.pl        Richard Ohnemus's getdate package
@@ -290,6 +291,14 @@ confmagic.h                Magic symbol remapping
 install.SH                 Installation script
 misc/                      Miscellaneous server commands
 misc/README                Introduction to the misc directory
+misc/mime/README           Introduction to the un-MIME filter
+misc/mime/rules            Rules that can be used to trigger unmime
+misc/mime/unmime           The unmime script for MIME message processing
+misc/pbounce/README        Some notes about the PATBOUNCE command
+misc/pbounce/mailagent.cf  Template for inclusion into your ~/.mailagent
+misc/pbounce/newcmd.cf     Configuration for PATBOUNCE plug-in
+misc/pbounce/patbounce.pl  Implementation of user-defined PATBOUNCE command
+misc/pbounce/rules         Sample rules shwowing how PATBOUNCE can be used
 misc/shell/                Command to run arbitrary shell commands
 misc/shell/README          Warning, should be read carefully
 misc/shell/server.cf       Configuration of this server command

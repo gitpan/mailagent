@@ -1,4 +1,4 @@
-;# $Id: analyze.pl,v 3.0.1.5 1995/01/03 18:06:33 ram Exp $
+;# $Id: analyze.pl,v 3.0.1.6 1996/12/24 14:47:17 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
+;# Revision 3.0.1.6  1996/12/24  14:47:17  ram
+;# patch45: forgot to return 0 at the end of special_user()
+;#
 ;# Revision 3.0.1.5  1995/01/03  18:06:33  ram
 ;# patch24: now makes use of rule environment vars from the env package
 ;# patch24: removed old broken umask handling (now a part of rule env)
@@ -424,6 +427,7 @@ sub special_user {
 			if $loglvl > 8;
 		return 1;
 	}
+	0;	# Not from special user!
 }
 
 # Log reception of mail (sender and subject fields). This is mainly intended

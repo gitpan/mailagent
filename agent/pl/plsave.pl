@@ -1,4 +1,4 @@
-;# $Id: plsave.pl,v 3.0 1993/11/29 13:49:06 ram Exp $
+;# $Id: plsave.pl,v 3.0.1.1 1996/12/24 14:57:58 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: plsave.pl,v $
+;# Revision 3.0.1.1  1996/12/24  14:57:58  ram
+;# patch45: allow '-' in package names
+;#
 ;# Revision 3.0  1993/11/29  13:49:06  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -51,7 +54,7 @@ sub read_plsave {
 	while (<PATLIST>) {
 		next if /^\s*#/;	# skip comments
 		next if /^\s*$/;	# skip empty lines
-		next unless s/^\s*(\w+)\s+([\w\.]+)//;
+		next unless s/^\s*([\w-]+)\s+([\w\.]+)//;
 		$fullname = $1 . "|" . ($2 eq '---'? "0" : $2);
 		if (defined($PSystem{$fullname})) {
 			&add_log("WARNING duplicate patlist entry $1 $2 ignored")
@@ -96,7 +99,7 @@ sub write_plsave {
 ";
 	foreach $pname (keys %PSystem) {
 		if ($Archived{$pname}) {
-			($system, $version) = $pname =~ /^(\w+)\|([\w\.]+)*$/;
+			($system, $version) = $pname =~ /^([\w-]+)\|([\w\.]+)*$/;
 			$version = '---' if $version eq '0';
 			print PATLIST "$system $version ";
 			print PATLIST "$Patch_level{$pname} $Mtime{$pname}\n";

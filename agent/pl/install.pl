@@ -1,4 +1,4 @@
-;# $Id: install.pl,v 3.0.1.1 1995/02/16 14:33:13 ram Exp $
+;# $Id: install.pl,v 3.0.1.2 1996/12/24 14:54:05 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: install.pl,v $
+;# Revision 3.0.1.2  1996/12/24  14:54:05  ram
+;# patch45: new prefix() routine
+;#
 ;# Revision 3.0.1.1  1995/02/16  14:33:13  ram
 ;# patch32: created
 ;#
@@ -279,11 +282,11 @@ sub check {
 		next if $path eq '' && $type =~ /^[fd]/;	# Missing, but optional
 		$path = &'tilda_expand($path);
 		if ($type =~ /^[fd]/) {
-			&exists($path, $type);		# Check existing file/dir
+			&exists($path, $type, $var);	# Check existing file/dir
 		} elsif ($path eq '') {
 			&'add_log("ERROR mandatory parameter '$var' not defined");
 		} else {
-			&create($path, $type);		# Create missing file/dir
+			&create($path, $type, $var);	# Create missing file/dir
 		}
 	}
 
@@ -339,26 +342,31 @@ sub dflt {
 
 # Check that a given file/directory is of the correct kind.
 sub exists {
-	local($path, $type) = @_;
-	return unless -e $path;
+	local($path, $type, $var) = @_;
 	local($what) = $type =~ /^[Dd]/ ? 'directory' : 'file';
-	local($short) = &'tilda($path);
+	local($prefix) = &prefix($path, $type);
+	local($short) = &'tilda("$prefix/$path");
+	return unless -e "$prefix/$path";
+	&'add_log("checking $what '$var' at $prefix/$path") if $cf'level > 11;
 	if ($type =~ /^[Dd]/) {
-		&'add_log("ERROR $short is not a directory") unless -d $path;
+		&'add_log("ERROR $short is not a directory (variable $var)")
+			unless -d "$prefix/$path";
 	} else {
-		&'add_log("ERROR $short is not a file") if -d $path;
+		&'add_log("ERROR $short is not a file (variable $var)")
+			if -d "$prefix/$path";
 	}
 }
 
 # Create file/directory, using type sepcification from the setup.cf file.
 sub create {
-	local($path, $type) = @_;
-	return &exists(path, $type) if -e $path;
+	local($path, $type, $var) = @_;
+	return &exists(path, $type, $var) if -e $path;
 	local($what) = $type =~ /^D/ ? 'directory' : 'file';
 	local($file) = $type =~ /^\w\s*(.*)/;
 	local($from) = $file ? "from default $file" : '(empty)';
-	local($short) = &'tilda($path);
-	&'add_log("creating mandatory $what $short $from");
+	local($prefix) = &prefix($path, $type);
+	local($short) = &'tilda("$prefix/$path");
+	&'add_log("creating mandatory $what $short $from for variable $var");
 	if ($type =~ /^D/) {
 		&'makedir($path);
 	} else {
@@ -379,6 +387,28 @@ sub create {
 		}
 		close BASE;
 	}
+}
+
+# Compute suitable prefix to put in front of variable value before checking
+# for file existence or performing creation. In the absence of specified
+# prefix, the file is anchored under the home directory if it does not
+# begin with a /.
+#
+# If a file is spefied as:
+#        mailbox = f ($maildrop)
+# in the setup.cf file, then it means the optional file is implicitely located
+# under another configuration variable or specified path. Use that if necessary.
+# Note that if a variable is specified, it is assumed to be a configuration
+# variable and is therefore evaluated in the cf package. It is possible to
+# fully qualify that name if necessary...
+#
+# Returns the suitable prefix (with ~ substitution).
+sub prefix {
+	local($path, $type) = @_;	# Path, file type such as "f ($var)"
+	local($prefix) = $type =~ /\(.*\)/;		# Grab ($var) or (/usr/bin) prefix
+	eval "package cf; \$cfset'prefix = \"$cfset'prefix\";";
+	$prefix = '~' unless $prefix || $path =~ m|^/|;
+	&'tilda_expand($prefix);	# Return value
 }
 
 # Check path setting.

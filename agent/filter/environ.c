@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: environ.c,v 3.0.1.1 1995/08/07 16:08:02 ram Exp $
+ * $Id: environ.c,v 3.0.1.2 1996/12/24 13:52:05 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,10 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: environ.c,v $
+ * Revision 3.0.1.2  1996/12/24  13:52:05  ram
+ * patch45: new get_env() routine, plus typo fixes
+ * patch45: make sure new environment lines are smaller than MAX_STRING
+ *
  * Revision 3.0.1.1  1995/08/07  16:08:02  ram
  * patch37: removed useless local variable declaration
  *
@@ -103,11 +107,11 @@ char *key;
 char *value;
 {
 	/* Appends 'value' at the end of the environment variable 'key', if it
-	 * already exits, otherwise create it with that value.
+	 * already exists, otherwise create it with that value.
 	 * Returns 0 for success, -1 for failure.
 	 */
 	
-	char env_line[MAX_STRING + 1];	/* Then environment line */
+	char env_line[MAX_STRING + 1];	/* The environment line */
 	char *cval;						/* Current value */
 
 	cval = ht_value(&henv, key);
@@ -138,11 +142,11 @@ char *key;
 char *value;
 {
 	/* Prepends 'value' at the head of the environment variable 'key', if it
-	 * already exits, otherwise create it with that value.
+	 * already exists, otherwise create it with that value.
 	 * Returns 0 for success, -1 for failure.
 	 */
 	
-	char env_line[MAX_STRING + 1];	/* Then environment line */
+	char env_line[MAX_STRING + 1];	/* The environment line */
 	char *cval;						/* Current value */
 
 	cval = ht_value(&henv, key);
@@ -193,6 +197,12 @@ char *value;
 	return 0;	/* Ok */
 }
 
+public char *get_env(key)
+char *key;
+{
+	return ht_value(&henv, key);	/* Pointer to string value, or null */
+}
+
 public char **make_env()
 {
 	/* Create the environment pointer suitable for the execle() system call.
@@ -219,7 +229,13 @@ public char **make_env()
 	
 	ptr = envp;
 	for (ptr = envp; --nb_line > 0; (void) ht_next(&henv), ptr++) {
-		sprintf(env_line, "%s=%s", ht_ckey(&henv), ht_cvalue(&henv));
+		char *key = ht_ckey(&henv);
+		char *value = ht_cvalue(&henv);
+		if ((strlen(key) + strlen(value) + 1) > MAX_STRING) {
+			add_log(1, "ERROR can't propagate environment variable %s", key);
+			fatal("environment line too big");
+		}
+		sprintf(env_line, "%s=%s", key, value);		/* key=value */
 		*ptr = strsave(env_line);
 		if (*ptr == (char *) 0)
 			fatal("no more memory for environment");

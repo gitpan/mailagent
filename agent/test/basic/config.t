@@ -1,6 +1,6 @@
 # This MUST be the first test ever run
 
-# $Id: config.t,v 3.0.1.4 1995/01/25 15:31:46 ram Exp $
+# $Id: config.t,v 3.0.1.5 1996/12/24 15:01:24 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: config.t,v $
+# Revision 3.0.1.5  1996/12/24  15:01:24  ram
+# patch45: added locksafe, set to OFF
+#
 # Revision 3.0.1.4  1995/01/25  15:31:46  ram
 # patch27: now sets a default umask in the configuration
 #
@@ -63,7 +66,8 @@ rules    : ~/.rules
 rulecache: ~/.cache
 maildrop : $pwd			# Do not LEAVE messages in /usr/spool/mail
 mailbox  : \$user		# Use config variable, not current perl $user
-#fromesc  : ON			# Backward compatibility -- should be ON when absent
+#fromesc : ON			# Backward compatibility -- should be ON when absent
+locksafe : OFF			# Don't bother with failed locks (for fsn <= 14 chars)
 hash     : dbr
 cleanlaps: 1M
 autoclean: OFF

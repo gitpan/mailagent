@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.h,v 3.0.1.1 1994/07/01 14:54:06 ram Exp $
+ * $Id: parser.h,v 3.0.1.2 1996/12/24 14:01:26 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.h,v $
+ * Revision 3.0.1.2  1996/12/24  14:01:26  ram
+ * patch45: declared exec_secure()
+ *
  * Revision 3.0.1.1  1994/07/01  14:54:06  ram
  * patch8: new routine get_confval to get integer config variables
  *
@@ -38,6 +41,7 @@ extern void read_conf();			/* Read configuration file */
 extern void set_env_vars();			/* Set correct environment variables */
 extern char *homedir();				/* Location of the home directory */
 extern int get_confval();			/* Get configuration value */
+extern int exec_secure();			/* Can we safely exec() this file? */
 
 /*
  * Parameters for get_confval().

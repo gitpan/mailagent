@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: msg.c,v 3.0.1.3 1995/08/31 16:22:00 ram Exp $
+ * $Id: msg.c,v 3.0.1.4 1996/12/24 13:59:31 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: msg.c,v $
+ * Revision 3.0.1.4  1996/12/24  13:59:31  ram
+ * patch45: call my_exit() instead of exit()
+ *
  * Revision 3.0.1.3  1995/08/31  16:22:00  ram
  * patch42: new routine say() to print messages onto stderr
  * patch42: all messages on stderr now also include the filter pid
@@ -109,7 +112,7 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use longs, hope (char *) fits in it! */
 		 */
 
 		add_log(6, "NOTICE leaving mail in MTA's queue");
-		exit(EX_TEMPFAIL);
+		my_exit(EX_TEMPFAIL);
 	}
 
 	/*
@@ -118,6 +121,6 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use longs, hope (char *) fits in it! */
 	 * the MTA to worry, hence the following...
 	 */
 
-	exit(EX_OK);
+	my_exit(EX_OK);
 }
 

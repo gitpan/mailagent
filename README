@@ -1,6 +1,6 @@
                            mailagent 3.0
 
-              Copyright (c) 1990-1995, Raphael Manfredi
+              Copyright (c) 1990-1996, Raphael Manfredi
 
 ------------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
@@ -12,20 +12,6 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     Artistic License for more details.
 ------------------------------------------------------------------------
-
-This version of mailagent requires you to have at least perl 4.0 PL36.
-It has also been ported to work with perl 5.0 PL0, provided you have
-at least integrated patches 0a-0h issued by Andy Dougherty and made
-available at the following ftp sites:
-
-	ftp.demon.co.uk:/pub/perl/db/perl5.000-p0a-p0h.tar.gz
-	ftp.funet.fi:/pub/languages/perl/ports/perl5/perl5.000-p0a-p0h.tar.gz
-
-Mailagent was tested with perl 5.0 PL1 on HP-UX where it did NOT work.
-(perl is dumping core while in the regression test suite). However,
-it does work when patches p1a-p1m has been applied. They might be
-found at the same ftp location listed above, I don't know (I get
-them via the perl5-porters mailing list).
 
 Please read all the directions below before you proceed any further, and
 then follow them carefully.
@@ -101,7 +87,7 @@ and it is expected to remain so, with a high signal/noise ratio.
 	Raphael Manfredi <ram@acri.fr>
 	Lyon, France, December 1st 1993
 
-	Raphael Manfredi <ram@hptnos02.grenoble.hp.com>
+	Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 	Grenoble, France, March 21st 1995
 
 ========================================================================
@@ -125,7 +111,7 @@ installation of the manual pages.
 4) Read the manual entry and the FAQ before running.
 
 5) IMPORTANT!  Communicate any problem and suggested patches to me,
-ram@hptnos02.grenoble.hp.com (Raphael Manfredi), so we can keep this
+Raphael_Manfredi@grenoble.hp.com (Raphael Manfredi), so we can keep this
 distribution in sync.  If you have a problem, there will be someone else
 who had it or will have it too...
 
@@ -154,5 +140,5 @@ the makefiles are correctly set before running any deinstall target.
 On USG systems, some executable have a chance to remain despite the
 deinstall (text file busy...).
 
-	Raphael Manfredi <ram@hptnos02.grenoble.hp.com>
+	Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 

@@ -1,4 +1,4 @@
-;# $Id: locate.pl,v 3.0 1993/11/29 13:48:56 ram Exp $
+;# $Id: locate.pl,v 3.0.1.1 1996/12/24 14:54:19 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: locate.pl,v $
+;# Revision 3.0.1.1  1996/12/24  14:54:19  ram
+;# patch45: new locate_program() routine
+;#
 ;# Revision 3.0  1993/11/29  13:48:56  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -31,5 +34,23 @@ sub locate_file {
 	}
 	$filename =~ s/~/$cf'home/g;	# ~ substitution
 	$filename;
+}
+
+# Locate specified program from command line by looking through the PATH
+# like the shell would. Return the first matching program path or the program
+# name if not found. Caller can check for the presence of '/' in the returned
+# value to determine whether we succeeded.
+sub locate_program {
+	local($_) = @_;
+	undef while s/^\s*[<>]\s*\S+//;	# Strip leading >&1 or >file directives
+	local($name) = /^\s*(\S+)/;
+	return $name if $name =~ m|/|;	# Absolute or relative path, no search
+	
+	foreach $dir (split(/:/, $ENV{'PATH'})) {
+		$dir = '.' if $dir eq '';
+		return "$dir/$name" if -x "$dir/$name";
+	}
+
+	return $name;		# Not found, return plain name
 }
 

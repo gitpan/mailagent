@@ -1,4 +1,4 @@
-;# $Id: filter.pl,v 3.0.1.7 1995/08/07 16:18:57 ram Exp $
+;# $Id: filter.pl,v 3.0.1.8 1996/12/24 14:51:51 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
+;# Revision 3.0.1.8  1996/12/24  14:51:51  ram
+;# patch45: added initial logging of the SELECT command
+;#
 ;# Revision 3.0.1.7  1995/08/07  16:18:57  ram
 ;# patch37: new BIFF command
 ;#
@@ -447,6 +450,8 @@ sub run_select {
 	# case we are running a command which does not alter this status, assume
 	# everything is fine.
 	$lastcmd = 0;						# Assume command will run correctly
+
+	&add_log("SELECT ($sec_start, $sec_end) at $now") if $loglvl > 11;
 
 	s/^\s*//;							# Remove leading spaces
 	if ($now >= $sec_start && $now <= $sec_end) {

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.6 1995/08/31 16:25:42 ram Exp $
+ * $Id: parser.c,v 3.0.1.8 1996/12/26 10:46:35 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,13 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
+ * Revision 3.0.1.8  1996/12/26  10:46:35  ram
+ * patch51: include <unistd.h> for X_OK and define fallbacks
+ *
+ * Revision 3.0.1.7  1996/12/24  14:01:13  ram
+ * patch45: enhanced security checks performed on files
+ * patch45: the _ character was not correctly parsed in variables
+ *
  * Revision 3.0.1.6  1995/08/31  16:25:42  ram
  * patch42: now uses say() to print messages on stderr
  *
@@ -77,6 +84,23 @@
 #endif
 #endif
 
+#ifdef I_UNISTD
+#include <unistd.h>		/* X_OK and friends */
+#endif
+
+#ifdef I_FCNTL
+#include <fcntl.h>
+#endif
+#ifdef I_SYS_FILE
+#include <sys/file.h>	/* Needed for X_OK */
+#endif
+
+#ifndef I_FCNTL
+#ifndef I_SYS_FILE
+#include <sys/fcntl.h>	/* Try this one in last resort */
+#endif
+#endif
+
 /*
  * The following should be defined in <sys/stat.h>.
  */
@@ -86,17 +110,33 @@
 #ifndef S_IWGRP
 #define S_IWGRP 00020		/* Write permissions for group */
 #endif
+#ifndef S_ISUID
+#define S_ISUID 04000		/* Set user ID on execution */
+#endif
+#ifndef S_ISGID
+#define S_ISGID 02000		/* Set group ID on execution */
+#endif
+
+#ifndef X_OK
+#define X_OK	1			/* Test for execute (search) permission */
+#endif
 
 #include "confmagic.h"
 
 #define MAX_STRING	2048			/* Maximum length for strings */
 #define SYMBOLS		50				/* Expected number of symbols */
 
+/* check_perm flags */
+#define MUST_OWN	0x0001			/* File/directory must be owned */
+#define MAY_PANIC 	0x0002			/* Whether we may panic */
+#define SECURE_ON 	0x0004			/* Force secure tests */
+
 /* Function declarations */
 public void read_conf();			/* Read configuration file */
 public void set_env_vars();			/* Set envrionment variables */
+public int exec_secure();			/* Checks whether exec() is safe on file */
 private void secure();				/* Perform basic security checks on file */
-private void check_perm();			/* Check permissions on file */
+private int check_perm();			/* Check permissions on file */
 private void get_home();			/* Extract home from /etc/passwd */
 private void substitute();			/* Variable and ~ substitutions */
 private void add_home();			/* Replace ~ with home directory */
@@ -114,11 +154,14 @@ extern char *strsave();				/* Save string value in memory */
 extern struct passwd *getpwuid();	/* Fetch /etc/passwd entry from uid */
 extern char *getenv();				/* Get environment variable */
 
-public void read_conf(file)
+public void read_conf(myself, file)
+char *myself;
 char *file;
 {
 	/* Read file in the home directory and build a symbol H table on the fly.
 	 * The ~ substitution and usual $var substitution occur (but not ${var}).
+	 * As we go, we perform basic sanity and security checks on the overall
+	 * configuration.
 	 */
 	
 	char path[MAX_STRING];			/* Full path of the config file */
@@ -126,6 +169,7 @@ char *file;
 	char mailagent[MAX_STRING];		/* Path of the configuration file */
 	FILE *fd;						/* File descriptor used for config file */
 	int line = 0;					/* Line number */
+	struct stat buf;				/* Statistics buffer */
 
 	if (home == (char *) 0)			/* Home not already artificially set */
 		get_home();					/* Get home directory via /etc/passwd */
@@ -168,10 +212,31 @@ char *file;
 	 */
 
 	rules = ht_value(&symtab, "rules");	/* Fetch rules location */
-	if (rules == (char *) 0)			/* No rule file, that's fine */
-		return;
+	if (rules)							/* No rule file is perfectly fine */
+		check_perm(rules, MUST_OWN | MAY_PANIC);	/* Might not exist */
 
-	check_perm(rules);				/* Might not exist, don't use secure() */
+	/* Make sure I cannot get compromised... */
+	if (*myself == '/') {				/* Only possible with absoulte path */
+		add_log(19, "checking myself at %s", myself);
+		if (!exec_secure(myself)) {
+			char *error = "ERROR --FILTER PROGRAM CAN BE TAMPERED WITH--";
+			say(error);					/* Make sure they see it */
+			add_log(1, error);
+		}
+	}
+
+	/* And that the .forward which invoked me is secure... */
+	strcpy(path, home);
+	strcat(path, "/");
+	strcat(path, ".forward");
+	if (-1 != stat(path, &buf)) {	/* File exists, not called manually */
+		add_log(19, "checking %s", path);
+		if (!exec_secure(path)) {
+			char *error = "ERROR --YOUR .forward FILE CAN BE TAMPERED WITH--";
+			say(error);					/* Make sure they see it */
+			add_log(1, error);
+		}
+	}
 }
 
 private void start_log()
@@ -202,6 +267,19 @@ private void start_log()
 		say("cannot open logfile %s", logfile);
 }
 
+private void stat_check(file)
+char *file;
+{
+	/* Make sure we can stat() the file */
+
+	struct stat buf;				/* Statistics buffer */
+
+	if (-1 == stat(file, &buf)) {
+		add_log(1, "SYSERR stat: %m (%e)");
+		fatal("cannot stat file %s", file);
+	}
+}
+
 private void secure(file)
 char *file;
 {
@@ -210,24 +288,50 @@ char *file;
 	 * Returning from this routine implies that the security checks succeeded.
 	 */
 
-	struct stat buf;			/* Statistics buffer */
-
-	if (-1 == stat(file, &buf)) {
-		add_log(1, "SYSERR stat: %m (%e)");
-		fatal("cannot stat file %s", file);
-	}
-
-	check_perm(file);		/* Check permissions */
+	stat_check(file);
+	check_perm(file, MUST_OWN | MAY_PANIC);	/* Check permissions */
 }
 
-private void check_perm(file)
+public int exec_secure(file)
 char *file;
+{
+	/* Same checks as secure(), but without file/directory ownership */
+
+	stat_check(file);
+	return check_perm(file, SECURE_ON);		/* Check permissions */
+}
+
+/* VARARGS3 */
+private void check_fatal(flags, reason, arg1, arg2, arg3, arg4, arg5)
+int flags;
+char *reason;
+long arg1, arg2, arg3, arg4, arg5;
+{
+	/* Die with a fatal error if MAY_PANIC is specified in flags, otherwise
+	 * simply log the error.
+	 */
+
+	char buffer[MAX_STRING];
+
+	if (flags & MAY_PANIC)
+		fatal(reason, arg1, arg2, arg3, arg4, arg5);
+
+	sprintf(buffer, "ERROR %s", reason);
+	add_log(1, buffer, arg1, arg2, arg3, arg4, arg5);
+}
+
+private int check_perm(file, flags)
+char *file;
+int flags;	/* MAY_PANIC | MUST_OWN */
 {
 	/* Check basic permissions on the specified file. It cannot be world
 	 * writable and must be owned by the user. If the file specified does not
 	 * exist, no error is reported however. If the 'secure' option is set
 	 * to ON, or if we are running with superuser credentials, further checks
 	 * are performed on the directory containing the file.
+	 *
+	 * We return true if the file is OK, false otherwise, unless MAY_PANIC
+	 * is activated in which case we don't return but exit with fatal().
 	 */
 
 	struct stat buf;			/* Statistics buffer */
@@ -237,16 +341,38 @@ char *file;
 	int wants_secure = 0;		/* Set to true for extra security checks */
 
 	if (-1 == stat(file, &buf))
-		return;
+		return 0;				/* Missing file is not secure! */
 
-	if (buf.st_mode & S_IWOTH)
-		fatal("file %s is world writable!", file);
+	if (buf.st_mode & S_IWOTH) {
+		check_fatal(flags, "file %s is world writable!", file);
+		return 0;			/* Failed checks */
+	}
 
-	if (buf.st_uid != geteuid())
-		fatal("file %s not owned by user!", file);
+	if ((flags & MUST_OWN) && buf.st_uid != geteuid()) {
+		check_fatal(flags, "file %s not owned by user!", file);
+		return 0;			/* Failed checks */
+	}
+
+	/*
+	 * If file is setuid of setgid, make sure only the owner can write to
+	 * it. It's too critical and the system might not clear the set[ug]id bit
+	 * on a write to the file.
+	 */
+
+	if (-1 != access(file, X_OK)) {			/* User may execute the file */
+		if ((buf.st_mode & S_ISUID) && (buf.st_mode & (S_IWOTH|S_IWGRP))) {
+			check_fatal(flags, "setuid file %s is writable!", file);
+			return 0;
+		}
+		if ((buf.st_mode & S_ISGID) && (buf.st_mode & (S_IWOTH|S_IWGRP))) {
+			check_fatal(flags, "setgid file %s is writable!", file);
+			return 0;
+		}
+	}
 
 	cfsecure = ht_value(&symtab, "secure");	/* Do we need extra security? */
 	if (
+		(flags & SECURE_ON) ||				/* They want secure checks anyway */
 		(cfsecure != (char *) 0 &&			/* Ok, secure is defined */
 		0 == strcasecmp(cfsecure, "ON")) ||	/* And extra checks wanted */
 		geteuid() == ROOTID					/* Running as superuser */
@@ -255,7 +381,7 @@ char *file;
 			
 	if (!wants_secure) {
 		add_log(12, "basic checks ok for file %s", file);
-		return;
+		return 1;			/* OK */
 	}
 
 	/*
@@ -264,8 +390,10 @@ char *file;
 
 	add_log(17, "performing additional checks on %s", file);
 
-	if (buf.st_mode & S_IWGRP)
-		fatal("file %s is group writable!", file);
+	if (buf.st_mode & S_IWGRP) {
+		check_fatal(flags, "file %s is group writable!", file);
+		return 0;			/* Failed checks */
+	}
 
 	/*
 	 * Ok, go on and check the parent directory...
@@ -284,19 +412,27 @@ char *file;
 
 	if (-1 == stat(parent, &buf)) {
 		add_log(1, "SYSERR stat: %m (%e)");
-		fatal("cannot stat directory %s", parent);
+		check_fatal(flags, "cannot stat directory %s", parent);
+		return 0;			/* Failed checks */
 	}
 
-	if (buf.st_mode & S_IWOTH)
-		fatal("directory %s is world writable!", parent);
+	if (buf.st_mode & S_IWOTH) {
+		check_fatal(flags, "directory %s is world writable!", parent);
+		return 0;			/* Failed checks */
+	}
 
-	if (buf.st_mode & S_IWGRP)
-		fatal("directory %s is group writable!", parent);
+	if (buf.st_mode & S_IWGRP) {
+		check_fatal(flags, "directory %s is group writable!", parent);
+		return 0;			/* Failed checks */
+	}
 
-	if (buf.st_uid != geteuid())
-		fatal("directory %s not owned by user!", parent);
+	if ((flags & MUST_OWN) && buf.st_uid != geteuid()) {
+		check_fatal(flags, "directory %s not owned by user!", parent);
+		return 0;			/* Failed checks */
+	}
 
 	add_log(12, "file %s seems to be secure", file);
+	return 1;				/* OK */
 }
 
 public char *homedir()
@@ -465,7 +601,7 @@ char **from;					/* Pointer to address in original text */
 
 	/* Get variable's name */
 	while (*name++ = *ptr) {
-		if (isalnum(*ptr))
+		if (isalnum(*ptr) || *ptr == '_')
 			ptr++;
 		else
 			break;

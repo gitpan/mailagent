@@ -1,6 +1,6 @@
 # Basic mailagent test: ensure it is correctly invoked by filter.
 
-# $Id: mailagent.t,v 3.0.1.1 1995/08/07 16:27:11 ram Exp $
+# $Id: mailagent.t,v 3.0.1.2 1996/12/24 15:02:07 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.t,v $
+# Revision 3.0.1.2  1996/12/24  15:02:07  ram
+# patch45: ensure we quote upper path properly, in case @ is there!
+#
 # Revision 3.0.1.1  1995/08/07  16:27:11  ram
 # patch37: added support for locking on filesystems with short filenames
 #
@@ -23,7 +26,7 @@ do '../pl/logfile.pl';
 $user = $ENV{'USER'};
 chdir '../out' || exit 0;
 # Make sure we'll find the mailagent
-system 'perl', '-i', '-p', '-e', "s|^path.*|path     :.:$up|", '.mailagent';
+system 'perl', '-i', '-p', '-e', "s|^path.*|path     :.:\Q$up\E|", '.mailagent';
 $? == 0 || print "1\n";
 unlink '.cache';		# Make sure no cached rules yet
 open(RULES, ">.rules") || print "2\n";

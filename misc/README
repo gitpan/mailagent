@@ -1,6 +1,8 @@
 This directory contains:
 
-	- unkit: an example of filtering command extension
-	- shell: an example of server command
+	- mime     : an example of how to un-MIME all messages that don't need MIME
+	- pbounce  : an example of mailder-daemon post-processing filter
+	- shell    : an example of server command
+	- unkit    : an example of filtering command extension
 
 Those files are not installed, they are only provided as living examples.
