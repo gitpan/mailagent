@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rulenv.pl,v $
-;# Revision 3.0.1.3  1995/08/07  16:24:06  ram
+;# Revision 3.0.1.3  1995/08/07 16:24:06  ram
 ;# patch37: new support for biff and biffmsg variable environment
 ;# patch37: fixed environment setup code
 ;#

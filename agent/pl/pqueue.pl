@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: pqueue.pl,v $
-;# Revision 3.0.1.3  1999/01/13  18:15:07  ram
+;# Revision 3.0.1.3  1999/01/13 18:15:07  ram
 ;# patch64: there may be empty lines in the agent.wait file
 ;#
 ;# Revision 3.0.1.2  1997/09/15  15:16:53  ram

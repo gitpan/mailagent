@@ -23,7 +23,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: sysexits.h,v $
- * Revision 3.0  1993/11/29  13:48:21  ram
+ * Revision 3.0  1993/11/29 13:48:21  ram
  * Baseline for mailagent 3.0 netwide release.
  *
  */

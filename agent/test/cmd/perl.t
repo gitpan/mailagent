@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: perl.t,v $
-# Revision 3.0.1.1  1994/07/01  15:08:05  ram
+# Revision 3.0.1.1  1994/07/01 15:08:05  ram
 # patch8: added test for correct exit status propagation
 #
 # Revision 3.0  1993/11/29  13:49:38  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: forward.pl,v $
-;# Revision 3.0.1.1  1996/12/24  14:52:11  ram
+;# Revision 3.0.1.1  1996/12/24 14:52:11  ram
 ;# patch45: created
 ;#
 ;#

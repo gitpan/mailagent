@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: list.t,v $
-# Revision 3.0.1.2  1999/07/12  13:57:15  ram
+# Revision 3.0.1.2  1999/07/12 13:57:15  ram
 # patch66: added new test cases
 #
 # Revision 3.0.1.1  1996/12/24  15:03:03  ram

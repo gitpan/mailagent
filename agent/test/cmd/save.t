@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: save.t,v $
-# Revision 3.0.1.2  1995/03/21  12:59:28  ram
+# Revision 3.0.1.2  1995/03/21 12:59:28  ram
 # patch35: fixed rename() syntax for perl 4.0
 #
 # Revision 3.0.1.1  1995/02/16  14:38:56  ram

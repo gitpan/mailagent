@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.18 1999/07/12 13:49:01 ram Exp $
+;# $Id: actions.pl,v 3.0.1.19 2001/01/10 16:52:58 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.19  2001/01/10 16:52:58  ram
+;# patch69: replaced calls to fake_date() by mta_date()
+;# patch69: rewrote the POST command, and added the -b switch
+;#
 ;# Revision 3.0.1.18  1999/07/12  13:49:01  ram
 ;# patch66: use servshell instead of /bin/sh for commands
 ;# patch66: make sure that we do not get an empty header when filtering
@@ -714,6 +718,7 @@ sub bounce {
 sub post {
 	local($newsgroups) = @_;		# Newsgroup(s) mail should be posted to
 	local($localdist) = $opt'sw_l;	# Local distribution if POST -l
+	local($wantbiff) = $opt'sw_b;	# Biffing activated upon success
 	local($address) = &email_addr;	# Address of user
 	unless (open(NEWS,"|$cf'sendnews $cf'newsopt -h")) {
 		&add_log("ERROR cannot run $cf'sendnews to post message: $!")
@@ -722,35 +727,178 @@ sub post {
 	}
 	&add_log("distribution of posting is local")
 		if $loglvl > 18 && $localdist;
+
+	# The From: header we're generating in the news is correctly formatted
+	# and escaped, to avoid rejects by the news server.
+	# We'll let any Reply-To header through, since RFC-1036 defines them
+	# for this purpose (i.e. the same as for mail), but we don't reformat
+	# the Reply-To since it's not a required header.
+	my ($faddr, $fcom) = &parse_address($Header{'From'});
+	$fcom = '"' . $fcom . '"' if $fcom =~ /[@.\(\)<>,:!\/=;]/;
+	if ($fcom ne '') {
+		print NEWS "From: $fcom <$faddr>\n";	# One line
+	} else {
+		print NEWS "From: $faddr\n";
+	}
+
+	# The Date: field must be parseable by INN, and not be in the future
+	# or the article would be rejected.  Articles too far in the past (outside
+	# the history range) are also rejected, but we don't know what is
+	# configured.  As a precaution, dates older than 14 days (the default INN
+	# setting) are patched.
+	unless (defined $Header{'Date'} && $Header{'Date'} ne '') {
+		&add_log("WARNING no Date, faking one") if $loglvl > 5;
+		my $date = &header'mta_date();
+		print NEWS "Date: $date\n";
+	} else {
+		my $str = $Header{'Date'};
+		my $when = &header'parsedate($str);
+		my $now = time;
+		my $date;
+		my $AGEMAX = 14 * 86400;		# 14 days
+		my $THRESH = 86400;				# 1 day
+		my $WARN_THRESH = 600;			# 10 minutes
+		if ($when < 0) {
+			&add_log("WARNING can't parse Date field '$str', adjusting")
+				if $loglvl > 5;
+			$date = &header'mta_date($now);
+		} elsif ($when > $now) {
+			my $rel = &relative_age($when - $now);
+			my $adjusting = '';
+			my $stamp = $when;
+			my $delta = $when - $now;
+			if ($delta >= $THRESH) {	# More than a day, adjust!
+				$stamp = $now;
+				$adjusting = ", adjusting";
+			}
+			&add_log("WARNING Date field is $rel in the future$adjusting")
+				if $loglvl > 5 && $delta >= $WARN_THRESH;
+			$date = &header'mta_date($stamp);
+		} elsif (($now - $when) >= $AGEMAX) {
+			my $rel = &relative_age($now - $when);
+			&add_log("WARNING Date field too ancient ($rel), adjusting")
+				if $loglvl > 5;
+			$date = &header'mta_date($now - $AGEMAX + 3600);
+		} else {
+			$date = &header'mta_date($when);	# Regenerate properly
+		}
+		print NEWS "Date: $date\n";
+		print NEWS "X-Orig-Date: $str\n" if lc($date) ne lc($str);
+	}
+
+	# If no Subject is present, fake one to make inews happy
+	unless (defined($Header{'Subject'}) && $Header{'Subject'} ne '') {
+		&add_log("WARNING no Subject, faking one") if $loglvl > 5;
+		print NEWS "Subject: <none>\n";
+	} else {
+		my $subject = $Header{'Subject'};
+		$subject =~ tr/\n/ /;				# Multiples instances collapsed
+		print NEWS "Subject: $subject\n";
+	}
+
+	# If no proper Message-ID is present, generate one
+	# If one is present, perform sanity fixups because INN is really picky
+	my $msgid;
+	unless (defined($Header{'Message-Id'}) && $Header{'Message-Id'} ne '') {
+		&add_log("WARNING no Message-Id, faking one") if $loglvl > 5;
+		$msgid = &gen_message_id;
+	} else {
+		($msgid) = $Header{'Message-Id'} =~ /(<[^>]+@[^>]+>)/;
+		if ($msgid ne '') {
+			# Fixups are always the same, therefore they don't prevent proper
+			# duplicate detection provided all feeds are done from mailagent
+			# But we also need to fix places using those message IDs, i.e.
+			# the References line, to preserve correct threading (see below).
+			my $fixup = &header'msgid_cleanup(\$msgid);
+			&add_log("NOTICE fixed Message-Id line for news")
+				if $loglvl > 6 && $fixup;
+		} else {
+			&add_log("WARNING bad Message-Id line, faking one") if $loglvl > 5;
+			$msgid = &gen_message_id;
+		}
+	}
+	print NEWS "Message-ID: $msgid\n";
+
 	# Protect Sender: lines in the original message and clean-up header
 	local($last_was_header);		# Set to true when header is skipped
+
+	# Need at most one MIME header, lest article might be rejected
+	my %mime = map { lc($_) => 0 } qw(
+		Mime-Version
+		Content-Transfer-Encoding
+		Content-Type
+	);
+
 	foreach (split(/\n/, $Header{'Head'})) {
-		s/^Sender:\s*(.*)/Prev-Sender: $1/;
+		s/^Sender:/Prev-Sender:/i;
+		s/^(To|Cc):/X-$1:/i;				# Keep distribution info
+		s/^(Resent-\w+):/X-$1:/i;
 		next if /^From\s/;					# First From line...
 		if (
-			/^To:/ ||
-			/^Cc:/ ||
-			/^Apparently-To:/ ||
-			/^Distribution:/ ||				# No mix-up, please
-			/^X-Mailer:/ ||					# Mailer identification
-			/^Newsgroups:/ ||				# Reply from news reader
-			/^Return-Receipt-To:/ ||		# Sendmail's acknowledgment
-			/^Received:/ ||					# We want to remove received
-			/^Errors-To:/ ||				# Error report redirection
-			/^Resent-[\w-]*:/				# Resent tags
+			/^From:/i				||		# This one was cleaned up above
+			/^Subject:/i			||		# This one handled above
+			/^Message-Id:/i			||		# idem
+			/^Date:/i				||		# idem
+			/^In-Reply-To:/i		||
+			/^References:/i			||		# One will be faked if missing
+			/^Apparently-To:/i		||
+			/^Distribution:/i		||		# No mix-up, please
+			/^Control:/i			||
+			/^X-Server-[\w-]+:/i	||
+			/^Xref:/i				||
+			/^NNTP-Posting-.*:/i	||		# Cleanup for NNTP server
+			/^Originator:/i			||		# Probably from news->mail gateway
+			/^X-Loop:/i				||		# INN does not like this field
+			/^X-Trace:/i			||		# idem
+			/^Newsgroups:/i			||		# Reply from news reader
+			/^Return-Receipt-To:/i	||		# Sendmail's acknowledgment
+			/^Received:/i			||		# We want to remove received
+			/^Precedence:/i			||
+			/^Errors-To:/i					# Error report redirection
 		) {
 			$last_was_header = 1;			# Mark we discarded the line
 			next;							# Line is skipped
+		}
+		if (/^([\w-]+):/ && exists $mime{"\L$1"}) {
+			my $field = lc($1);
+			if ($mime{$field}++) {
+				my $nfield = &header'normalize($field);
+				&add_log("WARNING stripping dup $nfield header")
+					if $loglvl > 5 && $mime{$field} == 2;
+				$last_was_header = 1;		# Mark we discarded the line
+				next;						# Line is skipped
+			}
 		}
 		next if /^\s/ && $last_was_header;	# Skip removed header continuations
 		$last_was_header = 0;				# We decided to keep header line
 		print NEWS $_, "\n";
 	}
-	# If no subject is present, fake one to make inews happy
-	unless (defined($Header{'Subject'}) && $Header{'Subject'} ne '') {
-		&add_log("WARNING no subject, faking one") if $loglvl > 5;
-		print NEWS "Subject: <none>\n";
+
+	# For correct threading, we need a References: line.
+	my $refs = $Header{'References'};		# Will probably be missing
+	$refs =~ tr/\n/ /;						# Must be ONE line
+	my $inreply = $Header{'In-Reply-To'};	# Should not be missing for replies
+	my ($replyid) = $inreply =~ /(<[^>]+>)/;
+
+	# Warn only when there's no message ID in the In-Reply-To header and
+	# there is no References line: this will prevent correct threading.
+	# We assume the References line was correctly setup when it is present.
+	&add_log("WARNING In-Reply-To header did not contain any message ID")
+		if $loglvl > 5 && $inreply ne '' && $replyid eq '' && $refs =~ /^\s*$/;
+
+	if ($replyid ne '' && $refs ne '' && $refs !~ /\Q$replyid/) {
+		$refs .= " $replyid";
+		&add_log("NOTICE added missing In-Reply-To ID to References")
+			if $loglvl > 6;
 	}
+	$refs = $replyid unless $refs ne '';
+	if ($refs ne '') {
+		my $fixup = &header'msgid_cleanup(\$refs);
+		&add_log("NOTICE fixed References line for news")
+			if $loglvl > 6 && $fixup;
+		print NEWS "References: $refs\n";	# One big happy line
+	}
+
 	# Any address included withing "" means addresses are stored in a file
 	$newsgroups = &complete_list($newsgroups, 'newsgroup');
 	$newsgroups =~ s/\s/,/g;	# Cannot have spaces between them
@@ -764,6 +912,8 @@ sub post {
 	local($failed) = $?;		# Status of forwarding
 	if ($failed) {
 		&add_log("ERROR could not post to $newsgroups") if $loglvl > 1;
+	} else {
+		&biff($newsgroups, "news") if $wantbiff;
 	}
 	$failed;		# 0 for success
 }
@@ -1316,7 +1466,7 @@ sub annotate_header {
 		return 1;
 	}
 	local($annotation) = '';		# Annotation made
-	$annotation = "$field: " . &header'fake_date . "\n" unless $opt'sw_d;
+	$annotation = "$field: " . &header'mta_date() . "\n" unless $opt'sw_d;
 	$annotation .= &header'format("$field: $value") . "\n" if $value ne '';
 	&header_append($annotation);	# Add field into %Header
 	0;

@@ -3,8 +3,8 @@ This is the root directory for mailagent.
 If you choose to install the mailagent, you will enable people to
 ask for patches and eventually distributions. You need kit 2.0
 (at least PL 9) and cshar 3.0 for the mailagent's PROCESS command to
-work properly. If you miss one of those, you can request them from my
-own mailagent.
+work properly. If you miss one of those, you can grab them my
+CPAN directory: http://search.cpan.org/search?author=RAM
 
 You will also have access to filtering abilities, specified using
 lex-like rules. The mailagent will delete all those mails you do not

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: hostname.pl,v $
-;# Revision 3.0  1993/11/29  13:48:52  ram
+;# Revision 3.0  1993/11/29 13:48:52  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
 ;# 

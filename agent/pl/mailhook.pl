@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mailhook.pl,v $
-;# Revision 3.0.1.2  1996/12/24  14:55:06  ram
+;# Revision 3.0.1.2  1996/12/24 14:55:06  ram
 ;# patch45: correctly initializes @cc to be the Cc: field
 ;# patch45: added @relayed and $lines, $length
 ;#

@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: group.t,v $
-# Revision 3.0.1.1  1994/04/25  15:25:47  ram
+# Revision 3.0.1.1  1994/04/25 15:25:47  ram
 # patch7: added three additional tests after a bug was found
 #
 # Revision 3.0  1993/11/29  13:49:59  ram

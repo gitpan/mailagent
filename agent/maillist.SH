@@ -31,7 +31,7 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: maillist.SH,v $
-# Revision 3.0.1.6  1996/12/24  14:07:48  ram
+# Revision 3.0.1.6  1996/12/24 14:07:48  ram
 # patch45: silently discard hostile addresses
 # patch45: knows about command forwarding
 #

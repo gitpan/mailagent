@@ -30,7 +30,7 @@ $spitshell >mailpatch.$manext <<!GROK!THIS!
 ''' of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailpatch.SH,v $
-''' Revision 3.0.1.2  1996/12/24  14:43:27  ram
+''' Revision 3.0.1.2  1996/12/24 14:43:27  ram
 ''' patch45: don't use expanded manpath in .so directives
 '''
 ''' Revision 3.0.1.1  1995/08/07  15:53:32  ram

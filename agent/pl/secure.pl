@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: secure.pl,v $
-;# Revision 3.0.1.7  1998/07/28  17:07:05  ram
+;# Revision 3.0.1.7  1998/07/28 17:07:05  ram
 ;# patch62: now explicitely log when too many symlink levels are found
 ;#
 ;# Revision 3.0.1.6  1997/02/20  11:46:00  ram

@@ -31,7 +31,7 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailhelp.SH,v $
-# Revision 3.0.1.3  1996/12/24  14:07:01  ram
+# Revision 3.0.1.3  1996/12/24 14:07:01  ram
 # patch45: silently discard hostile addresses
 #
 # Revision 3.0.1.2  1995/03/21  12:55:04  ram

@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: main.c,v $
- * Revision 3.0.1.6  1997/02/20  11:36:56  ram
+ * Revision 3.0.1.6  1997/02/20 11:36:56  ram
  * patch55: now uses getopt() to parse command line switches
  * patch55: new -o switch to redirect output
  *

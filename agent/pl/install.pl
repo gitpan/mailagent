@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: install.pl,v $
-;# Revision 3.0.1.4  1998/07/28  17:03:54  ram
+;# Revision 3.0.1.4  1998/07/28 17:03:54  ram
 ;# patch62: was not processing (prefix) indication from setup.cf
 ;#
 ;# Revision 3.0.1.3  1997/02/20  11:44:47  ram

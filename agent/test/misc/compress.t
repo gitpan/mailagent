@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: compress.t,v $
-# Revision 3.0.1.1  1995/01/25  15:33:37  ram
+# Revision 3.0.1.1  1995/01/25 15:33:37  ram
 # patch27: ported to perl 5.0 PL0
 #
 # Revision 3.0  1993/11/29  13:50:08  ram

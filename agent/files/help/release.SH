@@ -27,7 +27,7 @@ $spitshell >/dev/null <<!GROK!THIS!
 #  of the source tree for mailagent 3.0.
 #
 # $Log: release.SH,v $
-# Revision 3.0.1.1  1998/03/31  14:34:06  ram
+# Revision 3.0.1.1  1998/03/31 14:34:06  ram
 # patch59: fixed typos
 #
 # Revision 3.0  1993/11/29  13:47:58  ram

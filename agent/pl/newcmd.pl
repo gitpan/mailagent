@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: newcmd.pl,v $
-;# Revision 3.0.1.2  1995/01/03  18:12:58  ram
+;# Revision 3.0.1.2  1995/01/03 18:12:58  ram
 ;# patch24: it is no longer possible to get at the vacation variable
 ;#
 ;# Revision 3.0.1.1  1994/09/22  14:28:06  ram

@@ -47,7 +47,7 @@
 ;# Below are logging information for this package as included in the
 ;# mailagent program.
 ;#
-;# $Id: getdate.pl,v 3.0.1.3 1999/07/12 13:50:59 ram Exp $
+;# $Id: getdate.pl,v 3.0.1.4 2001/01/10 16:53:42 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -58,6 +58,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: getdate.pl,v $
+;# Revision 3.0.1.4  2001/01/10 16:53:42  ram
+;# patch69: fixed wrong lexical attribute synthesis for numbers
+;#
 ;# Revision 3.0.1.3  1999/07/12  13:50:59  ram
 ;# patch66: fixed Y2K bug
 ;#
@@ -638,7 +641,9 @@ sub yylex {
 			$sign = ($1 eq '-') ? -1 : 1;
 			$dtstr =~ s/^.\s*//;
 			if ($dtstr =~ /^(\d+)/) {
-				$yylval = eval "$1 * $sign";
+				# Fixed buggy and needless eval "" in case $1 is 09
+				# (would fail complaining about bad octal) -- RAM, 10/01/2001
+				$yylval = $1 * $sign;
 				$dtstr =~ s/^\d+//;
 				return $NUMBER;
 			}
@@ -647,7 +652,9 @@ sub yylex {
 			}
 		}
 		elsif ($dtstr =~ /^(\d+)/) {
-			$yylval = eval "$1";
+			# Fixed buggy and needless eval "" in case $1 is 09
+			# (would fail complaining about bad octal) -- RAM, 10/01/2001
+			$yylval = $1 + 0;
 			$dtstr =~ s/^\d+//;
 			return $NUMBER;
 		}

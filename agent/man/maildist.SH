@@ -29,7 +29,7 @@ $spitshell >maildist.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: maildist.SH,v $
-''' Revision 3.0.1.3  1998/07/28  17:00:19  ram
+''' Revision 3.0.1.3  1998/07/28 17:00:19  ram
 ''' patch62: fixed typo on .so line
 '''
 ''' Revision 3.0.1.2  1996/12/24  14:41:41  ram

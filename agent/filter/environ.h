@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: environ.h,v $
- * Revision 3.0.1.1  1996/12/24  13:52:15  ram
+ * Revision 3.0.1.1  1996/12/24 13:52:15  ram
  * patch45: declared get_env()
  *
  * Revision 3.0  1993/11/29  13:48:08  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: interface.pl,v $
-;# Revision 3.0.1.6  1998/03/31  15:23:00  ram
+;# Revision 3.0.1.6  1998/03/31 15:23:00  ram
 ;# patch59: added hook for the new ON command
 ;#
 ;# Revision 3.0.1.5  1997/02/20  11:45:12  ram

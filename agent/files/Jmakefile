@@ -13,7 +13,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: Jmakefile,v $
-;# Revision 3.0.1.2  1995/09/15  13:36:23  ram
+;# Revision 3.0.1.2  1995/09/15 13:36:23  ram
 ;# patch43: new compressors file installed in the private library
 ;#
 ;# Revision 3.0.1.1  1995/02/16  14:06:56  ram

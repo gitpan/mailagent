@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
-;# Revision 3.0.1.10  1998/03/31  15:22:19  ram
+;# Revision 3.0.1.10  1998/03/31 15:22:19  ram
 ;# patch59: when "vacfixed" is on, forbid any change of vacation message
 ;# patch59: new ON command to process commands on certain days only
 ;#

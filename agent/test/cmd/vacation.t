@@ -1,6 +1,6 @@
 # The VACATION command
 
-# $Id: vacation.t,v 3.0.1.3 1995/01/25 15:33:28 ram Exp $
+# $Id: vacation.t,v 3.0.1.4 2001/01/10 16:58:53 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: vacation.t,v $
+# Revision 3.0.1.4  2001/01/10 16:58:53  ram
+# patch69: changed "tome" settings due to dropping of dot stripping
+#
 # Revision 3.0.1.3  1995/01/25  15:33:28  ram
 # patch27: ported to perl 5.0 PL0
 #
@@ -81,7 +84,7 @@ $? == 0 || print "29\n";
 
 &replace_header('To: Raphael.Manfredi@acri.fr');
 &cleanup;
-&add_option('-o tome:rmanfredi,manfredi');
+&add_option('-o tome:rmanfredi,raphael.man*');
 `$cmd`;
 $? == 0 || print "40\n";
 -f "$user" && print "41\n";		# Mail has been deleted

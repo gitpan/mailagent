@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: free_file.pl,v $
-;# Revision 3.0.1.1  1994/10/04  17:52:52  ram
+;# Revision 3.0.1.1  1994/10/04 17:52:52  ram
 ;# patch17: added support for customized lockfile names
 ;#
 ;# Revision 3.0  1993/11/29  13:48:47  ram

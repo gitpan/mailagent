@@ -3,6 +3,7 @@ This directory contains:
 	- fakesend : code for user-defined FAKESEND comamnd
 	- getcost  : a score-based SPAM filter
 	- mime     : an example of how to un-MIME all messages that don't need MIME
+	- news     : a complete news <=> mail gateway
 	- pbounce  : an example of mailer-daemon post-processing filter
 	- shell    : an example of server command
 	- unkit    : an example of filtering command extension

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: listqueue.pl,v $
-;# Revision 3.0.1.6  1999/07/12  13:51:28  ram
+;# Revision 3.0.1.6  1999/07/12 13:51:28  ram
 ;# patch66: added one extra char for filename in queue listings
 ;#
 ;# Revision 3.0.1.5  1999/01/13  18:13:53  ram

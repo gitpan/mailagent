@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: config.t,v $
-# Revision 3.0.1.8  1999/01/13  18:16:19  ram
+# Revision 3.0.1.8  1999/01/13 18:16:19  ram
 # patch64: test for non-writable agent.wait file
 #
 # Revision 3.0.1.7  1997/02/20  11:48:11  ram

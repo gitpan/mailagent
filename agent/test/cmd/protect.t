@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: protect.t,v $
-# Revision 3.0.1.1  1995/01/25  15:33:20  ram
+# Revision 3.0.1.1  1995/01/25 15:33:20  ram
 # patch27: created
 #
 

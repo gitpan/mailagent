@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: checklock.pl,v $
-;# Revision 3.0.1.3  1994/10/04  17:47:34  ram
+;# Revision 3.0.1.3  1994/10/04 17:47:34  ram
 ;# patch17: added support for customized lockfile names
 ;#
 ;# Revision 3.0.1.2  1994/09/22  14:15:13  ram

@@ -16,7 +16,7 @@
  * Original Author: unknown, got this off net.sources
  *
  * $Log: getopt.c,v $
- * Revision 3.0.1.2  1999/07/12  13:43:07  ram
+ * Revision 3.0.1.2  1999/07/12 13:43:07  ram
  * patch66: was missing a trailing colon in getopt() declaration
  *
  * Revision 3.0.1.1  1997/02/20  11:34:56  ram

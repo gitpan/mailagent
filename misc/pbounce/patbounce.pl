@@ -9,7 +9,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: patbounce.pl,v $
-# Revision 3.0.1.3  1997/09/15  15:20:33  ram
+# Revision 3.0.1.3  1997/09/15 15:20:33  ram
 # patch57: also handle bounced output from @SH package
 #
 # Revision 3.0.1.2  1997/01/07  18:37:43  ram

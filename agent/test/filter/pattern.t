@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: pattern.t,v $
-# Revision 3.0.1.1  1996/12/24  15:03:19  ram
+# Revision 3.0.1.1  1996/12/24 15:03:19  ram
 # patch45: added Relayed to the list of returned headers
 #
 # Revision 3.0  1993/11/29  13:50:05  ram

@@ -14,7 +14,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: utmp_ph.c,v $
- * Revision 3.0.1.1  1994/10/29  18:13:23  ram
+ * Revision 3.0.1.1  1994/10/29 18:13:23  ram
  * patch20: created
  *
  */

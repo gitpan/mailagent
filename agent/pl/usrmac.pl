@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: usrmac.pl,v $
-;# Revision 3.0.1.1  1995/01/25  15:30:21  ram
+;# Revision 3.0.1.1  1995/01/25 15:30:21  ram
 ;# patch27: ported to perl 5.0 PL0
 ;# patch27: added eval error tracking for perl 5.0
 ;#

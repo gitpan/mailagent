@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: addr.pl,v $
-;# Revision 3.0.1.5  1997/01/07  18:32:15  ram
+;# Revision 3.0.1.5  1997/01/07 18:32:15  ram
 ;# patch52: slight mis-parsing of user names with '-' in them
 ;#
 ;# Revision 3.0.1.4  1995/02/03  17:59:19  ram

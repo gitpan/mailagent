@@ -31,7 +31,7 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailpatch.SH,v $
-# Revision 3.0.1.5  1996/12/24  14:08:29  ram
+# Revision 3.0.1.5  1996/12/24 14:08:29  ram
 # patch45: silently discard hostile addresses
 # patch45: added command forwarding support
 #

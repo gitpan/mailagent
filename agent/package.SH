@@ -33,7 +33,7 @@ $startperl
 #  Original Author: Graham Stoney, 1993
 #
 # $Log: package.SH,v $
-# Revision 3.0.1.9  1997/01/07  18:30:34  ram
+# Revision 3.0.1.9  1997/01/07 18:30:34  ram
 # patch52: the "no change" optimization was overzealous
 #
 # Revision 3.0.1.8  1996/12/26  10:46:55  ram

@@ -11,7 +11,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: logfile.pl,v $
-;# Revision 3.0.1.2  1995/08/07  16:29:15  ram
+;# Revision 3.0.1.2  1995/08/07 16:29:15  ram
 ;# patch37: simplified matching by removing spurious eval
 ;#
 ;# Revision 3.0.1.1  1994/07/01  15:10:42  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: stats.pl,v $
-;# Revision 3.0.1.4  1997/02/20  11:46:51  ram
+;# Revision 3.0.1.4  1997/02/20 11:46:51  ram
 ;# patch55: typo fixes and print() call cleanup to avoid run-time warnings
 ;#
 ;# Revision 3.0.1.3  1997/01/31  18:08:09  ram

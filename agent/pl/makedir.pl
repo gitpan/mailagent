@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: makedir.pl,v $
-;# Revision 3.0.1.2  1994/09/22  14:26:47  ram
+;# Revision 3.0.1.2  1994/09/22 14:26:47  ram
 ;# patch12: fixed regexp for perl5 support
 ;#
 ;# Revision 3.0.1.1  1994/07/01  15:02:07  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: history.pl,v $
-;# Revision 3.0.1.3  1994/10/29  17:46:13  ram
+;# Revision 3.0.1.3  1994/10/29 17:46:13  ram
 ;# patch20: now supports internet numbers in message IDs
 ;#
 ;# Revision 3.0.1.2  1994/09/22  14:22:10  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: sendfile.pl,v $
-;# Revision 3.0.1.3  1995/02/16  14:36:59  ram
+;# Revision 3.0.1.3  1995/02/16 14:36:59  ram
 ;# patch32: indentation fix
 ;#
 ;# Revision 3.0.1.2  1994/10/10  10:25:40  ram

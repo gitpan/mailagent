@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mh.pl,v $
-;# Revision 3.0.1.5  1996/12/24  14:56:37  ram
+;# Revision 3.0.1.5  1996/12/24 14:56:37  ram
 ;# patch45: processing of MH profile is now case-insensitive
 ;#
 ;# Revision 3.0.1.4  1995/08/07  16:20:19  ram

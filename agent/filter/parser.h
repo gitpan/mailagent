@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.h,v $
- * Revision 3.0.1.3  1997/01/07  18:28:23  ram
+ * Revision 3.0.1.3  1997/01/07 18:28:23  ram
  * patch52: new get_confstr() and get_confstr_opt()
  *
  * Revision 3.0.1.2  1996/12/24  14:01:26  ram

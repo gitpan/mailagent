@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rules.pl,v $
-;# Revision 3.0.1.9  1998/03/31  15:27:04  ram
+;# Revision 3.0.1.9  1998/03/31 15:27:04  ram
 ;# patch59: allow ~name expansion when specifying alternate rule files
 ;#
 ;# Revision 3.0.1.8  1997/01/31  18:08:02  ram

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.16 1999/07/12 13:43:57 ram Exp $
+ * $Id: io.c,v 3.0.1.17 2001/01/10 16:48:56 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.17  2001/01/10 16:48:56  ram
+ * patch69: switched to dynamic init of standard file array for GNU libc
+ *
  * Revision 3.0.1.16  1999/07/12  13:43:57  ram
  * patch66: renamed metaconfig obsolete symbol
  * patch66: now uses say() when mail is DUMPED
@@ -175,9 +178,9 @@
 
 /* The following array of stdio streams is used by close_tty() */
 private FILE *stream_by_fd[] = {
-	stdin,		/* file descriptor 0 */
-	stdout,		/* ... 1 */
-	stderr,		/* ... 2 */
+	0,		/* file descriptor 0 */
+	0,		/* ... 1 */
+	0,		/* ... 2 */
 };
 #define STDIO_FDS	(sizeof(stream_by_fd) / sizeof(FILE *))
 
@@ -1161,6 +1164,18 @@ int fd;
 		return;		/* Don't close it then */
 	}
 
+	/*
+	 * The GNU libc had this bight idea to make stdin, stdout and stderr
+	 * unsuitable for static initialization.  Wonderful.  Do it an runtime
+	 * then.  -- RAM, 05/01/2001
+	 */
+
+	if (!stream_by_fd[0]) {
+		stream_by_fd[0] = stdin;
+		stream_by_fd[1] = stdout;
+		stream_by_fd[2] = stderr;
+	}
+		
 	/* Close file descriptor if attached to a tty. Otherwise, flush it if
 	 * it is of the standard I/O kind, in case we did some buffered fprintf()
 	 * on those.

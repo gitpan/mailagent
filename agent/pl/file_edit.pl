@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: file_edit.pl,v $
-;# Revision 3.0.1.1  1994/09/22  14:19:09  ram
+;# Revision 3.0.1.1  1994/09/22 14:19:09  ram
 ;# patch12: typo prevented correct indexing in the @insert array
 ;#
 ;# Revision 3.0  1993/11/29  13:48:46  ram

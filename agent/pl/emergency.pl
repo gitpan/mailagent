@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: emergency.pl,v $
-;# Revision 3.0.1.3  1999/01/13  18:13:18  ram
+;# Revision 3.0.1.3  1999/01/13 18:13:18  ram
 ;# patch64: only use last two digits from year in logfiles
 ;# patch64: resync of agent.wait now more robust and uses locking
 ;#

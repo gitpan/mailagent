@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: matching.pl,v $
-;# Revision 3.0.1.4  1999/07/12  13:52:50  ram
+;# Revision 3.0.1.4  1999/07/12 13:52:50  ram
 ;# patch66: specialized <3> to mean <3,3> in mrange()
 ;#
 ;# Revision 3.0.1.3  1996/12/24  14:56:12  ram

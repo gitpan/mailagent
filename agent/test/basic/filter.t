@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: filter.t,v $
-# Revision 3.0.1.3  1999/01/13  18:16:41  ram
+# Revision 3.0.1.3  1999/01/13 18:16:41  ram
 # patch64: agent.wait file moved from queue to spool dir
 #
 # Revision 3.0.1.2  1995/08/07  16:27:05  ram

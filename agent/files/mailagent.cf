@@ -13,7 +13,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
-# Revision 3.0.1.12  1998/07/28  16:56:21  ram
+# Revision 3.0.1.12  1998/07/28 16:56:21  ram
 # patch62: added servshell variable
 #
 # Revision 3.0.1.11  1998/03/31  14:35:29  ram

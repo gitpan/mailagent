@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: signals.pl,v $
-;# Revision 3.0.1.2  1995/01/25  15:29:24  ram
+;# Revision 3.0.1.2  1995/01/25 15:29:24  ram
 ;# patch27: put signal handler names into double quotes for perl 5.0
 ;#
 ;# Revision 3.0.1.1  1994/09/22  14:39:13  ram

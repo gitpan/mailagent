@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: read_conf.pl,v $
-;# Revision 3.0.1.10  1997/01/07  18:33:25  ram
+;# Revision 3.0.1.10  1997/01/07 18:33:25  ram
 ;# patch52: new execsafe variable defaults to OFF when missing
 ;#
 ;# Revision 3.0.1.9  1996/12/24  14:59:00  ram

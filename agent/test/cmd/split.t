@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: split.t,v $
-# Revision 3.0.1.2  1997/09/15  15:18:10  ram
+# Revision 3.0.1.2  1997/09/15 15:18:10  ram
 # patch57: fixed overzealous unlinks
 #
 # Revision 3.0.1.1  1994/10/10  10:26:05  ram

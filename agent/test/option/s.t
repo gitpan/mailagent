@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: s.t,v $
-# Revision 3.0.1.1  1995/08/07  16:28:45  ram
+# Revision 3.0.1.1  1995/08/07 16:28:45  ram
 # patch37: added support for locking on filesystems with short filenames
 #
 # Revision 3.0  1993/11/29  13:50:20  ram

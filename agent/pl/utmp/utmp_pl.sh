@@ -29,7 +29,7 @@ $cat >utmp.pl <<!GROK!THIS!
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: utmp_pl.sh,v $
-;# Revision 3.0.1.2  1995/01/03  18:18:48  ram
+;# Revision 3.0.1.2  1995/01/03 18:18:48  ram
 ;# patch24: make sure old utmp list is gone when reloading from /etc/utmp
 ;#
 ;# Revision 3.0.1.1  1994/10/29  18:13:28  ram

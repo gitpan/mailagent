@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: once.pl,v $
-;# Revision 3.0.1.1  1994/09/22  14:28:42  ram
+;# Revision 3.0.1.1  1994/09/22 14:28:42  ram
 ;# patch12: removed useless test which prevented correct processing
 ;#
 ;# Revision 3.0  1993/11/29  13:49:04  ram

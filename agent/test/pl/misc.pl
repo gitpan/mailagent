@@ -11,7 +11,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: misc.pl,v $
-;# Revision 3.0.1.1  1994/07/01  15:11:55  ram
+;# Revision 3.0.1.1  1994/07/01 15:11:55  ram
 ;# patch8: fixed RCS leading comment string
 ;#
 ;# Revision 3.0  1993/11/29  13:50:26  ram

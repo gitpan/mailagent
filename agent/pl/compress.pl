@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: compress.pl,v $
-;# Revision 3.0.1.1  1995/09/15  14:03:35  ram
+;# Revision 3.0.1.1  1995/09/15 14:03:35  ram
 ;# patch43: can now handle compression with various compressors
 ;# patch43: (code contributed by Kevin Johnson <kjj@pondscum.phx.mcd.mot.com>)
 ;#

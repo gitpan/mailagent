@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: umask.t,v $
-# Revision 3.0.1.3  1996/12/24  15:02:36  ram
+# Revision 3.0.1.3  1996/12/24 15:02:36  ram
 # patch45: fixed test for perl5
 #
 # Revision 3.0.1.2  1995/02/03  18:05:08  ram

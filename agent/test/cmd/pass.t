@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: pass.t,v $
-# Revision 3.0.1.2  1994/10/10  10:26:01  ram
+# Revision 3.0.1.2  1994/10/10 10:26:01  ram
 # patch19: added various escapes in strings for perl5 support
 #
 # Revision 3.0.1.1  1994/04/25  15:25:22  ram

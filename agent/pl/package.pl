@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: package.pl,v $
-;# Revision 3.0.1.1  1994/09/22  14:29:07  ram
+;# Revision 3.0.1.1  1994/09/22 14:29:07  ram
 ;# patch12: created
 ;#
 ;#

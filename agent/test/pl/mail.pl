@@ -11,7 +11,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mail.pl,v $
-;# Revision 3.0.1.2  1997/09/15  15:19:30  ram
+;# Revision 3.0.1.2  1997/09/15 15:19:30  ram
 ;# patch57: forgot to unlink mail.lock in cp_mail()
 ;#
 ;# Revision 3.0.1.1  1994/07/01  15:11:46  ram

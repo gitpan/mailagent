@@ -31,7 +31,7 @@ $spitshell >mailhelp.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailhelp.SH,v $
-''' Revision 3.0.1.3  1999/07/12  13:46:52  ram
+''' Revision 3.0.1.3  1999/07/12 13:46:52  ram
 ''' patch66: updated my e-mail address
 '''
 ''' Revision 3.0.1.2  1996/12/24  14:41:59  ram

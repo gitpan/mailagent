@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
-;# Revision 3.0.1.7  1999/07/12  13:50:49  ram
+;# Revision 3.0.1.7  1999/07/12 13:50:49  ram
 ;# patch66: factorized servshell handling in function
 ;#
 ;# Revision 3.0.1.6  1998/07/28  17:02:15  ram

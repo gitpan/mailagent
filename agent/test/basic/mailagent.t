@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.t,v $
-# Revision 3.0.1.2  1996/12/24  15:02:07  ram
+# Revision 3.0.1.2  1996/12/24 15:02:07  ram
 # patch45: ensure we quote upper path properly, in case @ is there!
 #
 # Revision 3.0.1.1  1995/08/07  16:27:11  ram

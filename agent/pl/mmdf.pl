@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mmdf.pl,v $
-;# Revision 3.0.1.1  1995/01/25  15:26:57  ram
+;# Revision 3.0.1.1  1995/01/25 15:26:57  ram
 ;# patch27: new routine &chmod for folder permission settting
 ;#
 ;# Revision 3.0  1993/11/29  13:49:02  ram

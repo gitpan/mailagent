@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: lock.c,v $
- * Revision 3.0.1.5  1997/09/15  15:02:18  ram
+ * Revision 3.0.1.5  1997/09/15 15:02:18  ram
  * patch57: added more generic file_lock() and file_unlock() routines
  *
  * Revision 3.0.1.4  1995/08/07  16:10:04  ram

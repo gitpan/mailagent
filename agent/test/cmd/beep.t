@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: beep.t,v $
-# Revision 3.0.1.2  1995/08/07  16:27:31  ram
+# Revision 3.0.1.2  1995/08/07 16:27:31  ram
 # patch37: added regression testing for BEEP
 #
 # Revision 3.0.1.1  1995/01/25  15:32:12  ram

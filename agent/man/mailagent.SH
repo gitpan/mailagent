@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.23 1999/07/12 13:46:20 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.24 2001/01/10 16:51:38 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,11 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.24  2001/01/10 16:51:38  ram
+''' patch69: changed semantics of "tome"
+''' patch69: updated POST to current practices
+''' patch69: documented biffing macros for news article
+'''
 ''' Revision 3.0.1.23  1999/07/12  13:46:20  ram
 ''' patch66: variables are now propagated back and forth through APPLY
 ''' patch66: updated my e-mail address
@@ -760,8 +765,8 @@ identify missing To: lines to detect SPAM).
 This optional variable may contain a comma separated list of alternate logins
 that are also valid for the user (mail aliases). This is used in vacation
 mode to check whether the mail was sent to the user or to a mailing list.
-If you have an alias like \fIFirst.Name\fR, then specify \fIname\fR only,
-since \fImailagent\fR reduces the login name to the family name.
+Matching is anchored on the login name, so saying "ro*" will match
+both \fIroot\fR and \fIrom\fR.
 .TP
 .I track
 Set to \fIon\fR (case insensitively), this turns on the \fB\-t\fR option
@@ -1969,13 +1974,25 @@ Pipe the whole message to the specified program, but do not get anything
 back. Any output is mailed to the user who runs the \fImailagent\fR.
 (Returns the status of \fIprogram\fR)
 .TP
-POST [\fB\-l\fR] \fInewsgroup(s)\fR
+POST [\fB\-lb\fR] \fInewsgroup(s)\fR
 Post the message to the specified newsgroup(s) after having cleaned-up the
-header (by removing mail-related fields like Received: or To:). This acts
-as a saving. If the first name is \fB\-l\fR as in "POST -l comp.mail.mh",
+header: mail-related fields like Received: or In-Reply-To: are removed, a
+valid From: line is generated, the original To: and Cc: are renamed
+with an X- prefix, the References: line is updated/generated if necessary
+based on existing In-Reply-To, and NNTP-specific fields are stripped so
+that the server can add its own.
+.sp
+Running POST successfully acts as a saving.
+.sp
+If the first name is \fB\-l\fR as in "POST -l comp.mail.mh",
 then a "Distribution: local" header is added to force a local delivery.
 Otherwise, the default \fIinews\fR distribution will be used (world,
 usually).
+.sp
+When the \fB-b\fR switch is given, a successful POST will result
+in biffing being activated (see section \fBMAIL BIFFING\fR) for
+the resulting news article.
+.sp
 If more than one newsgroup is specified, they should be space
 separated. It is possible to get a newsgroup list via file inclusion.
 (Fails if message cannot be posted)
@@ -3245,7 +3262,9 @@ behaviour. Don't forget to run the shell command "\fIbiff y\fR" on the
 terminals where you want to get notification (you may do that on several ttys,
 one for each virtual display for instance).
 .PP
-Upon mail reception and saving on a folder, \fImailagent\fR locates all the
+Upon mail reception and saving on a folder
+or posting to a newsgroup,
+\fImailagent\fR locates all the
 ttys where you are logged on, then selects those where biffing was requested,
 finally emitting a message and making a beeping sound (if your terminal
 supports this and you are using the standard format--see below).
@@ -3270,7 +3289,8 @@ The header part of the biffing message. If shows only From:, To: Subject: and
 Date: headers, or whatever you have set the \fIbiffhead\fR configuration
 variable to. All headers are showed as one line of text, regardless of their
 actual length. There will be three trailing dots at the end to signal that
-truncation occurred.
+truncation occurred.  For a news article (biffing after a POST -b), the To:
+and Cc: fields are never shown, even if specified in \fIbiffhead\fR.
 .TP
 %-T
 Same as %-B, but trimming is activated. The purpose of trimming is to remove
@@ -3282,15 +3302,16 @@ file.
 .TP
 %B
 The relative path under %d of the message folder, full path (%p) if not
-saved under that directory.
+saved under that directory.  The newsgroup name for news articles.
 .TP
 %D
 The directory where the message is stored. If an MH folder, this is the
-folder full path. The home directory is replaced by a ~.
+folder full path. The home directory is replaced by a ~.  Empty
+for news articles.
 .TP
 %F
 The base name (last path component) of the message. For an MH message, this
-is the message number.
+is the message number.  Empty for news articles.
 .TP
 %P
 The folder path. It has the correct semantics for MH and directory folders,
@@ -3308,16 +3329,22 @@ As opposed to %a, this only expands to give \fBone\fR bell.
 %d
 Full path where folders such as the one being saved into are stored if not
 qualified (i.e. your MH path for MH folders, of something like \fI~/Mail\fR
-for other folders).
+for other folders).  Empty for news articles.
 .TP
 %f
-Folder where mail was saved, home replaced by ~ for short.
+Folder where mail was saved, home replaced by ~ for short.  The newsgroup
+when article was posted for news.
 .TP
 %m
 A '+' sign if the folder is an MH one, empty otherwise.
 .TP
 %p
 The full path name (same as %f) of the message, but without any ~ shortcut.
+The newsgroup name for news articles.
+.TP
+%t
+The type of message: usually "mail", but set to "article" for biffing after
+a POST command.
 .PD
 .PP
 You can get the standard macro expansion by using \fI%:f\fR for instance,
@@ -3332,7 +3359,7 @@ Here is the format you need to use to get the same behaviour as the
 default hardwired format:
 .Ex
 %b
-New mail for %u has arrived in %f:
+New %t for %u has arrived in %f:
 ----
 %-A
 ----%b

@@ -16,7 +16,7 @@
  * Original Author: Larry Wall <lwall@netlabs.com>
  *
  * $Log: dup2.c,v $
- * Revision 3.0.1.1  1997/02/20  11:34:52  ram
+ * Revision 3.0.1.1  1997/02/20 11:34:52  ram
  * patch55: created
  *
  * Revision 3.0.1.1  1994/01/24  13:58:37  ram

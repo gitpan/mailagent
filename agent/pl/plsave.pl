@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: plsave.pl,v $
-;# Revision 3.0.1.1  1996/12/24  14:57:58  ram
+;# Revision 3.0.1.1  1996/12/24 14:57:58  ram
 ;# patch45: allow '-' in package names
 ;#
 ;# Revision 3.0  1993/11/29  13:49:06  ram

@@ -1,4 +1,4 @@
-;# $Id: header.pl,v 3.0.1.1 1994/07/01 15:00:51 ram Exp $
+;# $Id: header.pl,v 3.0.1.2 2001/01/10 16:55:29 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: header.pl,v $
+;# Revision 3.0.1.2  2001/01/10 16:55:29  ram
+;# patch69: new mta_date() routine replaces old fake_date()
+;# patch69: added msgid_cleanup() and parsedate() routines
+;#
 ;# Revision 3.0.1.1  1994/07/01  15:00:51  ram
 ;# patch8: fixed leading From date format (spacing problem)
 ;#
@@ -87,7 +91,7 @@ sub clean {
 
 	$added .= &check(*array, 'From', $cf'user, 1);
 	$added .= &check(*array, 'To', $cf'user, 1);
-	$added .= &check(*array, 'Date', &fake_date, 0);
+	$added .= &check(*array, 'Date', &mta_date(), 0);
 	$added .= &check(*array, 'Subject', '<none>', 1);
 
 	&push(*array, &warning($added, 1)) if $added ne '';
@@ -124,16 +128,29 @@ sub push {
 	push(@array, '') if $last eq '';	# Restore EOH
 }
 
-# Compute a valid date field suitable for mail header
-sub fake_date {
-	require 'ctime.pl';
-	local($date) = &'ctime(time);
-	# Traditionally, MTAs add a ',' right after week day
-	# Moreover, RFC-822 and RFC-1123 require a leading 0 if hour < 10
-	$date =~ s/^(\w+)(\s)/$1,$2/;
-	$date =~ s/\s(\d:\d\d:\d\d)\b/0$1/;
-	chop($date);					# Ctime adds final new-line
-	$date;
+# Compute a valid date field suitable for mail header:
+#    Mon,  8 Jan 2001 05:14:00 +0100
+# If optional $time arg is missing, use current time.
+sub mta_date {
+	my ($time) = @_;
+	$time = time unless defined $time;
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($time);
+	my ($gmmin, $gmhour, $gmyday) = (gmtime($time))[1,2,7];
+	my @days   = qw(Sun Mon Tue Wed Thu Fri Sat);
+	my @months = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+
+	# Compute delta in minutes between local time and GMT
+	$yday = -1 if $gmyday == 0 && $yday >= 364;
+	$gmyday = -1 if $yday == 0 && $gmyday >= 364;
+	$gmhour += 24 if $gmyday > $yday;
+	my $dhour = ($gmyday < $yday) ? $hour + 24 : $hour;
+	my $dmin = ($dhour * 60 + $min) - ($gmhour * 60 + $gmmin);
+
+	# Must convert delta into +/-HHMM format
+	my $d = 100 * int($dmin / 60) + (abs($dmin) % 60) * ($dmin > 0 ? 1 : -1);
+
+	sprintf "%s, %2d %s %4d %02d:%02d:%02d %+05d",
+		$days[$wday], $mday, $months[$mon], 1900+$year, $hour, $min, $sec, $d;
 }
 
 # Normalizes header: every first letter is uppercase, the remaining of the
@@ -143,6 +160,39 @@ sub normalize {
 	local($field_name) = @_;			# Header to be normalized
 	$field_name =~ s/(\w+)/\u\L$1/g;
 	$field_name;						# Return header name with proper case
+}
+
+# Clean-up message ID string passed as reference.
+# Returns true if string was changed.
+sub msgid_cleanup {
+	my $mref = shift;
+	local $_ = $$mref;
+	my $fixup = 0;
+
+	# Regexps are written to work on both a single <id> as found in Message-ID
+	# lines, and on a space-separated list as found in References lines.
+
+	s/>\s</>\01</g;				# Protect spaces between IDs for References
+	$fixup++ if s/\s/-/g;		# No spaces
+	$fixup++ if s/_/-/g;		# No _ in names
+	$fixup++ if s/\.+>\b/>/g;	# No trailing dot(s)
+	$fixup++ if s/\.\.+/./g;	# No consecutive dots
+	s/>\01</> </g;				# Restore spaces between IDs
+	$$mref = $_ if $fixup;
+	return $fixup;
+}
+
+# Parse date from header and return its timestamp (seconds since the Epoch)
+sub parsedate {
+	my ($str) = @_;
+
+	# Look for +/-HHMM adjustment wrt GMT time
+	my ($sign, $hh_d, $mm_d) = $str =~ /\s([-+])(\d\d)(\d\d)\b/;
+	my $dt = 0;
+	$dt = (($sign eq '+') ? +1 : -1) * ($hh_d * 60 + $mm_d) if $sign ne '';
+
+	# Parse date to compute timestamp since Jan 1, 1970 GMT.
+	return main::getdate($str, time, -$dt);
 }
 
 # Format header field to fit into 78 columns, each continuation line being

@@ -1,4 +1,4 @@
-;# $Id: biff.pl,v 3.0.1.4 1996/12/24 14:48:03 ram Exp $
+;# $Id: biff.pl,v 3.0.1.5 2001/01/10 16:53:13 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: biff.pl,v $
+;# Revision 3.0.1.5  2001/01/10 16:53:13  ram
+;# patch69: added support for news article biffing
+;#
 ;# Revision 3.0.1.4  1996/12/24  14:48:03  ram
 ;# patch45: long header lines are now trimmed to 79 chars max
 ;#
@@ -46,8 +49,9 @@ sub biff {
 	local(@ttys) = &utmp'ttys($cf'user);
 	@ttys = <tty*> if $test_mode;	# For regression tests
 	&add_log("$cf'user is logged on @ttys") if $loglvl > 15;
+	my %done;						# Solaris might give same tty twice
 	foreach $tty (@ttys) {
-		&biff'notify($tty, $folder, $type);
+		&biff'notify($tty, $folder, $type) unless $done{$tty};
 	}
 }
 
@@ -74,9 +78,14 @@ sub notify {
 
 	# Headers to print are in 'biffhead', or default to the following list
 	# We set it now so that it can be seen by both &headers and &all
+	# Don't show "To" or "Cc" if biffing for a news article
 
 	local(@head) = ('From', 'To', 'Subject', 'Date');
 	@head = split(/,\s*/, $cf'biffhead) if defined $cf'biffhead;
+	@head = grep(!/^(To|Cc)$/, @head) if $type eq "news";
+
+	# Set proper 'mtype' parameter, used by the biffing %t macro.
+	local($mtype) = $type eq "news" ? "article" : "mail";
 
 	# If the 'biffmsg' parameter is defined, then this file defines the
 	# biffing format to be used. Otherwise, a default hardwired format is
@@ -111,28 +120,38 @@ sub custom {
 	local($plus) = '';		# A '+' character if MH folder, nothing otherwise
 	local($folddir);		# Folder directory
 
-	($dir, $base) = $folder =~ m|^(.*)/(.*)|;
+	if ($type eq 'news') {
+		($dir, $base) = ('', $folder);
+	} else {
+		($dir, $base) = $folder =~ m|^(.*)/(.*)|;
+	}
 
-	# Add distinct macros for each kind of folder: file, dir or MH.
+	# Add distinct macros for each kind of folder: file, dir, MH or news.
 	if ($type eq 'MH' || $type eq 'dir') {
 		($dir, $base) = $path =~ m|^(.*)/(.*)|;
 		$fpath = $dir;		# Last component is a message "number"
 	} else {
 		$fpath = $path;
 	}
-	if ($type ne 'MH') {
-		$folddir = $'XENV{'maildir'};		# Folder directory location
-		$folddir =~ s/~/$cf'home/g;			# ~ substitytion
-		$folddir = "$cf'home/Mail" unless $folddir;	# Default folders in ~/Mail
-	} else {
+
+	if ($type eq 'MH') {
 		&mh'profile;		# Read MH profile if not already done
 		$folddir = "$cf'home/$mh'Profile{'path'}";
 		$plus = '+';
+	} elsif ($type eq 'news') {
+		$folddir = '';
+		$fbase = $fpath;
+	} else {
+		$folddir = $'XENV{'maildir'};		# Folder directory location
+		$folddir =~ s/~/$cf'home/g;			# ~ substitytion
+		$folddir = "$cf'home/Mail" unless $folddir;	# Default folders in ~/Mail
 	}
 
-	local($foldmatch);
-	($foldmatch = $folddir) =~ s/(\W)/\\$1/g;	# Quote meta-characters
-	($fbase = $fpath) =~ s|^$foldmatch/||;
+	if ($type ne 'news') {
+		local($foldmatch);
+		($foldmatch = $folddir) =~ s/(\W)/\\$1/g;	# Quote meta-characters
+		($fbase = $fpath) =~ s|^$foldmatch/||;
+	}
 
 	# Lastly, using %:l gets the standard %l. This requires knowing about
 	# &macros_subst() internals for substition (% replaced by ^B!).
@@ -143,6 +162,7 @@ d	$biff'folddir
 f	$biff'folder
 m	$biff'plus
 p	$biff'path
+t	$biff'mtype
 B	$biff'fbase
 D	$biff'dir
 F	$biff'base
@@ -168,7 +188,7 @@ sub beep { "\07" x $env'beep; }
 
 # Default biffing
 sub default {
-	print TTY "$n\07New mail for $cf'user has arrived in $folder:$n";
+	print TTY "$n\07New $mtype for $cf'user has arrived in $folder:$n";
 	print TTY "----$n";
 	print TTY &all;
 	print TTY "$n----\07$n";

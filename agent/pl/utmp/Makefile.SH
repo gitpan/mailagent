@@ -101,7 +101,7 @@ depend:: ../../../mkdep
 depend::
 	($(SED) '/^# DO NOT DELETE/q' Makefile && \
 	$(MKDEP) $(SOURCES) | \
-	$(SED) 's/: \.\//: /; /\/usr\/include/d' \
+	$(SED) 's/: \.\//: /; s/\/usr\/include[^ ]*//g; /^[ 	]*\\$$/d' \
 	) > Makefile.new
 	cp Makefile Makefile.bak
 	cp Makefile.new Makefile

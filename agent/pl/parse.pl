@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.13 1999/07/12 13:53:30 ram Exp $
+;# $Id: parse.pl,v 3.0.1.14 2001/01/10 16:55:56 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.14  2001/01/10 16:55:56  ram
+;# patch69: allow direct IP numbers in Received fields
+;#
 ;# Revision 3.0.1.13  1999/07/12  13:53:30  ram
 ;# patch66: weird Received: logging moved to higher levels
 ;#
@@ -421,9 +424,14 @@ sub relay_list {
 		}
 
 		# Validate the host. It must be either an internet [xx.yy.zz.tt] form,
-		# or a domain name. This also skips things like 'localhost'.
+		# or a domain name. This also skips things like 'localhost'.  We
+		# also accept pure xx.yy.zz.tt (i.e. without surrounding brackets)
 
-		unless ($host =~ /^\[[\d.]+\]$/ || $host =~ /^[\w-.]+\.\w{2,4}$/) {
+		unless (
+			$host =~ /^\[[\d.]+\]$/							||
+			$host =~ /^[\w-.]+\.\w{2,4}$/					||
+			$host =~ /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/
+		) {
 			next if $host =~ /^[\w-]+$/;	# No message for unqualified hosts
 			&add_log("ignoring bad host $host in Received: line '$received'")
 				if $loglvl > 6;

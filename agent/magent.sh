@@ -35,7 +35,7 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
-# Revision 3.0.1.16  1999/01/13  18:08:48  ram
+# Revision 3.0.1.16  1999/01/13 18:08:48  ram
 # patch64: changed agent_wait to AGENT_WAIT, now holding full path
 #
 # Revision 3.0.1.15  1997/09/15  15:05:06  ram

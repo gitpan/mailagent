@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: lexical.pl,v $
-;# Revision 3.0.1.4  1997/01/31  18:07:55  ram
+;# Revision 3.0.1.4  1997/01/31 18:07:55  ram
 ;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
 ;#
 ;# Revision 3.0.1.3  1995/02/03  18:01:58  ram

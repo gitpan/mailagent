@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: apply.t,v $
-# Revision 3.0.1.1  1999/07/12  13:56:51  ram
+# Revision 3.0.1.1  1999/07/12 13:56:51  ram
 # patch66: added test for variable propagation
 #
 # Revision 3.0  1993/11/29  13:49:26  ram

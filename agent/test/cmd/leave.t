@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: leave.t,v $
-# Revision 3.0.1.1  1994/07/01  15:07:21  ram
+# Revision 3.0.1.1  1994/07/01 15:07:21  ram
 # patch8: added tests for new fromall config option
 #
 # Revision 3.0  1993/11/29  13:49:33  ram

@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: acs_rqst.pl,v $
-;# Revision 3.0.1.4  1997/09/15  15:08:16  ram
+;# Revision 3.0.1.4  1997/09/15 15:08:16  ram
 ;# patch57: code factorized within acs_lock()
 ;#
 ;# Revision 3.0.1.3  1997/02/20  11:41:19  ram

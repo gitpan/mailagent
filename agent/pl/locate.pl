@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: locate.pl,v $
-;# Revision 3.0.1.2  1999/07/12  13:52:12  ram
+;# Revision 3.0.1.2  1999/07/12 13:52:12  ram
 ;# patch66: added ~ substitution in locate_program()
 ;#
 ;# Revision 3.0.1.1  1996/12/24  14:54:19  ram

@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: annotate.t,v $
-# Revision 3.0.1.1  1995/01/03  18:20:17  ram
+# Revision 3.0.1.1  1995/01/03 18:20:17  ram
 # patch24: added tests for new -u option
 #
 # Revision 3.0  1993/11/29  13:49:26  ram

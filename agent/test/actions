@@ -2,7 +2,7 @@
 # Mailagent rules for action regression tests
 #
 
-# $Id: actions,v 3.0.1.12 1999/07/12 13:56:28 ram Exp $
+# $Id: actions,v 3.0.1.13 2001/01/10 16:58:28 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: actions,v $
+# Revision 3.0.1.13  2001/01/10 16:58:28  ram
+# patch69: fixed dates for the SELECT test to avoid failures past 2001
+#
 # Revision 3.0.1.12  1999/07/12  13:56:28  ram
 # patch66: added tests for variable propagation in APPLY
 #
@@ -311,11 +314,11 @@ X-Tag: /save #3/	{ SAVE ok };
 
 X-Tag: /select/
 {
-	SELECT (Jan 2 1970 .. Jan 1 2001) SAVE one;
+	SELECT (Jan 2 1970 .. Dec 31 2037) SAVE one;
 	SELECT (last month .. last minute) SAVE two;
 	SELECT (last minute .. next minute) SAVE three;
 	SELECT (now - 10 seconds .. now + 5 minutes) SAVE four;
-	SELECT (Jan 1 2001 .. Jan 2 1970) SAVE five;
+	SELECT (Dec 31 2037 .. Jan 2 1970) SAVE five;
 }
 
 X-Tag: /unknown #1/	{ unknown_command; DELETE };

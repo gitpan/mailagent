@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: unpack.pl,v $
-;# Revision 3.0.1.1  1996/12/24  15:01:04  ram
+;# Revision 3.0.1.1  1996/12/24 15:01:04  ram
 ;# patch45: allow '-' in package names
 ;#
 ;# Revision 3.0  1993/11/29  13:49:18  ram

@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
- * Revision 3.0.1.13  1997/09/15  15:03:51  ram
+ * Revision 3.0.1.13  1997/09/15 15:03:51  ram
  * patch57: changed ordering of include files
  *
  * Revision 3.0.1.12  1997/02/20  11:38:07  ram

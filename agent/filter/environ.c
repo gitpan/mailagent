@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: environ.c,v $
- * Revision 3.0.1.2  1996/12/24  13:52:05  ram
+ * Revision 3.0.1.2  1996/12/24 13:52:05  ram
  * patch45: new get_env() routine, plus typo fixes
  * patch45: make sure new environment lines are smaller than MAX_STRING
  *

@@ -22,7 +22,7 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: msg.c,v $
- * Revision 3.0.1.5  1999/01/13  18:08:06  ram
+ * Revision 3.0.1.5  1999/01/13 18:08:06  ram
  * patch64: added tag-checking heuristic to say()
  *
  * Revision 3.0.1.4  1996/12/24  13:59:31  ram

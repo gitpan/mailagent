@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cdir.pl,v $
-;# Revision 3.0.1.1  1995/03/21  12:56:26  ram
+;# Revision 3.0.1.1  1995/03/21 12:56:26  ram
 ;# patch35: created
 ;#
 ;#

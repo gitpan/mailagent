@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: logfile.c,v 3.0.1.4 1999/01/13 18:07:00 ram Exp $
+ * $Id: logfile.c,v 3.0.1.5 2001/01/10 16:50:08 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: logfile.c,v $
+ * Revision 3.0.1.5  2001/01/10 16:50:08  ram
+ * patch69: fixed incorrect selection of sys_errlist[]
+ *
  * Revision 3.0.1.4  1999/01/13  18:07:00  ram
  * patch64: only use last two digits from year in logfiles
  *
@@ -219,7 +222,7 @@ char *where;
 	 * it is available, otherwise simply print the error code number.
 	 */
 
-#ifdef HAS_SYS_ERRLIST
+#if !defined(HAS_STRERROR) && defined(HAS_SYS_ERRLIST)
 	extern int sys_nerr;					/* Size of sys_errlist[] */
 	extern char *sys_errlist[];				/* Maps error code to string */
 #endif

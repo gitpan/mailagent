@@ -9,7 +9,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: unkit.pl,v $
-# Revision 3.0.1.2  1995/01/03  18:22:55  ram
+# Revision 3.0.1.2  1995/01/03 18:22:55  ram
 # patch24: now uses cf'email for the notification address
 # patch24: fixed a typo in sv_kfrom variable spelling
 #

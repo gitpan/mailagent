@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
-;# Revision 3.0.1.9  1999/07/12  13:49:39  ram
+;# Revision 3.0.1.9  1999/07/12 13:49:39  ram
 ;# patch66: moved localization of the %Variable hash for APPLY
 ;#
 ;# Revision 3.0.1.8  1997/09/15  15:13:15  ram

@@ -27,7 +27,7 @@ $spitshell >/dev/null <<!GROK!THIS!
 #  of the source tree for mailagent 3.0.
 #
 # $Log: power.SH,v $
-# Revision 3.0  1993/11/29  13:47:58  ram
+# Revision 3.0  1993/11/29 13:47:58  ram
 # Baseline for mailagent 3.0 netwide release.
 #
 !GROK!THIS!

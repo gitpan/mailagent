@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: l.t,v $
-# Revision 3.0.1.1  1994/09/22  14:41:21  ram
+# Revision 3.0.1.1  1994/09/22 14:41:21  ram
 # patch12: now checks that callout messages are properly listed
 #
 # Revision 3.0  1993/11/29  13:50:18  ram

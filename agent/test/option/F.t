@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: F.t,v $
-# Revision 3.0.1.1  1994/01/26  09:36:08  ram
+# Revision 3.0.1.1  1994/01/26 09:36:08  ram
 # patch5: created
 #
 

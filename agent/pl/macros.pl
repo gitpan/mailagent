@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: macros.pl,v $
-;# Revision 3.0.1.5  1999/01/13  18:14:25  ram
+;# Revision 3.0.1.5  1999/01/13 18:14:25  ram
 ;# patch64: new %Y macro for 4-digit year, %y being year modulo 100
 ;#
 ;# Revision 3.0.1.4  1995/01/25  15:24:32  ram

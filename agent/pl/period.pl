@@ -1,4 +1,4 @@
-;# $Id: period.pl,v 3.0 1993/11/29 13:49:05 ram Exp $
+;# $Id: period.pl,v 3.0.1.1 2001/01/10 16:56:06 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: period.pl,v $
+;# Revision 3.0.1.1  2001/01/10 16:56:06  ram
+;# patch69: added relative_age()
+;#
 ;# Revision 3.0  1993/11/29  13:49:05  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -44,5 +47,36 @@ sub seconds_in_period {
 		$sec = 86400;			# Unrecognized: defaults to one day
 	}
 	$number * $sec;				# Number of seconds in the period
+}
+
+#############################################################
+# given seconds, convert to 7y4d9h23m15s format.
+# Author: Tom Christiansen
+#############################################################
+sub relative_age {
+	my $secs = shift;
+	my($years, $days, $hours, $mins);
+
+	$years = int($secs / (365 * 24 * 60 * 60));
+	$secs -= $years    * (365 * 24 * 60 * 60);
+
+	$days  = int($secs / (24 * 60 * 60));
+	$secs -= $days     * (24 * 60 * 60);
+
+	$hours = int($secs / (60 * 60));
+	$secs -= $hours    * (60 * 60);
+
+	$mins  = int($secs / 60);
+	$secs -= $mins     * 60;
+
+	my $retstr  = '';
+	$retstr .= $years . "y" if $years;
+	$retstr .= $days  . "d" if $days;
+	$retstr .= $hours . "h" if $hours;
+	$retstr .= $mins  . "m" if $mins;
+	$retstr .= $secs  . "s" if $secs;
+
+	return $retstr;
+
 }
 

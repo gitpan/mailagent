@@ -1,4 +1,4 @@
-;# $Id: rfc822.pl,v 3.0.1.4 1998/07/28 17:06:15 ram Exp $
+;# $Id: rfc822.pl,v 3.0.1.5 2001/01/10 16:57:11 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rfc822.pl,v $
+;# Revision 3.0.1.5  2001/01/10 16:57:11  ram
+;# patch69: dropped support of '_' and '.' stripping in last_name()
+;# patch69: added gen_message_id()
+;#
 ;# Revision 3.0.1.4  1998/07/28  17:06:15  ram
 ;# patch62: use non-greedy pattern match to avoid extra spaces
 ;#
@@ -92,14 +96,9 @@ sub login_name {
 	}
 }
 
-# Extract last name from a login name like First_name.Last_name and put it
-# in lowercase. Hence, Raphael.Manfredi will become manfredi. Since '_' or '.'
-# characters could be legitimely used in a login name (or distribution list),
-# we remove it only when followed by an upper-cased letter.
+# Lower-case name only
 sub last_name {
 	local($_) = shift(@_);			# The sender's login name
-	s/.*\.([A-Z]\w*)/$1/;			# Keep only the last name (. separation)
-	s/.*_([A-Z]\w*)/$1/;			# Same as above (_ separation)
 	tr/A-Z/a-z/;					# And lowercase it
 	$_;
 }
@@ -126,5 +125,19 @@ sub internet_info {
 	}
 	unshift(@parts, '') if @parts == 2;		# No host name
 	@parts[($#parts - 2) .. $#parts];		# ($host, $domain, $country)
+}
+
+# Generate a unique message ID
+sub gen_message_id {
+	my $now = time;
+	my @alphabet = ('a' .. 'z', '0' .. '9', 'A' .. 'Z');
+	my $randword = '';
+	for (my $i = 0; $i < 10; $i++) {
+		$randword .= $alphabet[rand @alphabet];
+	}
+	my $domain = &domain_addr;				# Local domain where we run
+	my $id = "<mailagent-$now-$randword\@$domain>";
+	&header'msgid_cleanup(\$id);			# Clean up: domain wrongly set?
+	return $id;
 }
 

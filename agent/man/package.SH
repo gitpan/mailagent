@@ -33,7 +33,7 @@ $spitshell >package.$manext <<!GROK!THIS!
 '''  Original Author: Graham Stoney, 1993
 '''
 ''' $Log: package.SH,v $
-''' Revision 3.0.1.4  1999/07/12  13:47:00  ram
+''' Revision 3.0.1.4  1999/07/12 13:47:00  ram
 ''' patch66: updated my e-mail address
 '''
 ''' Revision 3.0.1.3  1996/12/24  14:44:21  ram

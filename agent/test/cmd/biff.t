@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: biff.t,v $
-# Revision 3.0.1.1  1995/08/07  16:28:37  ram
+# Revision 3.0.1.1  1995/08/07 16:28:37  ram
 # patch37: created
 #
 

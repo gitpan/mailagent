@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: callout.pl,v $
-;# Revision 3.0.1.3  1997/02/20  11:42:52  ram
+;# Revision 3.0.1.3  1997/02/20 11:42:52  ram
 ;# patch55: ensure %Header and $wmode are localized in the main package
 ;#
 ;# Revision 3.0.1.2  1995/02/03  18:01:12  ram

@@ -1,4 +1,4 @@
-;# $Id: runcmd.pl,v 3.0.1.7 1998/03/31 15:27:18 ram Exp $
+;# $Id: runcmd.pl,v 3.0.1.8 2001/01/10 16:57:23 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: runcmd.pl,v $
+;# Revision 3.0.1.8  2001/01/10 16:57:23  ram
+;# patch69: new -b switch for POST to request biffing
+;#
 ;# Revision 3.0.1.7  1998/03/31  15:27:18  ram
 ;# patch59: declared the new "ON" command
 ;#
@@ -268,7 +271,7 @@ sub init_filter {
 		'BIFF',		'l',
 		'MACRO',	'rdp',
 		'NOP',		'tf',
-		'POST',		'l',
+		'POST',		'lb',
 		'PROTECT',	'lu',
 		'RECORD',	'acr',
 		'REJECT',	'ft',

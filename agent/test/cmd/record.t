@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: record.t,v $
-# Revision 3.0.1.1  1994/01/26  09:35:57  ram
+# Revision 3.0.1.1  1994/01/26 09:35:57  ram
 # patch5: added tests for tag support
 #
 # Revision 3.0  1993/11/29  13:49:42  ram

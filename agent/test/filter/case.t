@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: case.t,v $
-# Revision 3.0  1993/11/29  13:49:57  ram
+# Revision 3.0  1993/11/29 13:49:57  ram
 # Baseline for mailagent 3.0 netwide release.
 #
 

@@ -11,7 +11,7 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: c.t,v $
-# Revision 3.0.1.1  1997/09/15  15:18:45  ram
+# Revision 3.0.1.1  1997/09/15 15:18:45  ram
 # patch57: uses an empty file instead of /dev/null
 #
 # Revision 3.0  1993/11/29  13:50:13  ram

@@ -1,3 +1,83 @@
+Wed Jan 10 18:10:29 MET 2001   Raphael Manfredi <Raphael_Manfredi@pobox.com>
+
+. Description:
+
+	Updated date in README and my e-mail address.
+
+	Documented my CPAN directory URL in agent/README.
+
+	Compilation bug fixes in filter:
+	. switched to dynamic init of standard file array for GNU libc
+	. fixed incorrect selection of sys_errlist[]
+
+	Changed semantics of "tome": the '.' and '_' in names is no
+	longer stripped.  If your full name was, say, raphael_manfredi,
+	then you could set "tome: manfredi" and it worked.  The heuristics
+	were bad, and it prevented doing useful things.  Let's drop
+	support for that and see if anyone complains. ;-)
+
+	Updated POST to current practices.  In particular, it has been
+	tested to establish a mail -> news gateway with INN 1.7.2.
+	POST also support a new "-b" switch to cause article biffing, just
+	like saving in a folder triggers mail biffing.
+
+	The following new features are available in POST:
+	. fix lines like From: A.B <a@b> into From: "A.B" <a@b>
+	. remove duplicate Content-Transfer-Encoding and other MIME headers
+	. generate proper References: line and fixes bad Message-ID lines.
+	. fix date if too old or too far in the future
+
+	In the new misc/news directory, you'll find a program and instruction
+	to setup a news -> mail gateway (tested with INN 1.7.2), thereby
+	making it possible to build a bi-directional mail <=> news gateway
+	with mailagent.
+
+	Fixed wrong lexical attribute synthesis for numbers during date
+	parsing, which cause 08 and 09 to not parse at all.
+
+	Fixed sed command that produced bad dependencies on linux in the
+	agent/pl/utmp directory.
+
+	Fixed dates for the SELECT test to avoid failures past year 2001.
+
+. Files changed:
+
+	* agent/filter/io.c: Switched to dynamic init of standard file array
+	for GNU libc.
+
+	* agent/filter/logfile.c: Fixed incorrect selection of sys_errlist[].
+
+	* agent/man/mailagent.SH: Changed semantics of "tome".  Updated POST
+	to current practices.  Documented biffing macros for news article.
+
+	* agent/pl/actions.pl: Replaced calls to fake_date() by mta_date(). 
+	Rewrote the POST command, and added the -b switch.
+
+	* agent/pl/biff.pl: Added support for news article biffing.
+
+	* agent/pl/getdate.pl: Fixed wrong lexical attribute synthesis for
+	numbers.
+
+	* agent/pl/header.pl: New mta_date() routine replaces old
+	fake_date().  Added msgid_cleanup() and parsedate() routines.
+
+	* agent/pl/parse.pl: Allow direct IP numbers in Received fields.
+
+	* agent/pl/period.pl: Added relative_age().
+
+	* agent/pl/rfc822.pl: Dropped support of '_' and '.' stripping in
+	last_name().  Added gen_message_id().
+
+	* agent/pl/runcmd.pl: New -b switch for POST to request biffing.
+
+	* agent/test/actions: Fixed dates for the SELECT test to avoid
+	failures past 2001.
+
+	* agent/test/cmd/vacation.t: Changed "tome" settings due to dropping
+	of dot stripping.
+
+	* misc/news/newsgate, misc/news/ml.map: Created.
+
 Mon Jul 12 16:05:35 METDST 1999   Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 . Description:

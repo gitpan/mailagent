@@ -11,7 +11,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
-;# Revision 3.0.1.1  1994/07/01  15:10:19  ram
+;# Revision 3.0.1.1  1994/07/01 15:10:19  ram
 ;# patch8: now uses the cp_mail routine to copy mail
 ;#
 ;# Revision 3.0  1993/11/29  13:50:23  ram

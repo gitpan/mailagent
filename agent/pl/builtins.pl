@@ -9,7 +9,7 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: builtins.pl,v $
-;# Revision 3.0.1.1  1994/09/22  14:10:40  ram
+;# Revision 3.0.1.1  1994/09/22 14:10:40  ram
 ;# patch12: added escapes in strings for perl5 support
 ;# patch12: builtins are now looked for in &run_builtins
 ;#
