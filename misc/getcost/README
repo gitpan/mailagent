@@ -83,12 +83,22 @@ option (see below) must be used.
 
 ***** Options:
 
+	-a	Apply all body rules, i.e. do not stop scoring for a body line
+	    at the first match.  Scoring always stops when the delta cost
+		associated with a pattern match is 0.
+
 	-B	Penalize binary characters.  Each line that contains a
 		character with bit 7 set gets a score of -100.  This is
 		done only if no other patterns matched.
 
 	-b	Don't do any score processing on the message body.
 		Scoring is done only upon the message header.
+
+	-c	Collect sentences and only apply patterns on full ones. This
+		is useful in conjunction with -a, and also fights spam messages
+		with a word on each line, to specifically defeat scoring filters
+		which rely on consecutive words. This has no impact on -L, which
+		still focuses on physical lines in the message, not logical ones.
 
 	-D	(For debugging)  Dump scanner code.  For performance
 		reasons, the scanner for the message body is converted
@@ -101,7 +111,7 @@ option (see below) must be used.
 		is assigned a score.  This option is invaluable for
 		seeing how getcost arrives at a cost.
 
-	-f configfile
+	-f  configfile
 		Use "configfile" instead of $HOME/.spamconfig
 
 	-k  Keep going applying the rules, even when the -1000000
@@ -114,8 +124,10 @@ option (see below) must be used.
 		or -120.  This is done only if no other patterns
 		matched.
 
-	-m	If your login name appears in the To: header, a cost of
-		500 is assigned to the line.  Deprecated.
+	-m	Multiple matches: apply pattern everywhere on the line, not
+		just once. Useful with -c, to keep counting everything.
+		NB: this re-uses the deprecated "-m" flag which was adding
+		500 to the cost when your name appeared in the To: line.
 
 	-o	If the X-Openmail-Hops: header line exists, assign a
 		cost of 10000000 to the line.  Generally used to allow

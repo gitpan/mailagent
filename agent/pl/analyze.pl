@@ -1,4 +1,4 @@
-;# $Id: analyze.pl,v 3.0.1.8 1997/09/15 15:13:15 ram Exp $
+;# $Id: analyze.pl,v 3.0.1.9 1999/07/12 13:49:39 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
+;# Revision 3.0.1.9  1999/07/12  13:49:39  ram
+;# patch66: moved localization of the %Variable hash for APPLY
+;#
 ;# Revision 3.0.1.8  1997/09/15  15:13:15  ram
 ;# patch57: $lastcmd now global from analyze_mail() for BACK processing
 ;# patch57: indication of relaying hosts now selectively emitted
@@ -68,6 +71,7 @@ sub analyze_mail {
 	local($file) = shift(@_);	# Mail file to be parsed
 	local($mode) = 'INITIAL';	# Initial working mode
 	local($wmode) = $mode;		# Needed for statistics routines
+	local(%Variable);			# User-defined variables, visible through APPLY
 
 	# Set-up proper environment. Dynamic scoping is used on those variables
 	# for the APPLY command (see the &apply function). Note that the $wmode
@@ -186,7 +190,6 @@ sub apply_rules {
 	local(@Executed);			# Records already executed rules
 	local($selist);				# Key used to detect identical selector lists
 	local(%Inverted);			# Records inverted '!' selectors which matched
-	local(%Variable);			# User-defined variables
 
 	# The @Executed array records whether a specified action for a rule was
 	# executed. Loops are possible via the RESTART action, and as there is

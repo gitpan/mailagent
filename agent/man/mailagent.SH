@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.22 1999/01/13 18:10:52 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.23 1999/07/12 13:46:20 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,10 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.23  1999/07/12  13:46:20  ram
+''' patch66: variables are now propagated back and forth through APPLY
+''' patch66: updated my e-mail address
+'''
 ''' Revision 3.0.1.22  1999/01/13  18:10:52  ram
 ''' patch64: added %Y macro for 4-digit year output
 ''' patch64: agent.wait file moved from Queue to Spool
@@ -1265,6 +1269,9 @@ select lines #3 to #5 (included) from the mail body, whereas \fITo Cc <1,3>:\fR
 would focus on the first three addresses on each To: or Cc: header lines.
 Negative values refer to that many lines or addresses back from the end, i.e.
 \fICc <-2,->:\fR selects the last two addresses on the Cc: line.
+A single number such as \fI<2>\fR is understood as \fI<2, 2>\fR, i.e. it
+select only one item in the list, \fI<->\fR meaning everything (and being
+therefore redundant).
 .PP
 The selector is then followed by a pattern within '/' or by a single name.
 In order to ease the writing of the rules, the semantic of a single name varies
@@ -1744,7 +1751,13 @@ APPLY \fIrulefile\fR
 Get the rules held in \fIrulefile\fR and apply them to the current message.
 The filter will begin in whatever mode you were when using this command,
 but no feed back will occur, i.e. any mode changing will be lost when
-returning from the command. If mail is saved during the application of
+returning from the command.
+.sp
+Variables (see the %# macro) are propagated back and forth through APPLY,
+meaning you see variables set by the caller, and you may change their
+values or create new variables for the caller to later use.
+.sp
+If mail is saved during the application of
 the rules, then the corresponding flag is set in the main filter (the one
 that started the APPLY command). You may nest them, of course.
 (Fails if mail is not saved by the rules held in \fIrulefile\fR)
@@ -4727,7 +4740,7 @@ Parsing of the rule file should be done by a real parser and not lexically.
 Or at least, it should be possible to escape otherwise meaningful characters
 like ';' or '}' within the rules.
 .SH AUTHOR
-Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>.
+Raphael Manfredi <Raphael_Manfredi@pobox.com>.
 .SH "SEE ALSO"
 maildist($manext), mailhelp($manext), maillist($manext), mailpatch($manext),
 perl(1).

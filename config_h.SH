@@ -15,7 +15,7 @@ case "$0" in
 */*) cd `expr X$0 : 'X\(.*\)/'` ;;
 esac
 echo "Extracting config.h (with variable substitutions)"
-sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
+sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-def!#undef!'
 /*
  * This file was produced by running the config_h.SH script, which
  * gets its values from config.sh, which is generally produced by
@@ -25,7 +25,7 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  * that running config_h.SH again will wipe out any changes you've made.
  * For a more permanent change edit config.sh and rerun config_h.SH.
  *
- * \$Id: config_h.SH,v 3.0.1.10 1997/02/20 11:48:26 ram Exp $
+ * \$Id: config_h.SH,v 3.0.1.11 1999/07/12 13:58:36 ram Exp $
  */
 
 /*
@@ -113,8 +113,8 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
 #$d_rename HAS_RENAME	/**/
 
 /* HAS_SETPGID:
- *	This symbol, if defined, indicates that the setpgid routine is
- *	available to set process group ID.
+ *	This symbol, if defined, indicates that the setpgid(pid, gpid)
+ *	routine is available to set process group ID.
  */
 #$d_setpgid HAS_SETPGID	/**/
 
@@ -122,13 +122,13 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  *	This symbol, if defined, indicates that the setpgrp routine is
  *	available to set the current process group.
  */
-/* USE_BSDPGRP:
- *	This symbol, if defined, indicates that the BSD notion of process
- *	group is to be used. For instance, you have to say setpgrp(pid, pgrp)
- *	instead of the USG setpgrp().
+/* USE_BSD_SETPGRP:
+ *	This symbol, if defined, indicates that setpgrp needs two
+ *	arguments whereas USG one needs none.  See also HAS_SETPGID
+ *	for a POSIX interface.
  */
 #$d_setpgrp HAS_SETPGRP		/**/
-#$d_bsdpgrp USE_BSDPGRP		/**/
+#$d_bsdsetpgrp USE_BSD_SETPGRP	/**/
 
 /* HAS_SETRGID:
  *	This symbol, if defined, indicates that the setrgid routine is available
@@ -294,8 +294,8 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
 #$i_unistd I_UNISTD		/**/
 
 /* INTSIZE:
- *	This symbol contains the size of an int, so that the C preprocessor
- *	can make decisions based on it.
+ *	This symbol contains the value of sizeof(int) so that the C
+ *	preprocessor can make decisions based on it.
  */
 #define INTSIZE $intsize		/**/
 

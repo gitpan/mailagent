@@ -20,7 +20,7 @@ $spitshell >package.$manext <<!GROK!THIS!
 .TH PACKAGE $manext
 ''' @(#) Manual page for mailagent's package command
 '''
-''' $Id: package.SH,v 3.0.1.3 1996/12/24 14:44:21 ram Exp $
+''' $Id: package.SH,v 3.0.1.4 1999/07/12 13:47:00 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -33,6 +33,9 @@ $spitshell >package.$manext <<!GROK!THIS!
 '''  Original Author: Graham Stoney, 1993
 '''
 ''' $Log: package.SH,v $
+''' Revision 3.0.1.4  1999/07/12  13:47:00  ram
+''' patch66: updated my e-mail address
+'''
 ''' Revision 3.0.1.3  1996/12/24  14:44:21  ram
 ''' patch45: examples are now shown in constant-width font if possible
 ''' patch45: mentions command forwarding
@@ -185,7 +188,7 @@ mailagent's log file
 .SH AUTHORS
 Graham Stoney <greyham@research.canon.oz.au>
 .br
-Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com> (minor enhancements)
+Raphael Manfredi <Raphael_Manfredi@pobox.com> (minor enhancements)
 .SH "SEE ALSO"
 edusers($manext), mailagent($manext), metaconfig($manext).
 !GROK!THIS!

@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.12 1998/07/28 17:04:44 ram Exp $
+;# $Id: parse.pl,v 3.0.1.13 1999/07/12 13:53:30 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.13  1999/07/12  13:53:30  ram
+;# patch66: weird Received: logging moved to higher levels
+;#
 ;# Revision 3.0.1.12  1998/07/28  17:04:44  ram
 ;# patch62: become even more knowledgeable about Received lines
 ;#
@@ -386,8 +389,8 @@ sub relay_list {
 		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
 
 		if ($host eq '') {
-			&add_log("WARNING no relaying origin in Received: line '$received'")
-				if $loglvl > 4;
+			&add_log("NOTICE no relaying origin in Received: line '$received'")
+				if $loglvl > 6;
 			next;
 		}
 
@@ -414,7 +417,7 @@ sub relay_list {
 		# stacked, i.e. the last one we parse here...
 
 		unless (/\s*by\s+/i || /^\s*$/ || $i == $#received) {
-			&add_log("WARNING weird Received: line '$received'") if $loglvl > 5;
+			&add_log("weird Received: line '$received'") if $loglvl > 8;
 		}
 
 		# Validate the host. It must be either an internet [xx.yy.zz.tt] form,

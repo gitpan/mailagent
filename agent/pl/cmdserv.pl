@@ -1,4 +1,4 @@
-;# $Id: cmdserv.pl,v 3.0.1.6 1998/07/28 17:02:15 ram Exp $
+;# $Id: cmdserv.pl,v 3.0.1.7 1999/07/12 13:50:49 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
+;# Revision 3.0.1.7  1999/07/12  13:50:49  ram
+;# patch66: factorized servshell handling in function
+;#
 ;# Revision 3.0.1.6  1998/07/28  17:02:15  ram
 ;# patch62: shell used is now customized by the "servshell" variable
 ;#
@@ -581,12 +584,8 @@ sub exec_shell {
 		# For HPUX-10.x, grrr... have to use /bin/ksh otherwise that silly
 		# posix shell closes all the file descriptors greater than 2, defeating
 		# all our cute setting here...
-		local($shell) = defined($cf'servshell) ? $cf'servshell : 'sh';
-		$shell = &'locate_program($shell);
-		if (defined($cf'servshell) && !-x($shell)) {
-			&'add_log("WARNING invalid configured servshell $shell, using sh");
-			$shell = 'sh';
-		}
+
+		local($shell) = &servshell;
 
 		# Using a sub-block ensures exec() is followed by nothing
 		# and makes mailagent "perl -cw" clean, whatever that means ;-)
@@ -1240,6 +1239,18 @@ sub disable {
 		$Disabled{$cmd}++;
 	}
 	$cmdenv'disabled = join(',', sort keys %Disabled);	# No duplicates
+}
+
+# Get shell to run our commands
+sub servshell {
+	local($shell) = defined($cf'servshell) ? $cf'servshell : 'sh';
+	$shell = &'locate_program($shell);
+	if (defined($cf'servshell) && !-x($shell)) {
+		&'add_log("WARNING invalid configured servshell $shell, using sh")
+			if $'loglvl > 2;
+		$shell = 'sh';
+	}
+	$shell;
 }
 
 #

@@ -1,4 +1,4 @@
-;# $Id: matching.pl,v 3.0.1.3 1996/12/24 14:56:12 ram Exp $
+;# $Id: matching.pl,v 3.0.1.4 1999/07/12 13:52:50 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: matching.pl,v $
+;# Revision 3.0.1.4  1999/07/12  13:52:50  ram
+;# patch66: specialized <3> to mean <3,3> in mrange()
+;#
 ;# Revision 3.0.1.3  1996/12/24  14:56:12  ram
 ;# patch45: new Envelope and Relayed selectors
 ;# patch45: protect all un-escaped @ in patterns, for perl5
@@ -390,10 +393,14 @@ sub update_backref {
 # maximum value. An arbitrarily large number is returned in that case. If a
 # negative value is used, it is added to the number of items and rounded towards
 # 1 if still negative. That way, it is possible to request the last 10 items.
+# As a special case, <3> stands for <3,3> and thus <-> means everything.
 sub mrange {
 	local($range, $items) = @_;
 	local($min, $max) = (1, 9_999_999);
-	local($rmin, $rmax) = $range =~ /<\s*([\d-]*)\s*,\s*([\d-]*)\s*>/;
+	local($rmin, $rmax);
+	$rmin = $rmax = $1 if $range =~ /<\s*([\d-]+)\s*>/;
+	($rmin, $rmax) = $range =~ /<\s*([\d-]*)\s*,\s*([\d-]*)\s*>/
+		unless defined $rmin;
 	$rmin = $min if $rmin eq '' || $rmin eq '-';
 	$rmax = $max if $rmax eq '' || $rmax eq '-';
 	$rmin = $rmin + $items + 1 if $rmin < 0;

@@ -1,6 +1,6 @@
 # This tests mathching on list selectors like To or Newsgroups.
 
-# $Id: list.t,v 3.0.1.1 1996/12/24 15:03:03 ram Exp $
+# $Id: list.t,v 3.0.1.2 1999/07/12 13:57:15 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: list.t,v $
+# Revision 3.0.1.2  1999/07/12  13:57:15  ram
+# patch66: added new test cases
+#
 # Revision 3.0.1.1  1996/12/24  15:03:03  ram
 # patch45: added new tests for Relayed processing
 #
@@ -21,7 +24,7 @@
 do '../pl/filter.pl';
 
 sub cleanup {
-	for ($i = 1; $i <= 8; $i++) {
+	for ($i = 1; $i <= 9; $i++) {
 		unlink "$user.$i";
 	}
 	for ($i = 1; $i <= 3; $i++) {
@@ -78,16 +81,26 @@ unlink "$user.7";
 &replace_header('Newsgroups: comp.lang.perl, news.groups, news.answers');
 `$cmd`;
 $? == 0 || print "15\n";
--f "$user.8" || print "16\n";
+-f "$user.9" || print "16\n";
+unlink "$user.9";
+
+&replace_header('Newsgroups: none');
+&replace_header('To: abricot@eiffel.com, rame@hp.com');
+&add_header('To: root@localhost');
+
+`$cmd`;
+$? == 0 || print "17\n";
+-f "$user.1" && print "18\n";
+-f "$user.8" || print "19\n";
 unlink "$user.8";
 
 &replace_header('X-Tag: list #2');
 `$cmd`;
-$? == 0 || print "17\n";
--f 'ok.1' || print "18\n";
--f 'ok.2' || print "19\n";
--f 'ok.3' || print "20\n";
--f 'never' && print "21\n";
+$? == 0 || print "20\n";
+-f 'ok.1' || print "21\n";
+-f 'ok.2' || print "22\n";
+-f 'ok.3' || print "23\n";
+-f 'never' && print "24\n";
 
 &cleanup;
 unlink 'mail';

@@ -1,4 +1,4 @@
-;# $Id: listqueue.pl,v 3.0.1.5 1999/01/13 18:13:53 ram Exp $
+;# $Id: listqueue.pl,v 3.0.1.6 1999/07/12 13:51:28 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: listqueue.pl,v $
+;# Revision 3.0.1.6  1999/07/12  13:51:28  ram
+;# patch66: added one extra char for filename in queue listings
+;#
 ;# Revision 3.0.1.5  1999/01/13  18:13:53  ram
 ;# patch64: there may be empty lines in the agent.wait file
 ;#
@@ -75,7 +78,7 @@ Filename      Size Queue time  Status    Sender / Recipient list
 	local(%seen);				# Records addresses already seen
 	$: = " ,";					# Break recipients on white space or colon
 	format STDOUT =
-@<<<<<<<< @>>>>>>>@@<<<<<<<<<< @<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+@<<<<<<<<<@>>>>>>>@@<<<<<<<<<< @<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 $file     $size $star $queued  $status   $sender
                                          ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                          $recipient

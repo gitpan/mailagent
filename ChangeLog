@@ -1,3 +1,97 @@
+Mon Jul 12 16:05:35 METDST 1999   Raphael Manfredi <Raphael_Manfredi@pobox.com>
+
+. Description:
+
+	Regenerated Configure with newest metaconfig: no longer ask to
+	send mail to the author
+
+	Updated my e-mail address and copyright line.
+
+	Will now install examples as well.
+
+	Added the UNLOCKED pattern to chkagent.sh
+
+	Was missing a trailing colon in getopt() declaration.
+
+	Variables are now propagated back and forth through APPLY
+
+	Use servshell instead of /bin/sh for commands
+
+	Make sure that we do not get an empty header when filtering
+
+	Fixed Y2K bugs
+
+	Added one extra char for filename in queue listings.
+
+	Added ~ substitution in locate_program().
+
+	Specialized <3> to mean <3,3> in mrange()
+	Fixed wrong semantics for <3>, and rewrote tests accordingly
+
+	Weird Received: logging moved to higher levels
+
+	Queue renaming logs now include filenames in 'quotes'
+
+	Added tests for variable propagation in APPLY
+	Added test for variable propagation
+	Added new test cases
+
+	Updated getcost documentation and added switches -a and -c
+
+	Two new files (makefiles)
+
+. Files changed:
+
+	* agent/Jmakefile: Will now install examples as well.
+
+	* agent/examples/Jmakefile: Created.
+
+	* agent/files/chkagent.sh: Added the UNLOCKED pattern.
+
+	* agent/filter/getopt.c: Was missing a trailing colon in getopt()
+	declaration.
+
+	* agent/filter/io.c: Renamed metaconfig obsolete symbol.  Now uses
+	say() when mail is DUMPED.
+
+	* agent/man/edusers.SH, agent/man/package.SH, agent/man/mailhelp.SH:
+	Updated my e-mail address.
+
+	* agent/man/mailagent.SH: Variables are now propagated back and forth
+	through APPLY.  Updated my e-mail address.
+
+	* agent/pl/actions.pl: Use servshell instead of /bin/sh for commands.
+	Make sure that we do not get an empty header when filtering.
+
+	* agent/pl/analyze.pl: Moved localization of the %Variable hash for
+	APPLY.
+
+	* agent/pl/cmdserv.pl: Factorized servshell handling in function.
+
+	* agent/pl/getdate.pl: Fixed Y2K bug.
+
+	* agent/pl/listqueue.pl: Added one extra char for filename in queue
+	listings.
+
+	* agent/pl/locate.pl: Added ~ substitution in locate_program().
+
+	* agent/pl/matching.pl: Specialized <3> to mean <3,3> in mrange().
+
+	* agent/pl/parse.pl: Weird Received: logging moved to higher levels.
+
+	* agent/pl/queue_mail.pl: Logs now include filenames in 'quotes'.
+
+	* agent/test/actions: Added tests for variable propagation in APPLY.
+
+	* agent/test/cmd/apply.t: Added test for variable propagation.
+
+	* agent/test/filter/list.t: Added new test cases.
+
+	* agent/test/rules: Fixed wrong semantics for <2>, and rewrote tests
+	accordingly.
+
+	* misc/mime/unmime: Added processing for ligatured "oe".
+
 Wed Jan 13 19:24:56 MET 1999   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:
@@ -6,7 +100,7 @@ Wed Jan 13 19:24:56 MET 1999   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.co
 	the queue.
 
 	Fixed wrong localization of variables in unique_filename() which
-	could cause filter to lock up. Thanks to Gerhard den Hollande
+	could cause filter to lock up. Thanks to Gerhard den Hollander
 	for spotting it!
 
 	Additions to agent.wait are more robust and use locking to guard

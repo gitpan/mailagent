@@ -3,7 +3,7 @@
  */
 
 /*
- * $Id: getopt.c,v 3.0.1.1 1997/02/20 11:34:56 ram Exp $
+ * $Id: getopt.c,v 3.0.1.2 1999/07/12 13:43:07 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -16,6 +16,9 @@
  * Original Author: unknown, got this off net.sources
  *
  * $Log: getopt.c,v $
+ * Revision 3.0.1.2  1999/07/12  13:43:07  ram
+ * patch66: was missing a trailing colon in getopt() declaration
+ *
  * Revision 3.0.1.1  1997/02/20  11:34:56  ram
  * patch55: created
  *
@@ -76,7 +79,7 @@ do {						\
  * In any case, the 'optopt' variable is set upon return to the flag being
  * looked at, whether it was a valid flag or not.
  */
-V_FUNC(int getopt, (nargc, nargv, ostr)
+V_FUNC(int getopt, (nargc, nargv, ostr),
 	int	nargc		/* Argument count */ NXT_ARG
 	char **nargv	/* Argument vector */ NXT_ARG
 	char *ostr		/* String specifying options */)

@@ -1,4 +1,4 @@
-;# $Id: locate.pl,v 3.0.1.1 1996/12/24 14:54:19 ram Exp $
+;# $Id: locate.pl,v 3.0.1.2 1999/07/12 13:52:12 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: locate.pl,v $
+;# Revision 3.0.1.2  1999/07/12  13:52:12  ram
+;# patch66: added ~ substitution in locate_program()
+;#
 ;# Revision 3.0.1.1  1996/12/24  14:54:19  ram
 ;# patch45: new locate_program() routine
 ;#
@@ -39,11 +42,13 @@ sub locate_file {
 # Locate specified program from command line by looking through the PATH
 # like the shell would. Return the first matching program path or the program
 # name if not found. Caller can check for the presence of '/' in the returned
-# value to determine whether we succeeded.
+# value to determine whether we succeeded. A leading ~ is replaced by the
+# user's home directory.
 sub locate_program {
 	local($_) = @_;
 	undef while s/^\s*[<>]\s*\S+//;	# Strip leading >&1 or >file directives
 	local($name) = /^\s*(\S+)/;
+	$name =~ s/~/$cf'home/g;		# ~ substitution
 	return $name if $name =~ m|/|;	# Absolute or relative path, no search
 	
 	foreach $dir (split(/:/, $ENV{'PATH'})) {

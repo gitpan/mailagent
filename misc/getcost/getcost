@@ -5,7 +5,7 @@
 ###############################################################################
 #
 # File:         getcost
-# RCS:          $Header: /home/ram/home/projects/mailagent/misc/getcost/RCS/getcost,v 3.0.1.1 1998/03/31 15:29:49 ram Exp $
+# RCS:          $Header: /home/ram/home/projects/mailagent/misc/getcost/RCS/getcost,v 3.0.1.2 1999/07/12 13:59:33 ram Exp $
 # Description: SPAM scoring program
 #		Version 3.0
 # Authors:      Darryl Okahata (with additions from Raphael Manfredi)
@@ -33,7 +33,7 @@ $config_file = $ENV{'HOME'} . "/.spamconfig";
 ###############################################################################
 
 require 'getopts.pl';
-&Getopts('BDLbdf:mokMT:') || warn "getcost: bad switch usage\n";
+&Getopts('acBDLbdf:mokMT:') || warn "getcost: bad switch usage\n";
 $debug = 1 if ($opt_d);
 $dump_scanners = 1 if ($opt_D);
 $config_file = $opt_f if ($opt_f);
@@ -41,14 +41,16 @@ $stop_suppressed_recipients_spam = 1 if ($opt_S);
 $ding_binary_characters = 1 if ($opt_B);
 $ding_long_lines = 1 if ($opt_L);
 $allow_openmail = 1 if ($opt_o);
-$allow_my_name = 1 if ($opt_m);
 $allow_any_body_contents = 1 if ($opt_b);
 
 # Added by RAM
+$apply_all = $opt_a;
+$collect_line = $opt_c;
 $threshold = $opt_T;
 $mailagent = $opt_M;
 $keep_going = $opt_k;			# Don't stop when cost <= -100000
 $TO_SIZE = 1000;				# To header longer than this is suspect
+$match_all = $opt_m;			# Apply patterns with //g and count occurences
 
 # If debugging, test whether we're emitting to a terminal or a file...
 # Matches will be outlined with _ escapes when logging into a file, but
@@ -68,6 +70,7 @@ $in_header = 1;
 $from_processed = '';
 $pending_score = 0;
 $collecting_to = '';
+$collecting_line = '';
 $is_a_reply = 0;
 loop: while (<>) {
     if ($cost <= -100000 || $cost >= 1000000) {
@@ -221,8 +224,6 @@ loop: while (<>) {
 				$stop_suppressed_recipients_spam) {
 				&update("<recipients suppressed>\n", -1000000);
 				last loop;
-			} elsif ($allow_my_name && $to_header =~ /\b$my_name\b/oi) {
-				&update("To: $to_header\n", 500);
 			}
 			$to_header_processed = 1;
 			last loop if ($allow_any_body_contents);
@@ -240,6 +241,7 @@ loop: while (<>) {
 		  &update("Long line: $_", -(10 + length($_)));
 	      };
 
+	  $_ .= '. ' if $collect_line && eof();			# Finish last sentence
 	  $result = &check_body_line($_);
 	  last loop if ($result == 3);
 	  last BODY_SWITCH if ($result != -1);
@@ -320,6 +322,28 @@ sub update
     }
 }
 
+sub collect_line {
+	return 1 unless $collect_line;
+	my ($lref) = @_;
+
+	# Identify the part of the line that goes up to the end of a sentence,
+	# which is a punctuation sign, followed by a space. When a full sentence
+	# has been recognized, it is put back into $lref, and the residual part
+	# is left in $collecting_line.
+
+	my $line = $$lref;
+	$line =~ tr/\n/ /;
+	$collecting_line .= $line;
+
+	my $sentence;
+	$sentence = $1 if $collecting_line =~ s/^((?:.*?)[.?!:]+)\s//;
+
+	return 0 if $sentence eq '';	# No full sentence yet
+
+	$$lref = $sentence . "\n";
+	return 1;						# Full sentence recognized, held in $$lref
+}
+
 ###############################################################################
 
 sub read_config
@@ -370,14 +394,14 @@ sub read_config
 		# my name
 		s/^\s+//;
 		s/\s+$//;
-		$my_name = $_;
+		$my_name = $_;				## NO LONGER USED
 		next;
 	    };
 	    ($phase == 1) && do {
 		# my domain
 		s/^\s+//;
 		s/\s+$//;
-		$my_domain = $_;
+		$my_domain = $_;			## NO LONGER USED
 		next;
 	    };
 	    ($phase == 10) && do {
@@ -436,6 +460,7 @@ sub check_body_line
     local(\$line) = \@_;
     local(\$result);
 
+	return unless collect_line(\\\$line);
 	study \$line;
     $body_scanner
     return (\$result);
@@ -462,6 +487,8 @@ $switch_name: {
     #        2 for exit header/body loop
     #        3 to stop scanning completely
     \$result = -1;
+	my \$copy;
+	my \$stripped;
 EOF_SCANNER
     foreach $line (@scores) {
 	if ($line !~ /^\s*(.+)\s+([-+0-9]+)\s*$/) {
@@ -470,7 +497,7 @@ EOF_SCANNER
 	    next;
 	}
 	$pattern = $1;
-	$cost = $2;
+	my $cost = $2;
 	$pattern =~ s/\s+$//;
 	if ($cost == 0) {
 		$newcode = <<EOF
@@ -490,18 +517,42 @@ EOF
      \$line !~ /free\\s+software/) && do {
 	&update(\$line, $cost);
 	\$result = 1;
-	last $switch_name;
+	last $switch_name unless \$apply_all;
     };
 EOF
 	    } else {
-		$newcode = <<EOF
-    (\$line =~ $pattern) && do {
-	&update(\$line, $cost);
-	\$result = 1;
-	last $switch_name;
-    };
+			my $attempt_match_all = 0;
+			if ($pattern !~ m!^(?:/|m\W)\^!) {	# Not an anchored match at start
+				$attempt_match_all = 1 if $match_all;
+			}
+			if ($attempt_match_all) {
+				# Match pattern as many times as possible, removing
+				# the leading matched part and trying again, and again...
+				$newcode = <<EOF;
+	\$copy = \$line;
+	\$stripped = 0;
+	while (\$copy =~ $pattern) {
+		my (\$before, \$match, \$after) = (\$`, \$&, \$');
+		&update(
+			\$stripped ? "...\$before\$match\$after" : \$line,
+			$cost);
+		\$copy = substr(\$copy, length(\$before) + length(\$match));
+		\$stripped++;
+	}
+	\$result = \$stripped ? 1 : \$result;
+	last $switch_name if \$result == 1 && !\$apply_all;
 EOF
-	    }
+			} else {
+				# Match pattern once
+				$newcode = <<EOF;
+	(\$line =~ $pattern) && do {
+		&update(\$line, $cost);
+		\$result = 1;
+		last $switch_name unless \$apply_all;
+	};
+EOF
+			}
+		}
 	}
 	$scanner .= $newcode;
     }
@@ -509,7 +560,7 @@ EOF
     return ($scanner);
 }
 
-
 sub check_body_line
 {
 }
+

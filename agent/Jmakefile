@@ -2,7 +2,7 @@
  * Jmakefile for mailagent
  */
 
-;# $Id: Jmakefile,v 3.0.1.3 1994/10/31 11:12:59 ram Exp $
+;# $Id: Jmakefile,v 3.0.1.4 1999/07/12 13:40:32 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -13,6 +13,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: Jmakefile,v $
+;# Revision 3.0.1.4  1999/07/12  13:40:32  ram
+;# patch66: will now install examples as well
+;#
 ;# Revision 3.0.1.3  1994/10/31  11:12:59  ram
 ;# patch23: file magent.sh now replaces magent.SH to avoid auto-extraction
 ;#
@@ -50,7 +53,7 @@ mailagent: magent
 >BINDIR
 InstallScript(mailagent,$(BINDIR))
 
-SetSubdirs(pl filter files man test)
+SetSubdirs(pl filter files man test examples)
 DependDirs(pl filter)
 RemoteDependency(pl/utmp,utmp.pl)
 

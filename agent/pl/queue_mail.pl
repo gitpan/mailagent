@@ -1,4 +1,4 @@
-;# $Id: queue_mail.pl,v 3.0.1.4 1999/01/13 18:15:50 ram Exp $
+;# $Id: queue_mail.pl,v 3.0.1.5 1999/07/12 13:54:33 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: queue_mail.pl,v $
+;# Revision 3.0.1.5  1999/07/12  13:54:33  ram
+;# patch66: logs now include filenames in 'quotes'
+;#
 ;# Revision 3.0.1.4  1999/01/13  18:15:50  ram
 ;# patch64: writing to agent.wait is now more robust and uses locking
 ;#
@@ -83,6 +86,12 @@ sub queue_mail {
 	local($ok) = 1;						# Print status
 	local($_);
 	&add_log("queuing mail ($type) for delayed processing") if $loglvl > 18;
+
+	if ($file_name ne '' && $file_name !~ m|^/|) {
+		local($cwd);
+		chop($cwd = `pwd`);
+		$file_name = "$cwd/$file_name"
+	}
 	chdir $cf'queue || &fatal("cannot chdir to $cf'queue");
 
 	local(%known_type) = (				# Known queue message types
@@ -157,14 +166,14 @@ sub queue_mail {
 	# attempt to record the temporary file name into the waiting file. If
 	# mail came from stdin, there is not much we can do, so we panic.
 	if (!$ok) {
-		&add_log("ERROR could not queue message") if $loglvl > 0;
-		unlink "$tmp_queue";
+		&add_log("ERROR could not queue message '$file_name'") if $loglvl;
+		unlink $tmp_queue;
 		if ($file_name) {
 			# The file processed is already on the disk
 			$dirname = $file_name;
 			$dirname =~ s|^(.*)/.*|$1|;	# Keep only basename
 			$cf'user = (getpwuid($<))[0] || "uid$<" if $cf'user eq '';
-			$tmp_queue = $dirname/$cf'user.$$;
+			$tmp_queue = "$dirname/$cf'user.$$";
 			$tmp_queue = $file_name if &mv($file_name, $tmp_queue);
 			&add_log("NOTICE mail held in $tmp_queue") if $loglvl > 4;
 		} else {
@@ -259,12 +268,14 @@ sub mv {
 	&add_log("copying file $from to $to") if $loglvl > 19;
 	unless (open(FROM, $from)) {
 		&add_log("SYSERR open: $!") if $loglvl;
-		&add_log("ERROR cannot open source $from") if $loglvl;
+		&add_log("ERROR cannot open source '$from' to copy to '$to'")
+			if $loglvl;
 		return 1;
 	}
 	unless (open(TO, ">$to")) {
 		&add_log("SYSERR open: $!") if $loglvl;
-		&add_log("ERROR cannot open target $to") if $loglvl;
+		&add_log("ERROR cannot create target '$to' to copy '$from' to it")
+			if $loglvl;
 		close FROM;
 		return 1;
 	}
@@ -279,12 +290,12 @@ sub mv {
 	close FROM;
 	close TO;
 	unless ($ok) {
-		&add_log("ERROR could not copy $from to $to") if $loglvl;
-		unlink "$to";
+		&add_log("ERROR could not copy '$from' to '$to'") if $loglvl;
+		unlink $to;
 		return 1;
 	}
 	# Copy succeeded, remove original file
-	unlink "$from";
+	unlink $from;
 	0;					# Denotes success
 }
 

@@ -289,7 +289,6 @@ agent/test/pl/mta.pl           Trivial MTA and NTA for tests
 agent/test/rules               Rules used by filtering tests
 bin/                       Directory for uninstalled binaries
 bin/perload                The dataloading/autoloading perl translator
-config_h.SH                Produces config.h
 confmagic.h                Magic symbol remapping
 install.SH                 Installation script
 misc/                      Miscellaneous server commands
@@ -322,3 +321,6 @@ misc/unkit/newcmd.cf       Configuration of the new command
 misc/unkit/rules           Rules to be added to handle kit messages
 misc/unkit/unkit.pl        Implementation of the user-defined UNKIT command
 patchlevel.h               Current version number and patch level
+config_h.SH                Produces config.h
+agent/examples/Jmakefile   High level description for Makefile
+agent/examples/Makefile.SH Makefile for examples

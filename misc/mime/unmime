@@ -2,7 +2,7 @@
 		eval 'exec perl -S $0 ${1+"$@"}'
 				if $running_under_some_shell;
 
-# $Id: unmime,v 3.0.1.3 1998/03/31 15:31:34 ram Exp $
+# $Id: unmime,v 3.0.1.4 1999/07/12 14:00:12 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -17,6 +17,9 @@
 # Integrated into mailagent and modified with Eryq's permission.
 #
 # $Log: unmime,v $
+# Revision 3.0.1.4  1999/07/12  14:00:12  ram
+# patch66: added processing for ligatured "oe"
+#
 # Revision 3.0.1.3  1998/03/31  15:31:34  ram
 # patch59: new -x and -X options to cope with accentuated letters
 # patch59: added removal of ugly ?iso-8859-1?Q escapes in subject
@@ -119,8 +122,12 @@ sub dump_entity {
 sub smart_pack {
 	my ($hexa) = @_;
 	my $val = hex($hexa);
-	return "=$hexa" if $val >= 128;	# We're smart right there!
-	return pack('C', $val);
+	my $c = pack('C', $val);
+	# We're smart right there by detecting accentuated letters and leaving
+	# the =xx format if the xx code is greater than 128 and not that of an
+	# accentuated letter we know about!
+	return "=$hexa" if $val >= 128 && no_accent($c) eq $c;
+	return $c;
 }
 
 #------------------------------------------------------------
@@ -139,6 +146,7 @@ sub to_ascii {
 	my ($l) = @_;
 	return $l unless $opt_x;	# Don't loose info unless -x or -X
 	$l =~ tr/\x92/'/ if $opt_x;
+	$l =~ s/\xa6/oe/g if $opt_x;
 	$l = no_accent($l) if $opt_X;
 	return $l;
 }

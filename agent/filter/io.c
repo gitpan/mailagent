@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.15 1999/01/13 18:06:18 ram Exp $
+ * $Id: io.c,v 3.0.1.16 1999/07/12 13:43:57 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,10 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.16  1999/07/12  13:43:57  ram
+ * patch66: renamed metaconfig obsolete symbol
+ * patch66: now uses say() when mail is DUMPED
+ *
  * Revision 3.0.1.15  1999/01/13  18:06:18  ram
  * patch64: fixed wrong localization of variables in unique_filename()
  * patch64: additions to agent.wait are more robust and use locking
@@ -944,7 +948,6 @@ public int emergency_save()
 	return -1;	/* Failed */
 
 ok:
-	add_log(6, "DUMPED in %s", where);
 	say("DUMPED in %s", where);
 
 	/*
@@ -1339,7 +1342,7 @@ public int setsid()
 	/*
 	 * Good old way to get a process group leader.
 	 */
-#ifdef USE_BSDPGRP
+#ifdef USE_BSD_SETPGRP
 	error = setpgrp(0 ,getpid());	/* bsd way */
 #else
 	error = setpgrp();				/* usg way */

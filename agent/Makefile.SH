@@ -1,5 +1,5 @@
-: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL48]
-: $X-Id: Jmake.tmpl,v 3.0.1.2 1995/01/11 14:50:21 ram Exp ram $
+: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL70]
+: $X-Id: Jmake.tmpl,v 3.0.1.3 1997/02/28 14:56:16 ram Exp ram $
 
 case $CONFIG in
 '')
@@ -52,14 +52,14 @@ SED = $sed
 ########################################################################
 # Automatically generated parameters -- do not edit
 
-SUBDIRS = pl filter files man test
+SUBDIRS = pl filter files man test examples
 SCRIPTS =  \$(BIN)
 
 !GROK!THIS!
 $spitshell >>Makefile <<'!NO!SUBS!'
 ########################################################################
 # Jmake rules for building libraries, programs, scripts, and data files
-# $X-Id: Jmake.rules,v 3.0.1.2 1995/01/11 14:49:55 ram Exp ram $
+# $X-Id: Jmake.rules,v 3.0.1.6 1997/02/28 14:56:01 ram Exp ram $
 
 ########################################################################
 # Force 'make depend' to be performed first -- do not edit
@@ -123,14 +123,14 @@ edusers: edusers.SH
 
 install:: $(SCRIPTS) $(LSCRIPTS)
 	@for file in $(SCRIPTS) $(LSCRIPTS); do \
-		case '${MFLAGS}' in *[i]*) set +e;; esac; \
-		(set -x; $(INSTALL) -c -m 555 $$file $(SCRIPTDIR)); \
+	case '${MFLAGS}' in *[i]*) set +e;; esac; \
+	(set -x; $(INSTALL) -c -m 555 $$file $(SCRIPTDIR)); \
 	done
 
 deinstall::
 	@for file in $(SCRIPTS) $(LSCRIPTS); do \
-		case '${MFLAGS}' in *[i]*) set +e;; esac; \
-		(set -x; $(RM) $(SCRIPTDIR)/$$file); \
+	case '${MFLAGS}' in *[i]*) set +e;; esac; \
+	(set -x; $(RM) $(SCRIPTDIR)/$$file); \
 	done
 
 
@@ -161,8 +161,8 @@ depend::
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
 	for i in pl filter ;\
 	do \
-		(cd $$i ; echo "Depending" "in $(DIR)$$i..."; \
-			$(MAKE) $(MFLAGS)  depend); \
+	(cd $$i ; echo "Depending" "in $(DIR)$$i..."; \
+	$(MAKE) $(MFLAGS)  depend); \
 	done
 
 .FORCE:
@@ -209,12 +209,12 @@ local_clobber:: local_realclean
 
 Makefile.SH: Jmakefile
 	-@if test -f $(TOP)/.package; then \
-		if test -f Makefile.SH; then \
-			echo "	$(RM) Makefile.SH~; $(MV) Makefile.SH Makefile.SH~"; \
-			$(RM) Makefile.SH~; $(MV) Makefile.SH Makefile.SH~; \
-		fi; \
-		echo "	$(JMAKE) -DTOPDIR=$(TOP) -DCURDIR=$(CURRENT)" ; \
-		$(JMAKE) -DTOPDIR=$(TOP) -DCURDIR=$(CURRENT) ; \
+	if test -f Makefile.SH; then \
+	echo "	$(RM) Makefile.SH~; $(MV) Makefile.SH Makefile.SH~"; \
+	$(RM) Makefile.SH~; $(MV) Makefile.SH Makefile.SH~; \
+	fi; \
+	echo "	$(JMAKE) -DTOPDIR=$(TOP) -DCURDIR=$(CURRENT)" ; \
+	$(JMAKE) -DTOPDIR=$(TOP) -DCURDIR=$(CURRENT) ; \
 	else touch $@; exit 0; fi
 
 Makefile: Makefile.SH
@@ -234,8 +234,8 @@ subdirs:
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
 	for i in $(SUBDIRS) ;\
 	do \
-		(cd $$i ; echo $(VERB) "in $(DIR)$$i..."; \
-			$(MAKE) $(MFLAGS) $(FLAGS) $(TARGET)); \
+	(cd $$i ; echo $(VERB) "in $(DIR)$$i..."; \
+	$(MAKE) $(MFLAGS) $(FLAGS) $(TARGET)); \
 	done
 
 install::
@@ -266,37 +266,37 @@ tag::
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
 	for i in $(SUBDIRS) ;\
 	do \
-		(cd $$i ; echo "Tagging" "in $(DIR)$$i..."; \
-			$(MAKE) $(MFLAGS)  tag); \
+	(cd $$i ; echo "Tagging" "in $(DIR)$$i..."; \
+	$(MAKE) $(MFLAGS)  tag); \
 	done
 
 Makefiles::
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
 	for i in $(SUBDIRS);\
 	do \
-		echo "Making "Makefiles" in $(DIR)$$i..."; \
-		(cd $$i || exit 1; \
-		if test ! -f Makefile; then /bin/sh Makefile.SH; fi; \
-		$(MAKE) $(MFLAGS) Makefiles) \
+	echo "Making "Makefiles" in $(DIR)$$i..."; \
+	(cd $$i || exit 1; \
+	if test ! -f Makefile; then /bin/sh Makefile.SH; fi; \
+	$(MAKE) $(MFLAGS) Makefiles) \
 	done
 
 Makefiles.SH:: Makefile.SH
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
 	for i in $(SUBDIRS);\
 	do \
-		case "$(DIR)$$i/" in \
-		*/*/*/*/) newtop=../../../..;; \
-		*/*/*/) newtop=../../..;; \
-		*/*/) newtop=../..;; \
-		*/) newtop=..;; \
-		esac; \
-		case "$(TOP)" in \
-		/*) newtop="$(TOP)" ;; \
-		esac; \
-		echo "Making Makefiles.SH in $(DIR)$$i..."; \
-		(cd $$i || exit 1; $(MAKE) $(MFLAGS) -f ../Makefile \
-		Makefile TOP=$$newtop CURRENT=$(DIR)$$i;\
-		$(MAKE) $(MFLAGS) Makefiles.SH) \
+	case "$(DIR)$$i/" in \
+	*/*/*/*/) newtop=../../../..;; \
+	*/*/*/) newtop=../../..;; \
+	*/*/) newtop=../..;; \
+	*/) newtop=..;; \
+	esac; \
+	case "$(TOP)" in \
+	/*) newtop="$(TOP)" ;; \
+	esac; \
+	echo "Making Makefiles.SH in $(DIR)$$i..."; \
+	(cd $$i || exit 1; $(MAKE) $(MFLAGS) -f ../Makefile \
+	Makefile TOP=$$newtop CURRENT=$(DIR)$$i;\
+	$(MAKE) $(MFLAGS) Makefiles.SH) \
 	done
 
 all::

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chkagent.sh,v 3.0.1.2 1994/10/10 10:21:35 ram Exp $
+# $Id: chkagent.sh,v 3.0.1.3 1999/07/12 13:42:39 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: chkagent.sh,v $
+# Revision 3.0.1.3  1999/07/12  13:42:39  ram
+# patch66: added the UNLOCKED pattern
+#
 # Revision 3.0.1.2  1994/10/10  10:21:35  ram
 # patch19: now honors config variables email and sendmail
 #
@@ -22,7 +25,7 @@
 #
 
 # Make sure the mailagent is working well
-lookat='ERROR|FAILED|WARNING|FATAL|DUMPED|SYSERR'
+lookat='ERROR|FAILED|WARNING|UNLOCKED|FATAL|DUMPED|SYSERR'
 
 trap "rm -f $report $output $todaylog $msg" 1 2 3 15
 

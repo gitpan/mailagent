@@ -2,7 +2,7 @@
 # Mailagent rules for action regression tests
 #
 
-# $Id: actions,v 3.0.1.11 1998/03/31 15:28:55 ram Exp $
+# $Id: actions,v 3.0.1.12 1999/07/12 13:56:28 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: actions,v $
+# Revision 3.0.1.12  1999/07/12  13:56:28  ram
+# patch66: added tests for variable propagation in APPLY
+#
 # Revision 3.0.1.11  1998/03/31  15:28:55  ram
 # patch59: added regression tests for new "ON" command
 #
@@ -79,10 +82,19 @@ X-Tag: /annotate/
 };
 <ANNOTATE>		{ SAVE never };
 
-X-Tag: /apply/	{ APPLY apply.1; REJECT -t APPLY; SAVE never };
-<IMPOSSIBLE>	{ SAVE never; REJECT APPLY };
-<APPLY>			{ APPLY apply.2; REJECT -f; SAVE always };
-<APPLY>			{ SAVE never };
+X-Tag: /apply #1/	{ APPLY apply.1; REJECT -t APPLY; SAVE never };
+<IMPOSSIBLE>		{ SAVE never; REJECT APPLY };
+<APPLY>				{ APPLY apply.2; REJECT -f; SAVE always };
+<APPLY>				{ SAVE never };
+
+X-Tag: /apply #2/
+{
+	ASSIGN folder folder;
+	APPLY apply.1;
+	REJECT -f APPLY;
+	SAVE %#folder;
+};
+<APPLY>				{ SAVE never };
 
 X-Tag: /assign #1/,
 To: /^(\w+)@/

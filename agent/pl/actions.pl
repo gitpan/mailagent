@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.17 1999/01/13 18:12:18 ram Exp $
+;# $Id: actions.pl,v 3.0.1.18 1999/07/12 13:49:01 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.18  1999/07/12  13:49:01  ram
+;# patch66: use servshell instead of /bin/sh for commands
+;# patch66: make sure that we do not get an empty header when filtering
+;#
 ;# Revision 3.0.1.17  1999/01/13  18:12:18  ram
 ;# patch64: only use last two digits from year in logfiles
 ;#
@@ -104,9 +108,9 @@ sub leave {
 sub save {
 	local($mailbox) = @_;			# Where mail should be saved
 	local($failed) = 0;				# Printing status
-	unless ($mailbox) {				# Empty mailbox (e.g. SAVE %1 with no match)
-		&add_log("WARNING empty folder name, using mailbox") if $loglvl > 5;
+	if ($mailbox eq '') {			# Empty mailbox (e.g. SAVE %1 with no match)
 		$mailbox = &mailbox_name;
+		&add_log("WARNING empty folder name, using $mailbox") if $loglvl > 5;
 	}
 	local($biffing) = $env'biff =~ /ON/i;	# Whether we should biff or not
 	local($type) = 'file';					# Folder type, for biffing macros
@@ -341,12 +345,18 @@ sub process {
 		$fullcmd =~ /^[ \t]*(\w+)/;		# extract first word
 		$cmdname = $1;		# this is the command name
 		$trace = "$cf'tmpdir/trace.cmd$$";
+
+		# For HPUX-10.x, grrr... have to use our own shell otherwise that
+		# silly posix /bin/sh dumps core when fed the $cmdfile we built above.
+		local($shell) = &cmdserv'servshell;
+
 		$pid = fork;						# We fork here
 		$pid = -1 unless defined $pid;
+
 		if ($pid == 0) {
 			open(STDOUT, ">$trace");		# Where output goes
 			open(STDERR, ">&STDOUT");		# Make it follow pipe
-			exec '/bin/sh', "$cmdfile";		# Don't use sh -c
+			exec $shell, "$cmdfile";		# Don't use sh -c
 		} elsif ($pid == -1) {
 			# Set the error report code, and the mail will remain in queue
 			# for later processing. Any @RR in the message will be re-executed
@@ -1167,6 +1177,11 @@ sub feed_back {
 				$last_was_nl = /^$/ || $cf'fromall =~ /on/i;
 				$temp .= $_;
 			}
+		}
+		if ($head =~ /^\s*$/s) {			# A perl5 construct
+			&add_log("ERROR got empty header from $trace") if $loglvl > 1;
+			unlink "$trace";				# Maybe I should leave it around
+			die "feedback\n";				# Return to shell_command
 		}
 		$Header{'Head'} = $head;
 	}

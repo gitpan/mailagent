@@ -20,7 +20,7 @@ $spitshell >mailhelp.$manext <<!GROK!THIS!
 .TH MAILHELP $manext ram
 ''' @(#) Manual page for mailagent's commands -- (c) ram February 1991
 '''
-''' $Id: mailhelp.SH,v 3.0.1.2 1996/12/24 14:41:59 ram Exp $
+''' $Id: mailhelp.SH,v 3.0.1.3 1999/07/12 13:46:52 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,9 @@ $spitshell >mailhelp.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailhelp.SH,v $
+''' Revision 3.0.1.3  1999/07/12  13:46:52  ram
+''' patch66: updated my e-mail address
+'''
 ''' Revision 3.0.1.2  1996/12/24  14:41:59  ram
 ''' patch45: documented command forwarding
 '''
@@ -185,7 +188,7 @@ mailagent's log file
 The \fIproglist\fR file ought to make a distinction between different
 versions of a same system.
 .SH AUTHOR
-Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+Raphael Manfredi <Raphael_Manfredi@pobox.com>
 .SH "SEE ALSO"
 mailagent($manext), package($manext).
 !GROK!THIS!

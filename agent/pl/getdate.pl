@@ -47,7 +47,7 @@
 ;# Below are logging information for this package as included in the
 ;# mailagent program.
 ;#
-;# $Id: getdate.pl,v 3.0.1.2 1995/01/25 15:22:22 ram Exp $
+;# $Id: getdate.pl,v 3.0.1.3 1999/07/12 13:50:59 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -58,6 +58,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: getdate.pl,v $
+;# Revision 3.0.1.3  1999/07/12  13:50:59  ram
+;# patch66: fixed Y2K bug
+;#
 ;# Revision 3.0.1.2  1995/01/25  15:22:22  ram
 ;# patch27: fixed a typo in &yyerror and various code clean-up
 ;# patch27: ported to perl 5.0 PL0
@@ -539,12 +542,12 @@ sub dateconv {
 	if ($yy < 0) {
 		$yy = -$yy;
 	}
-	if ($yy < 100) {
+	if ($yy < 138) {
 		$yy += 1900;
 	}
 	$mdays[1] =
 		28 + (($yy % 4) == 0 && (($yy % 100) != 0 || ($yy % 400) == 0));
-	if ($yy < $epoch || $yy > 2001 || $mm < 1 || $mm > 12
+	if ($yy < $epoch || $yy > 2037 || $mm < 1 || $mm > 12
 		|| $dd < 1 || $dd > $mdays[--$mm]) {
 		return -1;
 	}
