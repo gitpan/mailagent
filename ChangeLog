@@ -1,3 +1,72 @@
+Tue Jul 28 19:33:00 METDST 1998   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	unique_filename() could loop forever, abort if no locking
+
+. Files changed:
+
+	* agent/filter/io.c: unique_filename() could loop forever, abort if
+	no locking.
+
+Tue Jul 28 19:13:31 METDST 1998   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	Added new "servshell" configuration variable. Probably only
+	useful if your are running HP-UX 10.x and later.
+
+	Added setup information for the "hash" config variable (for
+	the purpose of mailagent -I) and fixed wrong (prefix)
+	indication from setup.cf.
+
+	Fixed race condition whilst electing queue filename that could
+	cause a total loss of mail when the mailagent queue was accessed
+	via NFS from within the C filter.
+
+	Fixed typo on .so line in maildist.1
+
+	Skip blank lines in included file (i.e. "file" in rules).
+
+	Become even more knowledgeable about Received lines.
+
+	RFC-822 address matcher now uses non-greedy pattern match to
+	avoid extra spaces at the end of the name.
+
+	Now explicitely log when too many symlink levels are found
+	during "secure" checks.
+
+. Files changed:
+
+	* agent/files/mailagent.cf: Added servshell variable.
+
+	* agent/files/setup.cf: Added setup information for the "hash" config
+	variable.
+
+	* agent/filter/io.c: Fixed race condition whilst electing queue
+	filename.
+
+	* agent/man/mailagent.SH: Documented new "servshell" variable.
+
+	* agent/man/maildist.SH: Fixed typo on .so line.
+
+	* agent/pl/cmdserv.pl: Shell used is now customized by the
+	"servshell" variable.
+
+	* agent/pl/include.pl: Skip blank lines in included file.
+
+	* agent/pl/install.pl: Was not processing (prefix) indication from
+	setup.cf.
+
+	* agent/pl/parse.pl: Become even more knowledgeable about Received
+	lines.
+
+	* agent/pl/rfc822.pl: Use non-greedy pattern match to avoid extra
+	spaces.
+
+	* agent/pl/secure.pl: Now explicitely log when too many symlink
+	levels are found.
+
 Tue Mar 31 17:48:35 METDST 1998   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

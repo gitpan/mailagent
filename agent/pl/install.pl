@@ -1,4 +1,4 @@
-;# $Id: install.pl,v 3.0.1.3 1997/02/20 11:44:47 ram Exp $
+;# $Id: install.pl,v 3.0.1.4 1998/07/28 17:03:54 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: install.pl,v $
+;# Revision 3.0.1.4  1998/07/28  17:03:54  ram
+;# patch62: was not processing (prefix) indication from setup.cf
+;#
 ;# Revision 3.0.1.3  1997/02/20  11:44:47  ram
 ;# patch55: missed a '$' in front of a variable in create()
 ;#
@@ -344,12 +347,16 @@ sub dflt {
 }
 
 # Check that a given file/directory is of the correct kind.
+# Returns true if file/directory exists.
 sub exists {
 	local($path, $type, $var) = @_;
 	local($what) = $type =~ /^[Dd]/ ? 'directory' : 'file';
 	local($prefix) = &prefix($path, $type);
 	local($short) = &'tilda("$prefix/$path");
-	return unless -e "$prefix/$path";
+	unless (-e "$prefix/$path") {
+		&'add_log("no $prefix/$path for $what '$var' yet") if $cf'level > 14;
+		return 0;
+	}
 	&'add_log("checking $what '$var' at $prefix/$path") if $cf'level > 11;
 	if ($type =~ /^[Dd]/) {
 		&'add_log("ERROR $short is not a directory (variable $var)")
@@ -358,22 +365,26 @@ sub exists {
 		&'add_log("ERROR $short is not a file (variable $var)")
 			if -d "$prefix/$path";
 	}
+	return 1;		# Exists, but may be of the wrong type
 }
 
 # Create file/directory, using type sepcification from the setup.cf file.
 sub create {
 	local($path, $type, $var) = @_;
-	return &exists($path, $type, $var) if -e $path;
+	return if &exists($path, $type, $var);
 	local($what) = $type =~ /^D/ ? 'directory' : 'file';
 	local($file) = $type =~ /^\w\s*(.*)/;
+	$file =~ s/\s*\(.*\)\s*//;		# Remove ($spool)-like location hints
 	local($from) = $file ? "from default $file" : '(empty)';
 	local($prefix) = &prefix($path, $type);
-	local($short) = &'tilda("$prefix/$path");
+	local($target) = "$prefix/$path";
+	$target =~ tr|/||s;				# If $path starts with /, $prefix is ''
+	local($short) = &'tilda($target);
 	&'add_log("creating mandatory $what $short $from for variable $var");
 	if ($type =~ /^D/) {
-		&'makedir($path);
+		&'makedir($target);
 	} else {
-		local($dir, $base) = $path =~ m|(.*)/(.*)|;
+		local($dir, $base) = $target =~ m|(.*)/(.*)|;
 		&'makedir($dir);
 		unless (open(BASE, ">$dir/$base")) {
 			&'add_log("ERROR cannot create $dir/$base: $!") if $cf'level;
@@ -408,10 +419,10 @@ sub create {
 # Returns the suitable prefix (with ~ substitution).
 sub prefix {
 	local($path, $type) = @_;	# Path, file type such as "f ($var)"
-	local($prefix) = $type =~ /\(.*\)/;		# Grab ($var) or (/usr/bin) prefix
-	eval "package cf; \$cfset'prefix = \"$cfset'prefix\";";
+	local($prefix) = $type =~ /\((.*)\)/;	# Grab ($var) or (/usr/bin) prefix
+	eval "package cf; \$cfset'prefix = \"$cfset'prefix\";" if $prefix;
 	$prefix = '~' unless $prefix || $path =~ m|^/|;
-	&'tilda_expand($prefix);	# Return value
+	return $prefix ? &'tilda_expand($prefix) : '';
 }
 
 # Check path setting.

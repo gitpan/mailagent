@@ -5,7 +5,7 @@
 ###############################################################################
 #
 # File:         getcost
-# RCS:          $Header: /users/ram/home/projects/mailagent/misc/getcost/RCS/getcost,v 3.0.1.1 1998/03/31 15:29:49 ram Exp $
+# RCS:          $Header: /home/ram/home/projects/mailagent/misc/getcost/RCS/getcost,v 3.0.1.1 1998/03/31 15:29:49 ram Exp $
 # Description: SPAM scoring program
 #		Version 3.0
 # Authors:      Darryl Okahata (with additions from Raphael Manfredi)

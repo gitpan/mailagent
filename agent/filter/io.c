@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.12 1997/09/15 15:01:35 ram Exp $
+ * $Id: io.c,v 3.0.1.14 1998/07/28 17:32:33 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,12 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.14  1998/07/28  17:32:33  ram
+ * patch63: unique_filename() could loop forever, abort if no locking
+ *
+ * Revision 3.0.1.13  1998/07/28  16:57:41  ram
+ * patch62: fixed race condition whilst electing queue filename
+ *
  * Revision 3.0.1.12  1997/09/15  15:01:35  ram
  * patch57: factorized code to derive a unique filename
  *
@@ -502,27 +508,55 @@ char *base;
 	 * really depends on the value of the sprintf format, usually "%s%d".
 	 * A trailing %c may be appended to the format to help getting a unique
 	 * name.
-	 * Returns opened file descriptor on the elected file, or -1.
+	 * Returns opened file descriptor on the elected file ("locked"), or -1.
 	 */
 
 	char fmt[MAX_STRING];	/* Final sprintf() format string */
-	int try = 0;			/* Count attempts to find a unique queue name */
-	char trailer = '\0';	/* Trailer character after pid */
-	int alternate = 0;		/* True when alternate naming was chosen */
-	int fd;					/* Opened file */
 
 	sprintf(fmt, "%s%s%s", "%s/", format, "%c");
 
 	for (;;) {
+		int fd;					/* Opened file */
+		int try = 0;			/* Count attempts to find a unique filename */
+		int alternate = 0;		/* True when alternate naming was chosen */
+		char trailer = '\0';	/* Trailer character after pid */
+
 		sprintf(buf, fmt, dir, base, progpid + try, trailer);
+
+		/*
+		 * Must "lock" the file in the queue in case mailagent happens to be
+		 * sleeping in the background and wakes up between the time we create
+		 * the file and before we get a chance to rename() the temporary file.
+		 * When that happens, an empty message would be processed and if the
+		 * file system is NFS-mounted, it could be rename()-ed and then unlinked
+		 * by mailagent after a so-called "successful" processing... thereby
+		 * loosing the message completely.
+		 */
+
+		if (-1 == file_lock(buf, buf, 0)) {
+			add_log(6, "NOTICE could not lock %s", buf);
+			return -1;
+		}
+
 		fd = open(buf, O_WRONLY | O_CREAT | O_EXCL, 0600);
 		if (fd != -1)
-			return fd;
+			return fd;			/* Returns "locked" pathname */
+
 		if (errno != EEXIST) {
 			add_log(1, "SYSERR open: %m (%e)");
 			add_log(2, "ERROR can't create %s", buf);
+			file_unlock(buf);
 			return -1;
 		}
+
+		/*
+		 * Must do that now to preserve the value of errno in the test above
+		 * for the sake of %m and %e. Alternative would be to save/restore
+		 * errno before calling add_log().
+		 */
+
+		file_unlock(buf);
+
 		if (++try > MAX_TRYS) {
 			if (alternate > ('z' - 'a'))
 				fatal("unable to find unique queue filename");
@@ -568,6 +602,7 @@ char *queue;				/* Location of the queue directory */
 	if (-1 == rename(where, real)) {
 		add_log(1, "SYSERR rename: %m (%e)");
 		add_log(2, "ERROR could not rename %s into %s", where, real);
+		file_unlock(real);		/* Locked by unique_filename() */
 		fatal("try again later");
 	}
 
@@ -578,6 +613,7 @@ char *queue;				/* Location of the queue directory */
 
 	add_log(4, "QUEUED [%s] %d bytes", base, mail.len);
 	queued = 1;
+	file_unlock(real);			/* Better have this after logging QUEUED */
 
 	/* If we got a lock, then no mailagent is running and we may process the
 	 * mail. Otherwise, do nothing. The mail will be processed by the currently
@@ -973,6 +1009,7 @@ char *template;			/* First part of the file name */
 		return (char *) 0;
 
 	status = write_fd(fd, path);		/* Write mail to file descriptor fd */
+	file_unlock(path);					/* Was locked by unique_filename */
 	close(fd);
 	if (status == -1)					/* Something wrong happened */
 		goto error;

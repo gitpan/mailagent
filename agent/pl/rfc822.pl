@@ -1,4 +1,4 @@
-;# $Id: rfc822.pl,v 3.0.1.3 1998/03/31 15:26:17 ram Exp $
+;# $Id: rfc822.pl,v 3.0.1.4 1998/07/28 17:06:15 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rfc822.pl,v $
+;# Revision 3.0.1.4  1998/07/28  17:06:15  ram
+;# patch62: use non-greedy pattern match to avoid extra spaces
+;#
 ;# Revision 3.0.1.3  1998/03/31  15:26:17  ram
 ;# patch59: parser now allows no space between address and comment
 ;#
@@ -41,12 +44,12 @@ sub parse_address {
 	local($_) = shift(@_);		# The address to be parsed
 	local($comment);
 	local($internet);
-	if (/^\s*(.*)\s*<(\S+)>[^()]*$/) {		# comment <address>
+	if (/^\s*(.*?)\s*<(\S+)>[^()]*$/) {		# comment <address>
 		$comment = $1;
 		$internet = $2;
 		$comment =~ s/^"(.*)"/$1/;			# "comment" -> comment
 		($internet, $comment);
-	} elsif (/^\s*([^()]+)\s*\((.*)\)/) {	# address (comment) 
+	} elsif (/^\s*([^()]+?)\s*\((.*)\)/) {	# address (comment) 
 		$comment = $2;
 		$internet = $1;
 		# Construct '<address> (comment)' is invalid but... priority to <>

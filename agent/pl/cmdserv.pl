@@ -1,4 +1,4 @@
-;# $Id: cmdserv.pl,v 3.0.1.5 1998/03/31 15:20:35 ram Exp $
+;# $Id: cmdserv.pl,v 3.0.1.6 1998/07/28 17:02:15 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
+;# Revision 3.0.1.6  1998/07/28  17:02:15  ram
+;# patch62: shell used is now customized by the "servshell" variable
+;#
 ;# Revision 3.0.1.5  1998/03/31  15:20:35  ram
 ;# patch59: changed "set" to dump variables when not given any argument
 ;#
@@ -575,12 +578,22 @@ sub exec_shell {
 		open(STDERR, '>&MAILER');	# Temporarily mapped to the MAILER file
 		close(STDIN);				# Make sure there is no input
 
+		# For HPUX-10.x, grrr... have to use /bin/ksh otherwise that silly
+		# posix shell closes all the file descriptors greater than 2, defeating
+		# all our cute setting here...
+		local($shell) = defined($cf'servshell) ? $cf'servshell : 'sh';
+		$shell = &'locate_program($shell);
+		if (defined($cf'servshell) && !-x($shell)) {
+			&'add_log("WARNING invalid configured servshell $shell, using sh");
+			$shell = 'sh';
+		}
+
 		# Using a sub-block ensures exec() is followed by nothing
 		# and makes mailagent "perl -cw" clean, whatever that means ;-)
-		{ exec "sh $cmdfile" }		# Don't let perl use sh -c
+		{ exec "$shell $cmdfile" }	# Don't let perl use sh -c
 
 		&'add_log("SYSERR exec: $!") if $'loglvl;
-		&'add_log("ERROR cannot exec /bin/sh $cmdfile") if $'loglvl;
+		&'add_log("ERROR cannot exec $shell $cmdfile") if $'loglvl;
 		print MAILER "Cannot exec command file ($!).\n";
 		exit(9);
 	}

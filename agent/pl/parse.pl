@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.11 1998/03/31 15:25:16 ram Exp $
+;# $Id: parse.pl,v 3.0.1.12 1998/07/28 17:04:44 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.12  1998/07/28  17:04:44  ram
+;# patch62: become even more knowledgeable about Received lines
+;#
 ;# Revision 3.0.1.11  1998/03/31  15:25:16  ram
 ;# patch59: when "tofake" is turned off, disable faking of To:
 ;# patch59: allow for missing "host1" in the Received: line parsing
@@ -269,6 +272,9 @@ sub header_check {
 #	Received: from host1 ([xx.yy.zz.tt]) by host3
 #	Received: from host1 by host3
 #	Received: from (host2 [xx.yy.zz.tt]) by host3
+#	Received: from (host1) [xx.yy.zz.tt] by host3
+#	Received: from host1 [xx.yy.zz.tt] by host3
+#	Received: from host2 [xx.yy.zz.tt] (host1) by host3
 #	Received: from (user@host1) by host3
 #
 # The host2, when present, is the reverse DNS mapping of the IP address.
@@ -324,13 +330,25 @@ sub relay_list {
 		# by an (host2 [ip]) specification instead.
 
 		s/^\w+\@//;
+		# [xx.yy.zz.tt]
 		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s*//) {
 			$host = $1;				# IP address [xx.yy.zz.tt]
-		} elsif (s/^([\w-.]+)(\(\S+\))?\s*//) {
+		}
+		# foo.domain.com (optional)
+		elsif (s/^([\w-.]+)(\(\S+\))?\s*//) {
 			$host = $1;				# host name
-		} elsif (s/^\(\w+\@([\w-.]+)\)\s*//) {
+		}
+		# (user@foo.domain.com)
+		elsif (s/^\(\w+\@([\w-.]+)\)\s*//) {
 			$host = $1;				# host name
-		} elsif (m/^\(/) {
+		}
+		# (foo.domain.com) [xx.yy.zz.tt]
+		#  foo.domain.com  [xx.yy.zz.tt]
+		elsif (s/^\(?([\w-.]+)\)?\s*\[\d+\.\d+\.\d+\.\d+\]\s*//) {
+			$host = $1;				# host name
+		}
+		# Unrecognized, but starting with a parenthesis, hinting for host2...
+		elsif (m/^\(/) {
 			$host = undef;			# host1 missing, but host2 should be there
 		} else {
 			&add_log("WARNING invalid from in Received: line '$received'")
@@ -347,8 +365,12 @@ sub relay_list {
 		# Note: we don't anchor the match at the beginning of the string
 		# since we want to parse the 'user@255.190.143.3' as in:
 		#   from foo.net (HELO master.foo.org) (user@255.190.143.3) by bar.net
-		# but it may not come first... Later on, we'll remove all remaining
+		# and it may not come first... Later on, we'll remove all remaining
 		# leading unrecognized () information.
+		#
+		# The cryptic regexps below attempt to recognize things like:
+		#    (user@foo.domain.com [xx.yy.zz.tt])
+		#    (WORD user@foo.domain.com [xx.yy.zz.tt])
 
 		$real = '';
 		$real = $1 eq '' ? $2 : $1 if
@@ -356,6 +378,11 @@ sub relay_list {
 			s/\(\w+\s+([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*//;
 		$real =~ s/^.*\@//;
 		$real = '' if $real =~ /^[\d.]+$/;		# A sendmail version number!
+
+		# Supersede the host name computed in the previous parsing only
+		# if the "real" host name we attempted to guess is an IP address
+		# or looks like a fully qualified domain name.
+
 		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
 
 		if ($host eq '') {

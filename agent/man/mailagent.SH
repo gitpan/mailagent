@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.20 1998/03/31 14:40:01 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.21 1998/07/28 16:59:10 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,9 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.21  1998/07/28  16:59:10  ram
+''' patch62: documented new "servshell" variable
+'''
 ''' Revision 3.0.1.20  1998/03/31  14:40:01  ram
 ''' patch59: added "vacfixed" and "tofake" configuration parameters
 ''' patch59: new ON command to issue commands on certain days only
@@ -719,6 +722,15 @@ File used to compute job numbers (suggested: .seq).
 The directory name where shell and perl server commands are stored. This is
 the default lookup place. Optional parameter unless SERVER is used.
 (suggested: \$spool/cmds).
+.TP
+.I servshell
+This is the name of the shell used to launch SERVER shell commands (actually
+to proces the wrapper file that will ultimately exec() the command). On some
+systems like HPUX 10.x, this has to be set to /usr/old/bin/sh to get the
+plain old Bourne shell, because /bin/sh is a braindead POSIX shell that
+closes file descriptors greater than 2 upon exec(), whereas the Bourne
+shell does not. (optional, suggested: /bin/sh unless you're on HPUX 10.x,
+as explained before).
 .TP
 .I spool
 Spool directory, required (suggested: ~/var/mailagent).

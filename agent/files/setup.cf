@@ -2,7 +2,7 @@
 # Setup file for mailagent
 #
 
-# $Id: setup.cf,v 3.0.1.3 1996/12/24 13:49:42 ram Exp $
+# $Id: setup.cf,v 3.0.1.4 1998/07/28 16:56:55 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: setup.cf,v $
+# Revision 3.0.1.4  1998/07/28  16:56:55  ram
+# patch62: added setup information for the "hash" config variable
+#
 # Revision 3.0.1.3  1996/12/24  13:49:42  ram
 # patch45: can now say that a file is expected under some directory
 # patch45: applied that to mailbox, which is a file expected under maildrop
@@ -68,6 +71,7 @@ timezone  : $main'ENV{'TZ'} || 'MET'
 spool     = D
 queue     = D
 logdir    = D
+hash      = D ($spool)
 context   = f
 callout   = f
 log       = f

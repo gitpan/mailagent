@@ -17,8 +17,8 @@ esac
 echo "Extracting agent/man/maildist.$manext (with variable substitutions)"
 $rm -f maildist.$manext
 $spitshell >maildist.$manext <<!GROK!THIS!
-.so man$manexp/mailhelp.$manext
-''' $Id: maildist.SH,v 3.0.1.2 1996/12/24 14:41:41 ram Exp $
+.so man$manext/mailhelp.$manext
+''' $Id: maildist.SH,v 3.0.1.3 1998/07/28 17:00:19 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -29,6 +29,9 @@ $spitshell >maildist.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: maildist.SH,v $
+''' Revision 3.0.1.3  1998/07/28  17:00:19  ram
+''' patch62: fixed typo on .so line
+'''
 ''' Revision 3.0.1.2  1996/12/24  14:41:41  ram
 ''' patch45: don't use expanded manpath in .so directives
 '''

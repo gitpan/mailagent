@@ -1,4 +1,4 @@
-;# $Id: secure.pl,v 3.0.1.6 1997/02/20 11:46:00 ram Exp $
+;# $Id: secure.pl,v 3.0.1.7 1998/07/28 17:07:05 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: secure.pl,v $
+;# Revision 3.0.1.7  1998/07/28  17:07:05  ram
+;# patch62: now explicitely log when too many symlink levels are found
+;#
 ;# Revision 3.0.1.6  1997/02/20  11:46:00  ram
 ;# patch55: now honours groupsafe and execsafe configuration variables
 ;#
@@ -159,7 +162,12 @@ sub symfile_secure {
 # The routine returns 1 if the file is secure, 0 otherwise.
 sub symdir_check {
 	local($dir, $level) = @_;	# Directory, indirection level
-	return 0 if $level++ > $MAX_LINKS;
+	$MAX_LINKS = 100 unless defined $MAX_LINKS;	# May have been overridden
+	if ($level++ > $MAX_LINKS) {
+		&add_log("ERROR more than $MAX_LINKS levels of symlinks to reach $dir")
+			if $loglvl;
+		return 0
+	}
 	local($ndir) = readlink($dir);
 	unless (defined $ndir) {
 		&add_log("SYSERR readlink: $!") if $loglvl;
