@@ -1,3 +1,100 @@
+Tue Mar 31 17:48:35 METDST 1998   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	New configuration parameters "vacfixed" and "tofake".
+	The first one prevents any vacation message change through
+	usage of the VACATION directive, the other one prevents the
+	faking of a To: header line (for filtering purposes) when
+	such a line is missing from the message.
+
+	New ON command to issue commands on certain days only.
+	When combined with SELECT, this makes a powerful time-based
+	rule selection. For instance:
+
+		ON (Mon Tue Wed Thu) SELECT (18:30 .. 23:59) BOUNCE ram@home;
+		
+	would bounce to my home e-mail address the message if received
+	past 6.30 pm on weekdays (but Fridays) and before midnight.
+
+	Two NEW interesting directories under misc/:
+
+	. fakesend, showing an implementation of the FAKESEND
+      command I use to reply to messages bounced to my home
+	  e-mail address while pretending I replied from work.
+
+	. getcost: my contribution (with the help of a fellow from HP)
+	  to fighting SPAM with mailagent. This is a temporary solution,
+	  until I come up with a decent SCORE commandi, but it has
+	  helped me tremendously for the past 10 months.
+
+	The RFC822 parser now allows no space between address and comment.
+	I've not checked to see whether this is legal because it does not
+	hurt and improves robustness anyway.
+
+	Allow ~name expansion when specifying alternate rule files, via
+	the APPLY command.
+
+	The SERVER "set" command can now list defined variables when
+	invoked without any argument.
+
+	Allow for missing "host1" in the Received: line parsing, which
+	attempts to compute the chain of relaying hosts.
+
+	The misc/mime/unmime program has evolved: new -x and -X options to
+	cope with accentuated letters, and removal of ugly ?iso-8859-1?Q
+	escapes in subject lines that the HP router unfortunately adds
+	each time there is an accentuated letter in the Subject line!
+	(and From:, To: lines as well, although that's not frequent enough
+	for me to tackle yet).
+
+	There are 9 new files in the distribution.
+
+. Files changed:
+
+	* agent/files/help/release.SH: Fixed typos.
+
+	* agent/files/help/set.SH: Without parameters, list all the defined
+	variables.
+
+	* agent/files/mailagent.cf: Added "vacfixed" and "tofake"
+	configuration parameters.
+
+	* agent/man/mailagent.SH: Added "vacfixed" and "tofake" configuration
+	parameters.  New ON command to issue commands on certain days only. 
+	The SERVER "set" command can now list defined variables.  Added an
+	example of alternate VACATION message selection.
+
+	* agent/pl/cmdserv.pl: Changed "set" to dump variables when not given
+	any argument.
+
+	* agent/pl/filter.pl: When "vacfixed" is on, forbid any change of
+	vacation message.  New ON command to process commands on certain days
+	only.
+
+	* agent/pl/include.pl: Typo fix in comment.
+
+	* agent/pl/interface.pl: Added hook for the new ON command.
+
+	* agent/pl/parse.pl: When "tofake" is turned off, disable faking of
+	To:.  Allow for missing "host1" in the Received: line parsing.
+
+	* agent/pl/rfc822.pl: Parser now allows no space between address and
+	comment.
+
+	* agent/pl/rules.pl: Allow ~name expansion when specifying alternate
+	rule files.
+
+	* agent/pl/runcmd.pl: Declared the new "ON" command.
+
+	* agent/test/actions: Added regression tests for new "ON" command.
+
+	* misc/getcost/spamconfig, agent/test/cmd/on.t,
+	misc/fakesend/mh_profile: Created.
+
+	* misc/mime/unmime: New -x and -X options to cope with accentuated
+	letters.  Added removal of ugly ?iso-8859-1?Q escapes in subject.
+
 Mon Sep 15 17:31:05 METDST 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.10 1997/09/15 15:16:00 ram Exp $
+;# $Id: parse.pl,v 3.0.1.11 1998/03/31 15:25:16 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.11  1998/03/31  15:25:16  ram
+;# patch59: when "tofake" is turned off, disable faking of To:
+;# patch59: allow for missing "host1" in the Received: line parsing
+;#
 ;# Revision 3.0.1.10  1997/09/15  15:16:00  ram
 ;# patch57: improved Received: line parsing logic
 ;#
@@ -205,12 +209,19 @@ sub header_check {
 
 	# If no To: field, then maybe there is an Apparently-To: instead. If so,
 	# make them identical. Otherwise, assume the mail was directed to the user.
-	if (!$Header{'To'} && $Header{'Apparently-To'}) {
-		$Header{'To'} = $Header{'Apparently-To'};
-	}
-	unless ($Header{'To'}) {
-		&add_log("WARNING no To: field, assuming $cf'user") if $loglvl > 4;
-		$Header{'To'} = $cf'user;
+	#
+	# This changes the way filtering is done, so it's not always a good idea
+	# to do it. Some people may want to explicitely check that there is no
+	# To: line, but if we fake one, they'll never know. So check for tofake,
+	# and if OFF, don't do anything.
+	unless ($cf'tofake =~ /^off/i) {
+		if (!$Header{'To'} && $Header{'Apparently-To'}) {
+			$Header{'To'} = $Header{'Apparently-To'};
+		}
+		unless ($Header{'To'}) {
+			&add_log("WARNING no To: field, assuming $cf'user") if $loglvl > 4;
+			$Header{'To'} = $cf'user;
+		}
 	}
 
 	# Set number of lines in body, unless there is already a Lines:
@@ -257,6 +268,7 @@ sub header_check {
 #	Received: from host1 (host2 [xx.yy.zz.tt]) by host3
 #	Received: from host1 ([xx.yy.zz.tt]) by host3
 #	Received: from host1 by host3
+#	Received: from (host2 [xx.yy.zz.tt]) by host3
 #	Received: from (user@host1) by host3
 #
 # The host2, when present, is the reverse DNS mapping of the IP address.
@@ -308,6 +320,9 @@ sub relay_list {
 		# Look for host1, which must be there somehow since we found a 'from'
 		# Some sendmails like to add a leading 'login@' before the address,
 		# so strip that out before being fancy...
+		# The only case host1 was seen to be missing was when it is replaced
+		# by an (host2 [ip]) specification instead.
+
 		s/^\w+\@//;
 		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s*//) {
 			$host = $1;				# IP address [xx.yy.zz.tt]
@@ -315,6 +330,8 @@ sub relay_list {
 			$host = $1;				# host name
 		} elsif (s/^\(\w+\@([\w-.]+)\)\s*//) {
 			$host = $1;				# host name
+		} elsif (m/^\(/) {
+			$host = undef;			# host1 missing, but host2 should be there
 		} else {
 			&add_log("WARNING invalid from in Received: line '$received'")
 				if $loglvl > 4;
@@ -340,6 +357,12 @@ sub relay_list {
 		$real =~ s/^.*\@//;
 		$real = '' if $real =~ /^[\d.]+$/;		# A sendmail version number!
 		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
+
+		if ($host eq '') {
+			&add_log("WARNING no relaying origin in Received: line '$received'")
+				if $loglvl > 4;
+			next;
+		}
 
 		# If we have not recognized anything above, then we don't want to
 		# handle anything between () that may follow the original host name.

@@ -16,7 +16,7 @@ case "$0" in
 esac
 echo "Extracting agent/files/help/set (with variable substitutions)"
 $spitshell >/dev/null <<!GROK!THIS!
-# $Id: set.SH,v 3.0 1993/11/29 13:47:59 ram Exp $
+# $Id: set.SH,v 3.0.1.1 1998/03/31 14:34:47 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -27,6 +27,9 @@ $spitshell >/dev/null <<!GROK!THIS!
 #  of the source tree for mailagent 3.0.
 #
 # $Log: set.SH,v $
+# Revision 3.0.1.1  1998/03/31  14:34:47  ram
+# patch59: without parameters, list all the defined variables
+#
 # Revision 3.0  1993/11/29  13:47:59  ram
 # Baseline for mailagent 3.0 netwide release.
 #
@@ -46,9 +49,13 @@ This command sets the variable to the specified value. Flags are only
 set to 'true' or 'false', although 'on', 'yes' and an empty value are
 also recognized to be 'true', anything else being 'false'.
 
+A 'set' all by itself will list all the defined variables along with
+their values.
+
 EXAMPLES
 
 	set eof END_OF_FILE
 	set trace on
+	set
 !NO!SUBS!
 chmod 644 set

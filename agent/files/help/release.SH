@@ -16,7 +16,7 @@ case "$0" in
 esac
 echo "Extracting agent/files/help/release (with variable substitutions)"
 $spitshell >/dev/null <<!GROK!THIS!
-# $Id: release.SH,v 3.0 1993/11/29 13:47:58 ram Exp $
+# $Id: release.SH,v 3.0.1.1 1998/03/31 14:34:06 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -27,6 +27,9 @@ $spitshell >/dev/null <<!GROK!THIS!
 #  of the source tree for mailagent 3.0.
 #
 # $Log: release.SH,v $
+# Revision 3.0.1.1  1998/03/31  14:34:06  ram
+# patch59: fixed typos
+#
 # Revision 3.0  1993/11/29  13:47:58  ram
 # Baseline for mailagent 3.0 netwide release.
 #
@@ -44,9 +47,9 @@ DESCRIPTION
 
 This command releases the specified power.
 
-If the 'root' power is releases, other powers obtained while root or before
+If the 'root' power is released, other powers obtained while root or before
 are kept. That way, it makes sense to ask for powers while root, when the
-password for some minor power has been change, since you do not need to
+password for some minor power has been changed, since you do not need to
 supply it. Then 'root' may be released and the work continued with the
 minor power handy.
 

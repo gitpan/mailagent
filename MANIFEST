@@ -207,6 +207,7 @@ agent/test/cmd/macro.t         Test MACRO command
 agent/test/cmd/message.t       Test MESSAGE command
 agent/test/cmd/nop.t           Test NOP command
 agent/test/cmd/notify.t        Test NOTIFY command
+agent/test/cmd/on.t            Test ON command
 agent/test/cmd/once.t          Test ONCE command
 agent/test/cmd/pass.t          Test PASS command
 agent/test/cmd/perl.t          Test PERL command
@@ -293,6 +294,14 @@ confmagic.h                Magic symbol remapping
 install.SH                 Installation script
 misc/                      Miscellaneous server commands
 misc/README                Introduction to the misc directory
+misc/fakesend/README       Presentation of the FAKESEND command
+misc/fakesend/fakesend.pl  Implementation of user-defined FAKESEND command
+misc/fakesend/freplcomps   Sample MH reply components for FAKESEND usage
+misc/fakesend/mh_profile   Relevant MH profile sample for frepl and freplq
+misc/getcost/README        Presentation of the spam-filter getcost
+misc/getcost/getcost       The getcost script
+misc/getcost/rules         Sample rules to plug getcost in
+misc/getcost/spamconfig    A sample ~/.spamconfig file
 misc/mime/README           Introduction to the un-MIME filter
 misc/mime/rules            Rules that can be used to trigger unmime
 misc/mime/unmime           The unmime script for MIME message processing

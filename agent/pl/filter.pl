@@ -1,4 +1,4 @@
-;# $Id: filter.pl,v 3.0.1.9 1997/09/15 15:15:04 ram Exp $
+;# $Id: filter.pl,v 3.0.1.10 1998/03/31 15:22:19 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
+;# Revision 3.0.1.10  1998/03/31  15:22:19  ram
+;# patch59: when "vacfixed" is on, forbid any change of vacation message
+;# patch59: new ON command to process commands on certain days only
+;#
 ;# Revision 3.0.1.9  1997/09/15  15:15:04  ram
 ;# patch57: fixed ASSGINED -> ASSIGNED typo in log message
 ;# patch57: implemented new -t and -f flags for BEGIN and NOP
@@ -389,6 +393,56 @@ sub run_back {
 	$lastcmd;			# Propage error status we got from the $command
 }
 
+# Run the ON command
+sub run_on {
+	local($_) = $cmd;					# The whole command line
+	local(@days) = split(' ', 'Sun Mon Tue Wed Thu Fri Sat');
+	local(%days);
+	local($daynum) = 0;
+	foreach $day (@days) {				# Initialize Sun => 0, Mon => 1, etc...
+		$days{$day} = $daynum++;
+	}
+	local(@on);							# List of specified days
+	local(%on);							# Hash '0' (for sunday) => 1 if selected
+	if (s/^ON\s*\(([^\)]*)\)//) {		# List of days, like (Mon Tue)
+		@on = split(/,?\s+/, $1);		# Allow (Mon Thu) and (Mon, Thu)
+		local($non);
+		foreach $on (@on) {
+			$non = $on;					# New $on will be canonicalized
+			$non =~ s/^(...).*/\u\L$1/;	# Keep only first 3 letters
+			unless (defined $days{$non}) {
+				&add_log("WARNING ignoring bad day $on in ON (@on)")
+					if $loglvl > 5;
+				next;
+			}
+			$on{$days{$non}}++;			# E.g sets $on{1} for Mon
+		}
+		&add_log("on (@on)") if $loglvl > 18;
+	} else {
+		&add_log("ERROR bad ON syntax (did not parse right)") if $loglvl > 1;
+		return 1;
+	}
+
+	# Calling run_command will set $lastcmd to the status of the command. In
+	# case we are running a command which does not alter this status, assume
+	# everything is fine.
+
+	$lastcmd = 0;						# Assume command will run correctly
+	s/^\s*//;							# Remove leading spaces
+
+	local($wday) = (localtime(time))[6];
+
+	if (defined $on{$wday}) {
+		&add_log("ON (@on) $_") if $loglvl > 7;
+		s/%/%%/g;						# Protect against 2nd macro substitution
+		$cont = &run_command($_);		# Run command and update control flow
+	} else {
+		&add_log("not a good day for $_") if $loglvl > 12;
+	}
+
+	$lastcmd;							# Propagates execution status
+}
+
 # Run the ONCE command
 sub run_once {
 	local($_) = $cmd;					# The whole command line
@@ -521,10 +575,13 @@ sub run_assign {
 	# within simple quotes, then those are stripped and no evaluation is made.
 	unless ($value =~ s/^'(.*)'$/$1/) {
 		eval "\$eval = $value";			# Maybe value is an expression?
-	} else {
-		$eval = $value;					# Leading and trailing ' trimmed
+		if ($@) {
+			chop($@);
+			&add_log("WARNINIG can't evaluate '$value': $@");
+		} else {
+			$value = $eval;
+		}
 	}
-	$value = $eval if $eval && $@ eq '';
 	if ($var =~ s/^://) {
 		&extern'set($var, $value);		# Persistent variable is set
 	} else {
@@ -593,10 +650,15 @@ sub run_vacation {
 	&env'local('vacation', $allowed) if $opt'sw_l;
 	$env'vacation = $allowed;			# Won't hurt given the above local call
 	if ($allowed && $mode !~ /^on$/i) {	# New vacation path given
-		$mode =~ s/^~/$cf'home/;		# ~ substitution
-		&env'local('vacfile', $mode) if $opt'sw_l;
-		$env'vacfile = $mode;
-		&add_log("vacation message in file $mode$l") if $loglvl > 7;
+		if ($cf'vacfixed =~ /on/i) {	# Not allowed if vacfixed is ON
+			&add_log("WARNING no message change allowed by 'vacfixed'")
+				if $loglvl > 5;
+		} else {
+			$mode =~ s/^~/$cf'home/;		# ~ substitution
+			&env'local('vacfile', $mode) if $opt'sw_l;
+			$env'vacfile = $mode;
+			&add_log("vacation message in file $mode$l") if $loglvl > 7;
+		}
 	}
 	if ($allowed && $period) {
 		&env'local('vacperiod', $period) if $opt'sw_l;

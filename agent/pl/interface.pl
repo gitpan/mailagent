@@ -1,4 +1,4 @@
-;# $Id: interface.pl,v 3.0.1.5 1997/02/20 11:45:12 ram Exp $
+;# $Id: interface.pl,v 3.0.1.6 1998/03/31 15:23:00 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: interface.pl,v $
+;# Revision 3.0.1.6  1998/03/31  15:23:00  ram
+;# patch59: added hook for the new ON command
+;#
 ;# Revision 3.0.1.5  1997/02/20  11:45:12  ram
 ;# patch55: made use of local $lastcmd instead of main's
 ;#
@@ -62,6 +65,7 @@ sub macro		{ &interface'dispatch; }
 sub message		{ &interface'dispatch; }
 sub nop			{ &interface'dispatch; }
 sub notify		{ &interface'dispatch; }
+sub on			{ &interface'dispatch; }
 sub once		{ &interface'dispatch; }
 sub pass		{ &interface'dispatch; }
 sub perl		{ &interface'dispatch; }

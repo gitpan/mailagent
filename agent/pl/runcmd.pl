@@ -1,4 +1,4 @@
-;# $Id: runcmd.pl,v 3.0.1.6 1997/09/15 15:17:32 ram Exp $
+;# $Id: runcmd.pl,v 3.0.1.7 1998/03/31 15:27:18 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: runcmd.pl,v $
+;# Revision 3.0.1.7  1998/03/31  15:27:18  ram
+;# patch59: declared the new "ON" command
+;#
 ;# Revision 3.0.1.6  1997/09/15  15:17:32  ram
 ;# patch57: NOP now returns a status
 ;# patch57: added -t and -f switches for BEGIN and NOP
@@ -60,6 +63,7 @@
 ;#  MESSAGE vacation         Sends a vacation-like message back
 ;#  NOP                      No operation (useful only with ONCE)
 ;#  NOTIFY address message   Notifies address with a given message
+;#  ON (days) <cmd>          Executes any other single command on specified days
 ;#  ONCE (period) <cmd>      Executes any other single command once per period
 ;#  PASS program             Pass body to program and get new body back
 ;#  PERL script              Run script to perform some filtering actions
@@ -225,6 +229,7 @@ sub init_filter {
 		'MESSAGE', 'run_message',	# Send a vacation-like file
 		'NOP', 'run_nop',			# No operation
 		'NOTIFY', 'run_notify',		# Notify reception of message
+		'ON', 'run_on',				# On day control
 		'ONCE', 'run_once',			# Once control
 		'PASS', 'run_pass',			# Pass body to program with feedback
 		'PERL', 'run_perl',			# Perform actions from within a perl script

@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.19 1997/09/15 15:07:18 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.20 1998/03/31 14:40:01 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,12 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.20  1998/03/31  14:40:01  ram
+''' patch59: added "vacfixed" and "tofake" configuration parameters
+''' patch59: new ON command to issue commands on certain days only
+''' patch59: the SERVER "set" command can now list defined variables
+''' patch59: added an example of alternate VACATION message selection
+'''
 ''' Revision 3.0.1.19  1997/09/15  15:07:18  ram
 ''' patch57: new -t and -f options for BEGIN and NOP
 ''' patch57: all command options should now be output in bold
@@ -721,6 +727,15 @@ Spool directory, required (suggested: ~/var/mailagent).
 File where statistics should be gathered. If no such file exists, no
 statistics will be recorded (suggested: \$spool/mailagent.st).
 .TP
+.I tofake
+Whether or not \fImailagent\fR should fake a To: line into the message
+header when it is absent, which will be used for filtering purposes (no
+physical alteration of the header occur). It uses Alternate-To: headers if
+found, otherwise it assumes the message was send to the user and takes the
+value from the \fIuser\fR configuration variable.
+(optional, defaults to ON, suggested: ON; turn it OFF only if you want to
+identify missing To: lines to detect SPAM).
+.TP
 .I tome
 This optional variable may contain a comma separated list of alternate logins
 that are also valid for the user (mail aliases). This is used in vacation
@@ -754,6 +769,12 @@ A flag set to ON or OFF to switch the vacation mode accordingly.
 .TP
 .I vacfile
 The name of the file to be sent back in vacation mode (suggested: ~/.vacation).
+.TP
+.I vacfixed
+When ON, all changes to the vacation file (even locally) by means of the
+VACATION command are forbidden. This is useful if you usually have many
+customized vacation messages for different people but temporarily want to
+force one unique message (optional, defaults to: OFF).
 .TP
 .I vacperiod
 The minimum time elapsed between two vacation messages to a given address
@@ -1877,6 +1898,26 @@ message is run through the macro substitution mechanism (described later on).
 As with FORWARD, file inclusion for address specification is possible.
 (Fails if message cannot be sent)
 .TP
+ON \fI(day list) command\fR
+Execute the specified filter command only on the specified day list. That list
+is a space-separated list of days, specified using the English names. Only the
+first three characters are taken into account, case-insensitively. Therefore,
+the shortest valid day specifications
+are \fIMon, Tue, Wed, Thu, Fri, Sat\fR and \fISun\fR.
+.sp
+This command can be used in conjunction with SELECT to do time-based selective
+bouncing of messages to, for instance, your home address:
+.Ex
+ON (Mon Tue Wed Thu) SELECT (18:30 .. 23:00) BOUNCE me@home.net;
+ON (Fri) SELECT (18:30 .. 23:59) BOUNCE me@home.net;
+ON (Sat Sun) BOUNCE me@home.net;
+.Ef
+That would bounce messages only on week-ends and during the week, after
+18:30, and until 23:00 (assuming that's bed time, other messages will be
+seen at work the next day). Note that on Fridays, we go as far as 23:59.
+(Propagates status from \fIcommand\fR. If the command is not executed, always
+return success)
+.TP
 ONCE \fI(name, tag, period) command\fR
 Execute the specified filter command once per \fIperiod\fR. The \fIname\fR and
 \fItag\fR fields are used to record timestamps of the last ONCE command.
@@ -2015,8 +2056,8 @@ to the grammar, but it's before the Epoch so it does not mean anything). Other
 fancy dates like 'last month - 5 minutes' or '3 weeks ago' are also enabled.
 (Isn't that great to have a \fBreal\fR parser? The filtering rules could have
 been more elaborated if only I had known about this Berkeley \fIyacc\fR
-producing a \fIperl\fR parser...). (Returns the status of \fIcommand\fR, if run,
-otherwise returns true).
+producing a \fIperl\fR parser...).
+(Returns the status of \fIcommand\fR, if run, otherwise returns true).
 .TP
 SERVER [\fB\-t\fR] [\fB\-d \fIdisabled commands\fR]
 Activate server processing. The body of the message is interpreted as a list
@@ -2099,7 +2140,8 @@ already present there. If the message is recorded for the first time, processing
 continues normally. Otherwise a REJECT is performed. If \fB\-r\fR was used,
 a RESTART is used instead whilst \fB\-a\fR would run an ABORT.
 For instance, to remove duplicate messages from mailing lists, run a
-UNIQUE -a before saving the mail. The \fB\-c\fR option may be used alone to
+UNIQUE \fB\-a\fR before saving the mail.
+The \fB\-c\fR option may be used alone to
 actually prevent the command from disturbing the execution flow, and to later
 use the return status to see what happened:
 UNIQUE returns a failure status if the message was already recorded.
@@ -2121,6 +2163,8 @@ Instead of \fIon\fR or \fIoff\fR, you can specify a file name (~ substitution
 allowed) being the new path to be used for locating the vacation file.
 Optionally, you may specify a last parameter, which will be taken as the
 period to apply when sending the vacation message.
+Changes to the vacation message \fIpath\fR are forbidden when the
+configuration variable \fIvacfixed\fR is set to ON.
 .sp
 If you use the \fB\-l\fR option, changes are made locally, for the duration of
 the rule only. If you REJECT to go to some other rule, your changes will be
@@ -2876,6 +2920,26 @@ You cannot use the same scheme to allow vacation messages to special
 users like \fIroot\fR, because the test for "specialness" occurs after the
 vacation mode flag. This is construed as a feature as it prevents stupid
 mistakes, like using \fIr*\fR instead of \fIram\fR in the previous rule.
+.PP
+You may also want to setup a different vacation message, meant only for people
+in your organization given the sensitive nature of the information revealed ;-).
+A simple way of doing that is:
+.Ex
+From: /^\\\\w+\$/, /^\\\\w+@\\\\w+\$/, /^[\\\\w.-]+@.*\\\\.hp\\\\.com\$/i
+	{ VACATION ~/.hp_vacation 1w; REJECT HP };
+.Ef
+Assuming the domain of my organization is \fI.hp.com\fR and that messages
+not bearing any domain are local messages, the above rule sets up the
+file \fI~/.hp_vacation\fR, sent once a week, for all HP employees.
+.PP
+The VACATION command will not let you change the message path (but will
+allow frequency changes anyway) when the \fIvacfixed\fR configuration
+variable is set to ON. This is meant to be used in emergency situations,
+when only one vacation message will fit. For instance, when you are on
+a sick leave, a simple trigger message to your mailagent from home could
+change your \fI~/.mailagent\fR configuration to force the \fI~/.i_am_sick\fR
+message, regardless of what the various rules have to say. Actually, this
+is precisely why this feature was added, amazing... :-)
 .SH VARIABLES
 The following variables are paid attention to: they may come from the
 environment or be set in the rule file:
@@ -3997,6 +4061,8 @@ variables like the EOF marker value, or change some command environment.
 The user may define his own variables for his commands.
 For \fIflag\fR-type variable, a value of \fIon\fR, \fIyes\fR or \fItrue\fR sets
 the variable to \fI1\fR, any other string sets it to \fI0\fR (false).
+Used all by itself as \fIset\fR, the list of all the defined variables along
+with their respective values is returned.
 .TP
 .I setauth power password
 Replace power clearance file with one obtained from standard mail input up to

@@ -11,16 +11,20 @@
 # a Content-Type header and use MIME =xx escapes to encode some characters.
 # There's no need to RESYNC in that case since we leave the headers intact.
 #
+# Nota Bene: I'm supplying the -x option because I get many messages in French
+# written with non-ASCII characters. Feel free to remove it if you don't need
+# it, or to strengthen it by using -X instead, which will translate ALL the
+# accentuated leters into their plain ASCII counterpart.
 
 Mime-Version: /^\d/		{ REJECT MIME };
 
 <MIME> Content-Type: /multipart/		{ SAVE +mime; REJECT REAL };
 <MIME> Body <1,10>: /^Content-Type:/i	{ SAVE +mime; REJECT REAL };
 <MIME,REAL> {
-	FEED ~/mail/unmime;
+	FEED ~/mail/unmime -x;
 	STRIP Mime-Version Content-Transfer-Encoding Content-Type;
 	RESYNC; REJECT INITIAL;
 };
 
-Content-Type: /^text/i { FEED ~/mail/unmime -e; REJECT };
+Content-Type: /^text/i { FEED ~/mail/unmime -ex; REJECT };
 

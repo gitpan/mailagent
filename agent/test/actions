@@ -2,7 +2,7 @@
 # Mailagent rules for action regression tests
 #
 
-# $Id: actions,v 3.0.1.10 1995/08/07 16:26:55 ram Exp $
+# $Id: actions,v 3.0.1.11 1998/03/31 15:28:55 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: actions,v $
+# Revision 3.0.1.11  1998/03/31  15:28:55  ram
+# patch59: added regression tests for new "ON" command
+#
 # Revision 3.0.1.10  1995/08/07  16:26:55  ram
 # patch37: new BIFF regression testing
 #
@@ -182,6 +185,20 @@ X-Tag: /nop/				{ NOP; DELETE };
 X-Tag: /notify 1/			{ NOTIFY msg nobody; DELETE };
 X-Tag: /notify 2/			{ NOTIFY msg "list"; DELETE };
 X-Tag: /notify 3/			{ NOTIFY msg.2 some@random.ctry %u; DELETE };
+
+X-Tag: /^on$/
+{
+	ON (Mondays Tuesdays Wednesdays Thursdays Fridays Saturdays Sundays) LEAVE;
+	ON (mon) SAVE days;
+	ON (tue) SAVE days;
+	ON (wed) SAVE days;
+	ON (thu) SAVE days;
+	ON (fri) SAVE days;
+	ON (sat) SAVE days;
+	ON (sun) SAVE days;
+	ON (Mn Ts Wd Th Fr Sa Su) SAVE days;
+	ON (mno tsx wda tuh frd sam sum) SAVE days;
+}
 
 X-Tag: /once/
 {

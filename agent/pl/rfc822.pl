@@ -1,4 +1,4 @@
-;# $Id: rfc822.pl,v 3.0.1.2 1995/09/15 14:05:10 ram Exp $
+;# $Id: rfc822.pl,v 3.0.1.3 1998/03/31 15:26:17 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rfc822.pl,v $
+;# Revision 3.0.1.3  1998/03/31  15:26:17  ram
+;# patch59: parser now allows no space between address and comment
+;#
 ;# Revision 3.0.1.2  1995/09/15  14:05:10  ram
 ;# patch43: internet_info now assumes local user when facing a single login
 ;#
@@ -38,12 +41,12 @@ sub parse_address {
 	local($_) = shift(@_);		# The address to be parsed
 	local($comment);
 	local($internet);
-	if (/^\s*(.*)\s+<(\S+)>[^()]*$/) {		# comment <address>
+	if (/^\s*(.*)\s*<(\S+)>[^()]*$/) {		# comment <address>
 		$comment = $1;
 		$internet = $2;
 		$comment =~ s/^"(.*)"/$1/;			# "comment" -> comment
 		($internet, $comment);
-	} elsif (/^\s*([^()]+)\s+\((.*)\)/) {	# address (comment) 
+	} elsif (/^\s*([^()]+)\s*\((.*)\)/) {	# address (comment) 
 		$comment = $2;
 		$internet = $1;
 		# Construct '<address> (comment)' is invalid but... priority to <>
@@ -52,7 +55,7 @@ sub parse_address {
 		($internet, $comment);
 	} elsif (/^\s*<(\S+)>\s*(.*)/) {		# <address> ...garbage...
 		($1, $2);
-	} elsif (/^\s*\((.*)\)\s+<?(.*)>?/) {	# (comment) [address or <address>]
+	} elsif (/^\s*\((.*)\)\s*<?(.*)>?/) {	# (comment) [address or <address>]
 		($2, $1);
 	} else {								# plain address, grab first word
 		/^\s*(\S+)\s*(.*)/;

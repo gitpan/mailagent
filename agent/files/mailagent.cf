@@ -2,7 +2,7 @@
 # Configuration file for mailagent
 #
 
-# $Id: mailagent.cf,v 3.0.1.10 1997/02/20 11:33:49 ram Exp $
+# $Id: mailagent.cf,v 3.0.1.11 1998/03/31 14:35:29 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
+# Revision 3.0.1.11  1998/03/31  14:35:29  ram
+# patch59: added "vacfixed" and "tofake" configuration parameters
+#
 # Revision 3.0.1.10  1997/02/20  11:33:49  ram
 # patch55: new groupsafe, execskip and lockwarn variables
 #
@@ -74,6 +77,7 @@ email    : you@your.domain.top	# Your accurate e-mail address
 vacation : OFF					# Vacation mode on/off
 vacfile  : ~/.vacation			# File to be sent back
 vacperiod: 1d					# Period between two vacation messages
+vacfixed : OFF					# Turn to on to solely allow vacfile message
 
 # Mail and news transport agents
 # By default, values for sendmail and sendnews are determined at configuration
@@ -119,6 +123,7 @@ mmdfbox  : OFF					# Force new folders to MMDF format
 fromesc  : ON					# Escape leading From into >From
 fromall  : OFF					# Escape all From, even within paragraph
 fromfake : ON					# Attempt creation of From: header when missing
+tofake   : ON					# Fake a To: line when missing
 
 # Biffing support
 biff     : ON					# Whether biff is wanted

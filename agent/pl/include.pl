@@ -1,4 +1,4 @@
-;# $Id: include.pl,v 3.0 1993/11/29 13:48:52 ram Exp $
+;# $Id: include.pl,v 3.0.1.1 1998/03/31 15:22:33 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: include.pl,v $
+;# Revision 3.0.1.1  1998/03/31  15:22:33  ram
+;# patch59: typo fix in comment
+;#
 ;# Revision 3.0  1993/11/29  13:48:52  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -24,7 +27,7 @@ sub include_file {
 	local(@result);
 	local($_);
 	# Find file using mailfilter, maildir variables if not specified with an
-	# absolute pathname (starting iwht a '/').
+	# absolute pathname (starting with a '/').
 	$filename = &locate_file($filename);
 	&add_log("loading ".&plural($what)." from $filename") if $loglvl > 18;
 	if ($filename ne '' && open(INCLUDE, "$filename")) {

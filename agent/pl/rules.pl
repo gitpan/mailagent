@@ -1,4 +1,4 @@
-;# $Id: rules.pl,v 3.0.1.8 1997/01/31 18:08:02 ram Exp $
+;# $Id: rules.pl,v 3.0.1.9 1998/03/31 15:27:04 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rules.pl,v $
+;# Revision 3.0.1.9  1998/03/31  15:27:04  ram
+;# patch59: allow ~name expansion when specifying alternate rule files
+;#
 ;# Revision 3.0.1.8  1997/01/31  18:08:02  ram
 ;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
 ;#
@@ -448,6 +451,7 @@ sub alternate {
 	local($'edited_rules) = 1;	# Signals that rules do not come from main file
 	local(@'Linerules);			# We're stuffing our new rules there
 
+	$rules =~ s/^~/$cf'home/;	# ~ substitution
 	unless (open(RULES, $rules)) {
 		&'add_log("ERROR cannot open alternate rule file $rules: $!")
 			if $'loglvl;

@@ -1,4 +1,4 @@
-;# $Id: cmdserv.pl,v 3.0.1.4 1997/02/20 11:43:12 ram Exp $
+;# $Id: cmdserv.pl,v 3.0.1.5 1998/03/31 15:20:35 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
+;# Revision 3.0.1.5  1998/03/31  15:20:35  ram
+;# patch59: changed "set" to dump variables when not given any argument
+;#
 ;# Revision 3.0.1.4  1997/02/20  11:43:12  ram
 ;# patch55: made 'perl -cw' clean
 ;#
@@ -639,7 +642,7 @@ sub exec_help {
 "Following is a list of the known commands. Some additional help is available
 on a command basis by using 'help <command>', unless the command name is
 followed by a '*' character in which case no further help may be obtained.
-Commands which collect input until an eof mark are marked with a trailing '='.
+Commands collecting input until an EOF mark are flagged with a trailing '='.
 
 ";
 		local(@cmds);			# List of known commands
@@ -1113,14 +1116,28 @@ sub run_getauth {
 # Set internal variable. The syntax is:
 #    set <variable> <value>
 # and the corresponding variable from cmdenv package is set.
+# If <variable> is missing, dump all the known variables.
 sub run_set {
 	local($x, $var, @args) = split(' ', $cmdenv'cmd);
+	if ($var eq '') {				# Dump defined variables
+		local($type, $val);
+		foreach $name (keys %Set) {
+			$type = $Set{$name};	# Variable type 'flag' or 'var'
+			$val = eval "defined(\$cmdenv'$name) ? \$cmdenv'$name : undef";
+			next unless defined $val;
+			$val = $val ? 'true' : 'false' if $type eq 'flag';
+			$val = "'$val'" if $type ne 'flag';
+			print MAILER "$name=$val\n";
+		}
+		return 0;
+	}
 	unless (defined $Set{$var}) {
 		print MAILER "Unknown or read-only variable '$var'.\n";
 		return 1;		# Failed
 	}
 	local($type) = $Set{$var};		# The variable type
-	local($_)	;					# Value to assign to variable
+	local($_);						# Value to assign to variable
+	local($val);					# Final assigned value
 	if ($type eq 'flag') {
 		$_ = $args[0];
 		if ($_ eq '' || /on/i || /yes/i || /true/i) {
