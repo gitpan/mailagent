@@ -1,4 +1,4 @@
-;# $Id: analyze.pl,v 3.0.1.6 1996/12/24 14:47:17 ram Exp $
+;# $Id: analyze.pl,v 3.0.1.7 1997/01/31 18:07:47 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
+;# Revision 3.0.1.7  1997/01/31  18:07:47  ram
+;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
+;#
 ;# Revision 3.0.1.6  1996/12/24  14:47:17  ram
 ;# patch45: forgot to return 0 at the end of special_user()
 ;#
@@ -211,8 +214,8 @@ sub apply_rules {
 		undef %Matched;							# Reset matching patterns
 		undef %Inverted;						# Reset negated patterns
 		$rules = $_;							# Work on a copy
-		$rules =~ s/^([^{]*){// && ($mode = $1);	# First word is the mode
-		$rules =~ s/\s*(.*)}// && ($action = $1);	# Followed by action }
+		$rules =~ s/^([^{]*)\{// && ($mode = $1);	# First word is the mode
+		$rules =~ s/\s*(.*)\}// && ($action = $1);	# Followed by action }
 		$mode =~ s/\s*$//;							# Remove trailing spaces
 		$rules =~ s/^\s+//;						# Remove leading spaces
 		$last_selector = "";					# Last selector used

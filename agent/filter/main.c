@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: main.c,v 3.0.1.4 1997/01/07 18:26:49 ram Exp $
+ * $Id: main.c,v 3.0.1.5 1997/01/31 18:06:43 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: main.c,v $
+ * Revision 3.0.1.5  1997/01/31  18:06:43  ram
+ * patch54: also trap fatal SIGSEGV and SIGBUS signals
+ *
  * Revision 3.0.1.4  1997/01/07  18:26:49  ram
  * patch52: don't use my_exit() when printing version number
  *
@@ -188,6 +191,12 @@ private void set_signal()
 #endif
 #ifdef SIGTERM
 	signal(SIGTERM, handler);
+#endif
+#ifdef SIGSEGV
+	signal(SIGSEGV, handler);
+#endif
+#ifdef SIGBUS
+	signal(SIGBUS, handler);
 #endif
 }
 

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.10 1997/01/08 08:42:31 ram Exp $
+ * $Id: parser.c,v 3.0.1.11 1997/01/31 18:07:11 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
+ * Revision 3.0.1.11  1997/01/31  18:07:11  ram
+ * patch54: forgot one more get_confval vs get_confstr translation
+ *
  * Revision 3.0.1.10  1997/01/08  08:42:31  ram
  * patch53: must use get_confstr() to get at the execsafe variable
  *
@@ -513,7 +516,7 @@ char **envp;				/* The environment pointer */
 		fatal("cannot set HOME variable");
 
 	/* If there is a 'timezone' variable, set TZ accordingly */
-	tz = get_confval("timezone", CF_DEFAULT, (char *) 0);	/* Exists ? */
+	tz = get_confstr("timezone", CF_DEFAULT, (char *) 0);	/* Exists ? */
 	if (tz != (char *) 0) {
 		if (-1 == set_env("TZ", tz))
 			add_log(1, "ERROR cannot set TZ variable");

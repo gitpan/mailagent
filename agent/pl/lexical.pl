@@ -1,4 +1,4 @@
-;# $Id: lexical.pl,v 3.0.1.3 1995/02/03 18:01:58 ram Exp $
+;# $Id: lexical.pl,v 3.0.1.4 1997/01/31 18:07:55 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: lexical.pl,v $
+;# Revision 3.0.1.4  1997/01/31  18:07:55  ram
+;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
+;#
 ;# Revision 3.0.1.3  1995/02/03  18:01:58  ram
 ;# patch30: rule parsing could end-up prematurely when facing hook files
 ;#
@@ -174,7 +177,7 @@ sub action_parse {
 	for (;;) {
 		# Go to first un-escaped '{', if possible and save leading string
 		# up-to first '{'. Note that any '}' immediately stops scanning.
-		s/^(([^\\{}]|\\.)*{)// && ($parsed .= $1);
+		s/^(([^\\{}]|\\.)*\{)// && ($parsed .= $1);
 		# Go to first un-escaped '}', with any '{' stopping scan.
 		$block = '';
 		s/^(([^\\{}]|\\.)*\})// && ($block = $1);

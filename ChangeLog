@@ -1,3 +1,30 @@
+Fri Jan 31 19:11:21 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	Filter also trap fatal SIGSEGV and SIGBUS signals in C filter.
+
+	Forgot one more get_confval vs get_confstr translation in filter.
+	This caused dreadful core dumps, a sure sign being the regression
+	test suite mysteriously failing...
+
+	Esacape metacharacter '{' in regexps for perl5.003_20. This
+	subversion has been really nitty picky on un-escaped '{'
+	without a '}' counterpart. Further subversions have backed-out
+	this strict checking however, but the deed is done and I have
+	escaped all the culprits!
+
+. Files changed:
+
+	* agent/filter/main.c: Also trap fatal SIGSEGV and SIGBUS signals.
+
+	* agent/filter/parser.c: Forgot one more get_confval vs get_confstr
+	translation.
+
+	* agent/pl/stats.pl, agent/pl/lexical.pl, agent/pl/rules.pl,
+	agent/pl/analyze.pl: Esacape metacharacter '{' in regexps for
+	perl5.003_20.
+
 Wed Jan  8 09:43:56 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

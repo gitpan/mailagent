@@ -1,4 +1,4 @@
-;# $Id: stats.pl,v 3.0.1.2 1995/02/03 18:04:36 ram Exp $
+;# $Id: stats.pl,v 3.0.1.3 1997/01/31 18:08:09 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: stats.pl,v $
+;# Revision 3.0.1.3  1997/01/31  18:08:09  ram
+;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
+;#
 ;# Revision 3.0.1.2  1995/02/03  18:04:36  ram
 ;# patch30: avoid blank printing when the default rule was never applied
 ;#
@@ -709,7 +712,7 @@ sub print_header {
 sub rule_stats {
 	return unless $opt_r;
 	local($rulenum) = @_;
-	local($mode) = $main'Rules[$rulenum - 1] =~ /^(.*)\s+{/;
+	local($mode) = $main'Rules[$rulenum - 1] =~ /^(.*)\s+\{/;
 	return unless $mode =~ /,/ || $mode eq 'ALL' || $mode =~ /!/;
 
 	# If there is only one mode <ALL>, more than one mode, or at least
