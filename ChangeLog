@@ -1,3 +1,76 @@
+Wed Jan 13 19:24:56 MET 1999   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	The agent.wait file is now stored in the spool rather than in
+	the queue.
+
+	Fixed wrong localization of variables in unique_filename() which
+	could cause filter to lock up. Thanks to Gerhard den Hollande
+	for spotting it!
+
+	Additions to agent.wait are more robust and use locking to guard
+	against concurrent accesses, rather than counting on proper
+	O_APPEND semantics and praying nobody (mailagent) renames the
+	file whilst generated ;-)
+
+	Only use last two digits from year in logfiles. I choose to
+	see "00/01/01" on Jan 1st 2000 in the logs.
+
+	Added tag-checking heuristic to say() in C filter to avoid
+	extra pre-pending of ERROR tags.
+
+	New %Y macro for 4-digit year, %y being year modulo 100
+
+	Resync of agent.wait now more robust and uses locking.
+	There may be empty lines in the agent.wait file, to reserve
+	space in the filesystem (minimal size is therefore 1 byte).
+
+	Test suite: Test for non-writable agent.wait file and cleanup
+	agent.wait file since now always produced.
+
+	Documented the -k option for getcost in misc/getcost.
+
+. Files changed:
+
+	* agent/files/filter.sh: Agent.wait is now stored in the spool rather
+	than in queue.
+
+	* agent/filter/io.c: Fixed wrong localization of variables in
+	unique_filename().  Additions to agent.wait are more robust and use
+	locking.
+
+	* agent/pl/actions.pl, agent/filter/logfile.c, agent/pl/add_log.pl:
+	Only use last two digits from year in logfiles.
+
+	* agent/filter/msg.c: Added tag-checking heuristic to say().
+
+	* agent/magent.sh: Changed agent_wait to AGENT_WAIT, now holding full
+	path.
+
+	* agent/man/mailagent.SH: Added %Y macro for 4-digit year output. 
+	Agent.wait file moved from Queue to Spool.
+
+	* agent/pl/emergency.pl: Only use last two digits from year in
+	logfiles.  Resync of agent.wait now more robust and uses locking.
+
+	* agent/pl/pqueue.pl, agent/pl/listqueue.pl: There may be empty lines
+	in the agent.wait file.
+
+	* agent/pl/macros.pl: New %Y macro for 4-digit year, %y being year
+	modulo 100.
+
+	* agent/pl/queue_mail.pl: Writing to agent.wait is now more robust
+	and uses locking.
+
+	* agent/test/basic/config.t: Test for non-writable agent.wait file.
+
+	* agent/test/basic/filter.t: Agent.wait file moved from queue to
+	spool dir.
+
+	* agent/test/pl/init.pl: Cleanup agent.wait file since now always
+	produced.
+
 Tue Jul 28 19:33:00 METDST 1998   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: logfile.c,v 3.0.1.3 1997/02/20 11:36:23 ram Exp $
+ * $Id: logfile.c,v 3.0.1.4 1999/01/13 18:07:00 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: logfile.c,v $
+ * Revision 3.0.1.4  1999/01/13  18:07:00  ram
+ * patch64: only use last two digits from year in logfiles
+ *
  * Revision 3.0.1.3  1997/02/20  11:36:23  ram
  * patch55: prefer open(O_APPEND) to fopen("a") for stdio append bugs
  *
@@ -116,8 +119,8 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use long instead of int for 64 bits */
 	ct = localtime(&clock);		/* Get local time from amount of seconds */
 	expand(format, buffer);		/* Expansion of %m and %e into buffer */
 
-	fprintf(stdlog, "%d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
-		ct->tm_year, ct->tm_mon + 1, ct->tm_mday,
+	fprintf(stdlog, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
+		ct->tm_year % 100, ct->tm_mon + 1, ct->tm_mday,
 		ct->tm_hour, ct->tm_min, ct->tm_sec,
 		progname, progpid);
 

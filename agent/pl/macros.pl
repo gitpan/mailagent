@@ -1,4 +1,4 @@
-;# $Id: macros.pl,v 3.0.1.4 1995/01/25 15:24:32 ram Exp $
+;# $Id: macros.pl,v 3.0.1.5 1999/01/13 18:14:25 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: macros.pl,v $
+;# Revision 3.0.1.5  1999/01/13  18:14:25  ram
+;# patch64: new %Y macro for 4-digit year, %y being year modulo 100
+;#
 ;# Revision 3.0.1.4  1995/01/25  15:24:32  ram
 ;# patch27: ported to perl 5.0 PL0
 ;#
@@ -40,6 +43,7 @@
 ;# %S     Re: subject of original message
 ;# %T     Time of last modification on mailed file (value taken from $macro_T)
 ;# %U     Full name of the user
+;# %Y     Year (yyyy format)
 ;# %_     A white space
 ;# %#reg  Value of user-defined variable 'reg'
 ;# %&     List of selectors which incurred match (among regexps ones) 
@@ -99,6 +103,7 @@ sub macros_subst {
 	$mday = sprintf("%.2d", $mday);
 	local($timenow) = sprintf("%.2d:%.2d", $hour, $min);
 	$hour = sprintf("%.2d", $hour);
+	$year += 1900;
 
 	# The following dummy block is here only to force perl interpreting
 	# the $ variables in the substitutions correctly...
@@ -142,7 +147,8 @@ sub macros_subst {
 	s/\02!T/$macro_T/g;					# Time of last modification on file
 	s/\02!u/$cf'user/go;				# User login name (does not change)
 	s/\02!U/$cf'name/go;				# User's name (does not change)
-	s/\02!y/$year/g;					# Year (last two digits)
+	s/\02!y/$year % 100/eg;				# Year (last two digits)
+	s/\02!Y/$year/g;					# Year (yyyy format)
 	s/\02!_/ /g;						# A white space
 	s/\02!~//g;							# A null character
 	s/\02!&/$macro_ampersand/g;			# List of matched generic selectors

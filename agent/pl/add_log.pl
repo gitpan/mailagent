@@ -1,4 +1,4 @@
-;# $Id: add_log.pl,v 3.0.1.2 1995/02/16 14:33:04 ram Exp $
+;# $Id: add_log.pl,v 3.0.1.3 1999/01/13 18:12:37 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: add_log.pl,v $
+;# Revision 3.0.1.3  1999/01/13  18:12:37  ram
+;# patch64: only use last two digits from year in logfiles
+;#
 ;# Revision 3.0.1.2  1995/02/16  14:33:04  ram
 ;# patch32: new routine stdout_log for -I switch usage
 ;#
@@ -120,7 +123,7 @@ sub write_log {
 	local ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
 		localtime(time);
 	$date = sprintf("%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
-		$year,++$mon,$mday,$hour,$min,$sec);
+		$year % 100,++$mon,$mday,$hour,$min,$sec);
 	$log = $date . " $'prog_name\[$'jobnum\]: $msg\n";
 
 	# If we cannot append to the logfile, first check whether it is the default

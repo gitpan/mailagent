@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: msg.c,v 3.0.1.4 1996/12/24 13:59:31 ram Exp $
+ * $Id: msg.c,v 3.0.1.5 1999/01/13 18:08:06 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: msg.c,v $
+ * Revision 3.0.1.5  1999/01/13  18:08:06  ram
+ * patch64: added tag-checking heuristic to say()
+ *
  * Revision 3.0.1.4  1996/12/24  13:59:31  ram
  * patch45: call my_exit() instead of exit()
  *
@@ -45,6 +48,7 @@
 #include "portable.h"
 #include <stdio.h>
 #include <sys/types.h>
+#include <ctype.h>
 #include "sysexits.h"
 #include "logfile.h"
 #include "lock.h"
@@ -65,6 +69,21 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use longs, hope (char *) fits in it! */
 	fprintf(stderr, "%s[%d]: ", progname, progpid);
 	fprintf(stderr, msg, arg1, arg2, arg3, arg4, arg5);
 	fputc('\n', stderr);
+
+	/*
+	 * A little heuristic here...
+	 *
+	 * If the message begins with an upper-cased don't prepend
+	 * the ERROR tag, assuming a tag was already specified.
+	 */
+
+	if (isupper(msg[0]))
+		add_log(2, msg, arg1, arg2, arg3, arg4, arg5);
+	else {
+		char buffer[MAX_STRING];
+		sprintf(buffer, "ERROR %s", msg);
+		add_log(2, buffer, arg1, arg2, arg3, arg4, arg5);
+	}
 }
 
 /* VARARGS2 */
@@ -88,6 +107,7 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use longs, hope (char *) fits in it! */
 	fprintf(stderr, "%s[%d]: FATAL ", progname, progpid);
 	fprintf(stderr, reason, arg1, arg2, arg3, arg4, arg5);
 	fputc('\n', stderr);
+
 	sprintf(buffer, "FATAL %s", reason);
 	add_log(1, buffer, arg1, arg2, arg3, arg4, arg5);
 

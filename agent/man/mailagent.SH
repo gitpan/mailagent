@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.21 1998/07/28 16:59:10 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.22 1999/01/13 18:10:52 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,10 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.22  1999/01/13  18:10:52  ram
+''' patch64: added %Y macro for 4-digit year output
+''' patch64: agent.wait file moved from Queue to Spool
+'''
 ''' Revision 3.0.1.21  1998/07/28  16:59:10  ram
 ''' patch62: documented new "servshell" variable
 '''
@@ -2464,6 +2468,9 @@ Time of the last modification on mailed file (commands MESSAGE and NOTIFY)
 %U
 Full name of the user
 .TP
+%Y
+Full year, with four digits (so-called \fIyyyy format\fR)
+.TP
 %_
 A white space (useful to put white spaces in single patterns)
 .TP
@@ -4680,9 +4687,10 @@ directory holding templates and samples.
 Log/agentlog
 mailagent's log file.
 .TP
-Queue/agent.wait
+Spool/agent.wait
 list of mails waiting to be processed and stored outside of mailagent's
-spool directory.
+queue directory. Even when logically empty, this file is kept around and
+still holds one blank line to reserve a block on the filesystem.
 .TP
 Queue/qmXXXXX
 mail spooled by \fIfilter\fR.

@@ -1,4 +1,4 @@
-;# $Id: pqueue.pl,v 3.0.1.2 1997/09/15 15:16:53 ram Exp $
+;# $Id: pqueue.pl,v 3.0.1.3 1999/01/13 18:15:07 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: pqueue.pl,v $
+;# Revision 3.0.1.3  1999/01/13  18:15:07  ram
+;# patch64: there may be empty lines in the agent.wait file
+;#
 ;# Revision 3.0.1.2  1997/09/15  15:16:53  ram
 ;# patch57: messages in the queue are now locked before processing
 ;# patch57: new pmail() routine to factorize locking/processing code
@@ -51,18 +54,22 @@ sub pqueue {
 		}
 	}
 
-	# In $agent_wait are stored the names of the mails outside the queue
-	# directory, waiting to be processed.
-	if (-f "$cf'queue/$agent_wait") {
-		if (open(WAITING, "$cf'queue/$agent_wait")) {
+	# In $AGENT_WAIT are stored the names of the mails outside the queue
+	# directory, waiting to be processed. Empty lines (one being added by
+	# &resync systematically) are skipped.
+	if (-f $AGENT_WAIT) {
+		local(*WAITING);
+		local($_);
+		if (open(WAITING, $AGENT_WAIT)) {
 			while (<WAITING>) {
 				chop;
+				next unless length $_;	# Ignore empty lines
 				push(@files, $_);		# Process this file too
 				$waiting{$_} = 1;		# Record it comes from waiting file
 			}
 			close WAITING;
 		} else {
-			&add_log("ERROR cannot open $cf'queue/$agent_wait: $!") if $loglvl;
+			&add_log("ERROR cannot open $AGENT_WAIT: $!") if $loglvl;
 		}
 	}
 	return 0 unless $#files >= 0;
@@ -74,7 +81,7 @@ sub pqueue {
 		$file_name = $file;
 		if ($waiting{$file} && ! -f $file) {
 			# We may have already processed this file without having resynced
-			# agent_wait or the file has been removed.
+			# AGENT_WAIT or the file has been removed.
 			&add_log ("WARNING could not find $file") if $loglvl > 4;
 			$waiting{$file} = 0;	# Mark it as processed
 			next;					# And skip it

@@ -58,7 +58,7 @@ believe it or not, the code has greatly improved since it was first
 conceived. ]
 
      Questionable code also exists to automatically mark the message as
-SPAM if the To: header is more than 500 characters long.  This code
+SPAM if the To: header is more than 1000 characters long.  This code
 should probably be deleted/modified.
 
      Scanning stops as soon as the cost goes above 1000000 or below
@@ -103,6 +103,10 @@ option (see below) must be used.
 
 	-f configfile
 		Use "configfile" instead of $HOME/.spamconfig
+
+	-k  Keep going applying the rules, even when the -1000000
+		threshold is reached. Useful in conjunction with -d on a
+		tty to debug a set of patterns.
 
 	-L	Penalize long lines.  Lines greater than 90 characters get
 		assigned a cost of: -(10 + line_length).  For example, a

@@ -1,6 +1,6 @@
 # Set up mailagent and filter paths
 
-;# $Id: init.pl,v 3.0.1.2 1995/08/07 16:28:52 ram Exp $
+;# $Id: init.pl,v 3.0.1.3 1999/01/13 18:16:59 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -11,6 +11,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: init.pl,v $
+;# Revision 3.0.1.3  1999/01/13  18:16:59  ram
+;# patch64: cleanup agent.wait file since now always produced
+;#
 ;# Revision 3.0.1.2  1995/08/07  16:28:52  ram
 ;# patch37: added support for locking on filesystems with short filenames
 ;#
@@ -31,4 +34,5 @@ $filter = "$up/filter/filter";
 
 # Make sure no lock were left by previous test
 unlink "$pwd/out/filter$lockext", "$pwd/out/perl$lockext";
+unlink 'agent.wait';
 

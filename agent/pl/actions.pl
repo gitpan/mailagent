@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.16 1997/09/15 15:10:53 ram Exp $
+;# $Id: actions.pl,v 3.0.1.17 1999/01/13 18:12:18 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.17  1999/01/13  18:12:18  ram
+;# patch64: only use last two digits from year in logfiles
+;#
 ;# Revision 3.0.1.16  1997/09/15  15:10:53  ram
 ;# patch57: don't blindly chop command error message, remove trailing \n
 ;# patch57: annotation was not performed for value "0"
@@ -532,7 +535,7 @@ sub send_message {
 	# Do not put the year in %T if it is the same as the current one.
 	++$mon;						# Month in the range 1-12
 	if ($this_year != $year) {
-		$macro_T = sprintf("%.2d/%.2d/%.2d", $year, $mon, $mday);
+		$macro_T = sprintf("%.2d/%.2d/%.2d", $year % 100, $mon, $mday);
 	} else {
 		$macro_T = sprintf("%.2d/%.2d", $mon, $mday);
 	}

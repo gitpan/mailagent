@@ -1,4 +1,4 @@
-;# $Id: queue_mail.pl,v 3.0.1.3 1996/12/24 14:58:35 ram Exp $
+;# $Id: queue_mail.pl,v 3.0.1.4 1999/01/13 18:15:50 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: queue_mail.pl,v $
+;# Revision 3.0.1.4  1999/01/13  18:15:50  ram
+;# patch64: writing to agent.wait is now more robust and uses locking
+;#
 ;# Revision 3.0.1.3  1996/12/24  14:58:35  ram
 ;# patch45: add as many trailing 'x' as necessary for unique queue file
 ;#
@@ -167,7 +170,7 @@ sub queue_mail {
 		} else {
 			&fatal("mail may be lost");	# Mail came from filter via stdin
 		}
-		# If the mail is on the disk, add its name to the file $agent_wait
+		# If the mail is on the disk, add its name to the file $AGENT_WAIT
 		# in the queue directory. This file contains the names of the mails
 		# stored outside of the mailagent's queue and waiting to be processed.
 		$ok = &waiting_mail($tmp_queue);
@@ -196,22 +199,46 @@ sub queue_mail {
 # queue. Returns 1 if mail was successfully added to this list.
 sub waiting_mail {
 	local($tmp_queue) = @_;
-	local($status) = 0;
-	if (open(WAITING, ">>$agent_wait")) {
-		if (print WAITING "$tmp_queue\n") {
-			$status = 1;			# Mail more or less safely queued
-			&add_log("NOTICE processing deferred for $tmp_queue")
-				if $loglvl > 3;
-		} else {
-			&add_log("ERROR could not record $tmp_queue in $agent_wait")
-				if $loglvl > 1;
+	local($error) = 0;
+	local($old_size) = -s $AGENT_WAIT;
+	local($locked) = 0 == &acs_rqst($AGENT_WAIT);
+
+	&add_log("WARNING updating $AGENT_WAIT without lock")
+		if !$locked && $loglvl > 5;
+
+	if (open(WAITING, ">>$AGENT_WAIT")) {
+		unless (print WAITING "$tmp_queue\n") {
+			&add_log("ERROR could not write in $AGENT_WAIT: $!") if $loglvl > 1;
+			$error++;
 		}
-		close WAITING;
+		unless (close WAITING) {
+			&add_log("ERROR could not flush $AGENT_WAIT: $!") if $loglvl > 1;
+			$error++;
+		}
 	} else {
-		&add_log("ERROR unable to open $agent_wait") if $loglvl > 0;
-		&add_log("WARNING left mail in $tmp_queue") if $loglvl > 1;
+		&add_log("ERROR unable to open $AGENT_WAIT: $!") if $loglvl > 0;
+		$error++;
 	}
-	$status;		# 1 means success
+
+	&free_file($AGENT_WAIT) if $locked;
+
+	if (!error && defined $old_size) {
+		local($size) = -s $AGENT_WAIT;
+		local($expected) = $old_size + length($tmp_queue) + 1;
+		if ($size != $expected) {
+			&add_log("ERROR $AGENT_WAIT has $size bytes (expected $expected)")
+				if $loglvl > 1;
+			$error++;
+		}
+	}
+
+	if ($error) {
+		&add_log("ERROR has forgotten about $tmp_queue") if $loglvl;
+	} else {
+		&add_log("NOTICE processing deferred for $tmp_queue") if $loglvl > 3;
+	}
+
+	return $error ? 0 : 1;			# 1 means success
 }
 
 # Performs a '/bin/mv' operation, but without the burden of an extra process.

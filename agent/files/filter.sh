@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: filter.sh,v 3.0.1.3 1995/08/07 16:06:52 ram Exp $
+# $Id: filter.sh,v 3.0.1.4 1999/01/13 18:03:19 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: filter.sh,v $
+# Revision 3.0.1.4  1999/01/13  18:03:19  ram
+# patch64: agent.wait is now stored in the spool rather than in queue
+#
 # Revision 3.0.1.3  1995/08/07  16:06:52  ram
 # patch37: avoid forking of a new mailagent if one is sitting in background
 #
@@ -247,9 +250,9 @@ eval $addlog
 # is already updating the agent.wait file. The worse that could result from
 # this shallowness would be having an unprocessed mail.
 umask 077
-set 'WARNING mailagent ignores where mail was left'
-if /bin/echo "$temp" >> $queue/agent.wait; then
-	if grep "$temp" $queue/agent.wait >/dev/null 2>&1; then
+set "WARNING mailagent ignores mail was left in $temp"
+if /bin/echo "$temp" >> $spool/agent.wait; then
+	if grep "$temp" $spool/agent.wait >/dev/null 2>&1; then
 		set "NOTICE $temp memorized into agent.wait"
 	fi
 fi

@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.15 1997/09/15 15:05:06 ram Exp $
+# $Id: magent.sh,v 3.0.1.16 1999/01/13 18:08:48 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,6 +35,9 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
+# Revision 3.0.1.16  1999/01/13  18:08:48  ram
+# patch64: changed agent_wait to AGENT_WAIT, now holding full path
+#
 # Revision 3.0.1.15  1997/09/15  15:05:06  ram
 # patch57: call new pmail() routine to process main message
 # patch57: fixed typo in -r usage
@@ -260,8 +263,8 @@ $ENV{'IFS'}='' if $ENV{'IFS'};	# Shell separation field
 select(STDERR); $| = 1;			# In case we get perl warnings...
 select(STDOUT);					# and because the -t option writes on STDOUT,
 $| = 1;							# make sure it is flushed before we fork().
-$agent_wait = "agent.wait";		# Waiting file for out-of-the-queue mails
 $privlib = "$cf'home/../.." if $test_mode;	# Tests ran from test/out
+$AGENT_WAIT = "$cf'spool/agent.wait";		# Waiting file for mails
 
 $orgname = &tilda_expand($orgname);		# Perform run-time ~name substitution
 

@@ -1,6 +1,6 @@
 # This MUST be the first test ever run
 
-# $Id: config.t,v 3.0.1.7 1997/02/20 11:48:11 ram Exp $
+# $Id: config.t,v 3.0.1.8 1999/01/13 18:16:19 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: config.t,v $
+# Revision 3.0.1.8  1999/01/13  18:16:19  ram
+# patch64: test for non-writable agent.wait file
+#
 # Revision 3.0.1.7  1997/02/20  11:48:11  ram
 # patch55: avoid exec-safe checks and group-writable directories
 #
@@ -94,6 +97,7 @@ EOF
 close CONFIG;
 `rm -rf queue emerg tmp`;
 `mkdir emerg tmp`;
+`cp /dev/null agent.wait; chmod u-w agent.wait`;
 $? == 0 || print "2\n";
 # Use the special undocumented -t option from filter to get HOME directory
 # via environment instead of /etc/passwd.
@@ -121,5 +125,6 @@ if (-f "$file") {
 &check_log('unable to queue', 11);	# Filter did not queue mail
 unlink 'agentlog';
 `mkdir queue`;
+`chmod u+w agent.wait`;
 $? == 0 || print "12\n";		# Cannot make queue
 print "0\n";

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.14 1998/07/28 17:32:33 ram Exp $
+ * $Id: io.c,v 3.0.1.15 1999/01/13 18:06:18 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,10 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.15  1999/01/13  18:06:18  ram
+ * patch64: fixed wrong localization of variables in unique_filename()
+ * patch64: additions to agent.wait are more robust and use locking
+ *
  * Revision 3.0.1.14  1998/07/28  17:32:33  ram
  * patch63: unique_filename() could loop forever, abort if no locking
  *
@@ -512,14 +516,14 @@ char *base;
 	 */
 
 	char fmt[MAX_STRING];	/* Final sprintf() format string */
+	int try = 0;			/* Count attempts to find a unique filename */
+	int alternate = 0;		/* True when alternate naming was chosen */
+	char trailer = '\0';	/* Trailer character after pid */
 
 	sprintf(fmt, "%s%s%s", "%s/", format, "%c");
 
 	for (;;) {
 		int fd;					/* Opened file */
-		int try = 0;			/* Count attempts to find a unique filename */
-		int alternate = 0;		/* True when alternate naming was chosen */
-		char trailer = '\0';	/* Trailer character after pid */
 
 		sprintf(buf, fmt, dir, base, progpid + try, trailer);
 
@@ -876,10 +880,14 @@ public int emergency_save()
 	char *where;			/* Where file was stored (static data) */
 	char *home = homedir();	/* Location of the home directory */
 	char path[MAX_STRING];	/* Location of the AGENT_WAIT file */
-	char *queue;			/* Location of the queue directory */
+	char *spool;			/* Location of the spool directory */
 	char *emergdir;			/* Emergency directory */
 	int fd;					/* File descriptor to write in AGENT_WAIT */
 	int size;				/* Length of 'where' string */
+	int old_size;			/* Old size of AGENT_WAIT file */
+	struct stat buf;		/* To stat AGENT_WAIT */
+	int error = 0;			/* Assume no error during AGENT_WAIT writes */
+	int locked = 0;			/* True when AGENT_WAIT was locked */
 
 	/*
 	 * It is possible that we come here due to a configuration error, for
@@ -939,30 +947,95 @@ ok:
 	add_log(6, "DUMPED in %s", where);
 	say("DUMPED in %s", where);
 
-	/* Attempt to write path of saved mail in the AGENT_WAIT file */
+	/*
+	 * Attempt to write path of saved mail in the AGENT_WAIT file
+	 *
+	 * The file is locked to prevent concurrent update by mailagent, which
+	 * could be regenerating the file. Still, we don't want to wait too much
+	 * so only loop for 10 seconds.
+	 */
 
-	queue = ht_value(&symtab, "queue");
-	if (queue == (char *) 0)
+	spool = ht_value(&symtab, "spool");
+	if (spool == (char *) 0)
 		return 0;
-	sprintf(path, "%s/%s", queue, AGENT_WAIT);
+
+	locked = 0 == file_lock(AGENT_WAIT, "agent.wait", 10);
+	if (!locked)
+		add_log(6, "WARNING updating %s without lock", AGENT_WAIT);
+
+	sprintf(path, "%s/%s", spool, AGENT_WAIT);
 	if (-1 == (fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0600))) {
 		add_log(1, "SYSERR open: %m (%e)");
-		add_log(6, "WARNING mailagent ignores where mail was left");
+		add_log(6, "WARNING mailagent ignores mail was left in %s", where);
+		if (locked)
+			file_unlock(AGENT_WAIT);
 		return 0;
 	}
+
+	/*
+	 * Stat AGENT_WAIT to save the old size, and enable a comparison later
+	 * on to really be sure that the path of the message was properly
+	 * memorized in there. Yes, this is paranoid, but I was bitten once
+	 * by the old code that did not check that.
+	 */
+
+	if (-1 == stat(path, &buf)) {
+		add_log(1, "SYSERR stat: %m (%e)");
+		add_log(6, "WARNING cannot stat %s", path);
+		old_size = -1;				/* Mark: old size not available */
+	} else
+		old_size = buf.st_size;
+
 	size = strlen(where);
 	where[size + 1] = '\0';			/* Make room for trailing new-line */
 	where[size] = '\n';
 	if (-1 == write(fd, where, size + 1)) {
 		add_log(1, "SYSERR write: %m (%e)");
 		add_log(4, "ERROR could not append to %s", path);
-		add_log(6, "WARNING mailagent ignores where mail was left");
-	} else {
-		where[size] = '\0';
+		error++;
+	}
+	where[size] = '\0';
+
+	if (-1 == close(fd)) {
+		add_log(1, "SYSERR close: %m (%e)");
+		add_log(4, "ERROR could not flush to %s", path);
+		error++;
+	}
+
+	if (locked)
+		file_unlock(AGENT_WAIT);
+
+	if (-1 == stat(path, &buf)) {
+		add_log(1, "SYSERR stat: %m (%e)");
+		add_log(6, "WARNING cannot stat %s", path);
+		old_size = -1;				/* Disable sanity check below */
+	}
+
+	/*
+	 * If an error is already recorded, it is useless to do a size
+	 * sanity check since the size will not be correct anyway.
+	 */
+
+	if (!error && old_size != -1) {
+		int expected = old_size + size + 1;
+		if (expected != buf.st_size) {
+			add_log(2, "ERROR %s truncated to %d bytes (should have had %d)",
+				buf.st_size, expected);
+			error++;
+		}
+	} else if (!error)
+		add_log(8, "cannot double-check %s was properly flushed", path);
+
+	/*
+	 * Setting `queued' to 1 means that, upon exit, filter will return a
+	 * success status to the MTA.
+	 */
+
+	if (!error) {
 		add_log(7, "NOTICE memorized %s", where);
 		queued = 1;
-	}
-	close(fd);
+	} else
+		add_log(6, "WARNING mailagent ignores mail was left in %s", where);
 
 	return 0;
 }

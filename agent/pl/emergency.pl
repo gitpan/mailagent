@@ -1,4 +1,4 @@
-;# $Id: emergency.pl,v 3.0.1.2 1997/01/07 18:32:40 ram Exp $
+;# $Id: emergency.pl,v 3.0.1.3 1999/01/13 18:13:18 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: emergency.pl,v $
+;# Revision 3.0.1.3  1999/01/13  18:13:18  ram
+;# patch64: only use last two digits from year in logfiles
+;# patch64: resync of agent.wait now more robust and uses locking
+;#
 ;# Revision 3.0.1.2  1997/01/07  18:32:40  ram
 ;# patch52: now pre-extend memory by using existing message size
 ;#
@@ -103,7 +107,7 @@ sub fatal {
 		($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
 			localtime(time);
 		$date = sprintf("%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
-			$year,++$mon,$mday,$hour,$min,$sec);
+			$year % 100,++$mon,$mday,$hour,$min,$sec);
 		print STDERR "---- $date ----\n";
 	}
 
@@ -168,38 +172,106 @@ sub dump_mbox {
 	0;
 }
 
-# Resynchronizes the waiting file if necessary (i.e if it exists and %waiting
-# is not an empty array).
-sub resync {
-	local(@key) = keys %waiting;	# Keys of H table are file names
+# Utility routine for resync() below: writes %waiting keys to opened file.
+# The file is closed at the end of the operation.
+# Returns true if OK.
+sub write_waitkeys {
+	local(*FILE, @extra) = @_;
 	local($ok) = 1;					# Assume resync is ok
-	local($printed) = 0;			# Nothing printed yet
-	return if $#key < 0 || "$cf'queue" eq '' || ! -f "$cf'queue/$agent_wait";
-	&add_log("resynchronizing the waiting file") if $loglvl > 11;
-	if (open(WAITING, ">$cf'queue/$agent_wait~")) {
-		foreach (@key) {
-			if ($waiting{$_}) {
-				print WAITING "$_\n" || ($ok = 0);
-				$printed = 1;
+	local($_);
+	foreach (keys %waiting) {
+		if ($waiting{$_}) {
+			(print FILE "$_\n") || ($ok = 0);
+			unless ($ok) {
+				&add_log("SYSERR write: $!") if $loglvl;
+				last;
 			}
 		}
-		close(WAITING) || ($ok = 0);
-		if ($printed) {
-			if (!$ok) {
-				&add_log("ERROR could not update waiting file") if $loglvl;
-				unlink "$cf'queue/$agent_wait~";
-			} elsif (rename("$cf'queue/$agent_wait~","$cf'queue/$agent_wait")) {
-				&add_log("waiting file has been updated") if $loglvl > 18;
-			} else {
-				&add_log("ERROR cannot rename waiting file") if $loglvl;
-			}
+	}
+	# Even if !$ok, try appending any extra file, in case it works
+	foreach (@extra) {
+		(print FILE "$_\n") || ($ok = 0);
+		unless ($ok) {
+			&add_log("SYSERR write: $!") if $loglvl;
+			last;
+		}
+	}
+	(print FILE "\n") || ($ok = 0);	# Trailing blank line
+	close(FILE) || ($ok = 0);
+	&add_log("SYSERR close: $!") if !$ok && $loglvl;
+	return $ok;
+}
+
+# Resynchronizes the waiting file if necessary.
+#
+# In order to have the filesystem reserve at least a block, we systematically
+# write an empty line at the end of the waiting file, to avoid it being
+# empty. That way, even when the filesystem is otherwise full, there is some
+# space reserved to store data.
+sub resync {
+	return if $cf'spool eq '';		# Agent wait is in spool directory
+	&add_log("resynchronizing the waiting file") if $loglvl > 11;
+	local *WAITING;
+	local($ok) = 0;
+
+	# We need to protect against concurrent accesses (by the C filter
+	# or another mailagent), and also understand that those processes might
+	# update the file WITHOUT locking. To guard as much as possible against
+	# that, we read the file in and record keys that do not exist in our
+	# own %waiting table.
+
+	local($locked) = 0 == &acs_rqst($AGENT_WAIT);
+	local(@extra) = ();
+
+	&add_log("WARNING updating $AGENT_WAIT without lock")
+		if !$locked && $loglvl > 5;
+
+	open(WAITING, $AGENT_WAIT);
+	local($_);
+	while (<WAITING>) {
+		chop;
+		next unless length $_;
+		push(@extra, $_) unless exists $waiting{$_};
+	}
+	close WAITING;
+
+	local($amount) = 0 + @extra;
+	local($s) = $amount == 1 ? '' : 's';
+	&add_log("NOTICE found $amount unprocessed file$s in $AGENT_WAIT")
+		if $amount && $loglvl > 6;
+
+	# Try first to write a new copy of the file, and only rename it once
+	# the copy has been written.
+
+	if (open(WAITING, ">$AGENT_WAIT~")) {
+		$ok = write_waitkeys(*WAITING, @extra);
+		if (!$ok) {
+			&add_log("ERROR could not update waiting file") if $loglvl;
+			unlink "$AGENT_WAIT~";
+		} elsif (rename("$AGENT_WAIT~", $AGENT_WAIT)) {
+			&add_log("waiting file has been updated") if $loglvl > 18;
 		} else {
-			unlink "$cf'queue/$agent_wait";
-			unlink "$cf'queue/$agent_wait~";
-			&add_log ("removed waiting file") if $loglvl > 18;
+			&add_log("ERROR cannot rename waiting file: $!") if $loglvl;
 		}
 	} else {
-		&add_log("ERROR unable to write new waiting file") if $loglvl;
+		&add_log("WARNING unable to write new waiting file: $!") if $loglvl > 5;
 	}
+
+	if ($ok || !-f $AGENT_WAIT) {
+		&free_file($AGENT_WAIT) if $locked;
+		return;
+	}
+
+	# If we could not create a new file, maybe the disk is full, or the write
+	# permission bit on the file's directory was removed. Try to override
+	# the existing file then.
+
+	&add_log("NOTICE trying to write over existing $AGENT_WAIT") if $loglvl > 6;
+	if (open(WAITING, ">$AGENT_WAIT")) {
+		$ok = write_waitkeys(*WAITING, @extra);
+		&add_log("ERROR mangled file $AGENT_WAIT") if !$ok && $loglvl;
+	}
+
+	&free_file($AGENT_WAIT) if $locked;
 }
 
