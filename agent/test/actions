@@ -2,7 +2,7 @@
 # Mailagent rules for action regression tests
 #
 
-# $Id: actions,v 3.0.1.15 2001/03/17 18:15:08 ram Exp $
+# $Id: actions,v 3.0.1.10 1995/08/07 16:26:55 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,21 +13,6 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: actions,v $
-# Revision 3.0.1.15  2001/03/17 18:15:08  ram
-# patch72: fixed test rules for UNIQUE, removing spurious REJECT -f
-#
-# Revision 3.0.1.14  2001/03/13 13:15:56  ram
-# patch71: added test cases for SUBST/TR on header fields
-#
-# Revision 3.0.1.13  2001/01/10 16:58:28  ram
-# patch69: fixed dates for the SELECT test to avoid failures past 2001
-#
-# Revision 3.0.1.12  1999/07/12  13:56:28  ram
-# patch66: added tests for variable propagation in APPLY
-#
-# Revision 3.0.1.11  1998/03/31  15:28:55  ram
-# patch59: added regression tests for new "ON" command
-#
 # Revision 3.0.1.10  1995/08/07  16:26:55  ram
 # patch37: new BIFF regression testing
 #
@@ -91,19 +76,10 @@ X-Tag: /annotate/
 };
 <ANNOTATE>		{ SAVE never };
 
-X-Tag: /apply #1/	{ APPLY apply.1; REJECT -t APPLY; SAVE never };
-<IMPOSSIBLE>		{ SAVE never; REJECT APPLY };
-<APPLY>				{ APPLY apply.2; REJECT -f; SAVE always };
-<APPLY>				{ SAVE never };
-
-X-Tag: /apply #2/
-{
-	ASSIGN folder folder;
-	APPLY apply.1;
-	REJECT -f APPLY;
-	SAVE %#folder;
-};
-<APPLY>				{ SAVE never };
+X-Tag: /apply/	{ APPLY apply.1; REJECT -t APPLY; SAVE never };
+<IMPOSSIBLE>	{ SAVE never; REJECT APPLY };
+<APPLY>			{ APPLY apply.2; REJECT -f; SAVE always };
+<APPLY>			{ SAVE never };
 
 X-Tag: /assign #1/,
 To: /^(\w+)@/
@@ -207,20 +183,6 @@ X-Tag: /notify 1/			{ NOTIFY msg nobody; DELETE };
 X-Tag: /notify 2/			{ NOTIFY msg "list"; DELETE };
 X-Tag: /notify 3/			{ NOTIFY msg.2 some@random.ctry %u; DELETE };
 
-X-Tag: /^on$/
-{
-	ON (Mondays Tuesdays Wednesdays Thursdays Fridays Saturdays Sundays) LEAVE;
-	ON (mon) SAVE days;
-	ON (tue) SAVE days;
-	ON (wed) SAVE days;
-	ON (thu) SAVE days;
-	ON (fri) SAVE days;
-	ON (sat) SAVE days;
-	ON (sun) SAVE days;
-	ON (Mn Ts Wd Th Fr Sa Su) SAVE days;
-	ON (mno tsx wda tuh frd sam sum) SAVE days;
-}
-
 X-Tag: /once/
 {
 	ONCE (ram,tag,1w) SAVE one;
@@ -320,11 +282,11 @@ X-Tag: /save #3/	{ SAVE ok };
 
 X-Tag: /select/
 {
-	SELECT (Jan 2 1970 .. Dec 31 2037) SAVE one;
+	SELECT (Jan 2 1970 .. Jan 1 2001) SAVE one;
 	SELECT (last month .. last minute) SAVE two;
 	SELECT (last minute .. next minute) SAVE three;
 	SELECT (now - 10 seconds .. now + 5 minutes) SAVE four;
-	SELECT (Dec 31 2037 .. Jan 2 1970) SAVE five;
+	SELECT (Jan 1 2001 .. Jan 2 1970) SAVE five;
 }
 
 X-Tag: /unknown #1/	{ unknown_command; DELETE };
@@ -350,7 +312,7 @@ X-Tag: /strip/
 }
 X-Tag: /strip/, To: ram		{ SAVE no_resync };
 
-X-Tag: /subst #1/,
+X-Tag: /subst/,
 To: /(.*)/
 {
 	SUBST 1 /com/fr/g;
@@ -362,20 +324,7 @@ To: /(.*)/
 	DELETE;
 }
 
-X-Tag: /subst #2/
-{
-	SUBST to /eiffel\.com/chram.org/;
-	SUBST Subject: /^Re:\s+//i;
-	SUBST Received /eiffel\.com/chram.org/g;
-	SAVE subst;
-	REJECT SUBST;
-};
-<SUBST> To: /^ram@chram\.org$/		{ SAVE never; REJECT };
-<SUBST>								{ RESYNC; REJECT };
-<SUBST> To: /^ram@chram\.org$/		{ SAVE always };
-<SUBST> 							{ SAVE never2 };
-
-X-Tag: /tr #1/,
+X-Tag: /tr/,
 To: /(.*)/
 {
 	TR 1 /a-z/A-Z/;
@@ -386,18 +335,6 @@ To: /(.*)/
 	RUN /bin/echo '%1,%#subject,%#:persistent' >output;
 	DELETE;
 }
-
-X-Tag: /tr #2/
-{
-	TR To: /a-z/A-Z/;
-	TR received /A-Z/a-z/;
-	SAVE subst;
-	REJECT TR;
-}
-<TR> To: /^RAM@EIFFEL.COM$/			{ SAVE never; REJECT };
-<TR>								{ RESYNC; REJECT };
-<TR> To: /^RAM@EIFFEL.COM$/			{ SAVE always };
-<TR> 								{ SAVE never2 };
 
 X-Tag: /umask #1/		{ REJECT UMASK; };
 <UMASK>	{
@@ -457,10 +394,10 @@ X-Tag: /unique #3/				{ UNIQUE -a; SAVE %u.1 };
 X-Tag: /unique #4/				{ UNIQUE -c; REJECT -f UNIQUE; SAVE %u.1 };
 <UNIQUE> X-Tag: /unique #4/		{ SAVE %u.2 };
 X-Tag: /unique #5/			{ UNIQUE -a (tag1,tag2); SAVE %u.1; REJECT };
-X-Tag: /unique #5/			{ UNIQUE (tag2); SAVE %u.2; REJECT };
+X-Tag: /unique #5/			{ UNIQUE (tag2); REJECT -f; SAVE %u.2; REJECT };
 X-Tag: /unique #5/			{ UNIQUE -a; SAVE %u.3 };
-X-Tag: /unique #6/			{ UNIQUE (tag); SAVE %u.1; REJECT };
-X-Tag: /unique #6/			{ UNIQUE (other); SAVE %u.2; REJECT };
+X-Tag: /unique #6/			{ UNIQUE (tag); REJECT -f; SAVE %u.1; REJECT };
+X-Tag: /unique #6/			{ UNIQUE (other); REJECT -f; SAVE %u.2; REJECT };
 X-Tag: /unique #6/			{ UNIQUE -a; SAVE %u.3 };
 
 X-Tag: /vacation #2/		{ DELETE };

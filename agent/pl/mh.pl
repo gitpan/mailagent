@@ -1,4 +1,4 @@
-;# $Id: mh.pl,v 3.0.1.5 1996/12/24 14:56:37 ram Exp $
+;# $Id: mh.pl,v 3.0.1.4 1995/08/07 16:20:19 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,9 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mh.pl,v $
-;# Revision 3.0.1.5  1996/12/24 14:56:37  ram
-;# patch45: processing of MH profile is now case-insensitive
-;#
 ;# Revision 3.0.1.4  1995/08/07  16:20:19  ram
 ;# patch37: now beware of filesystems with limited filename lengths
 ;#
@@ -48,9 +45,9 @@ sub save {
 	local($folder) = @_;		# MH folder name (without leading '+')
 	&profile;					# Get MH profile, once and for all
 	local($fmode);				# File protection mode
-	$folder = "$cf'home/$Profile{'path'}/$folder";
-	local($mode) = oct("0$Profile{'folder-protect'}" || '0700');
-	$fmode = oct("0$Profile{'msg-protect'}") if defined $Profile{'msg-protect'};
+	$folder = "$cf'home/$Profile{'Path'}/$folder";
+	local($mode) = oct("0$Profile{'Folder-Protect'}" || '0700');
+	$fmode = oct("0$Profile{'Msg-Protect'}") if defined $Profile{'Msg-Protect'};
 	$fmode = $env'protect if defined $env'protect;
 	&'makedir($folder, $mode);	# Create folder dir with right permissions
 	&save_msg($folder, $fmode, 'MH');	# Propagate failure status
@@ -108,7 +105,7 @@ sub save_msg {
 	# saved in directories.
 
 	&unseen($name)
-		if $mh eq 'MH' && $Profile{'unseen-sequence'} ne '' && !$failed;
+		if $mh eq 'MH' && $Profile{'Unseen-Sequence'} ne '' && !$failed;
 
 	# Mark as unseen in log when saved within a directory
 	&'add_log("UNSEEN " . &'tilda($name)) if $'loglvl > 6;
@@ -129,7 +126,7 @@ sub profile {
 	local($dflt) = defined($'XENV{'maildir'}) ? $'XENV{'maildir'} : 'Mail';
 	$dflt = &'tilda($dflt);		# Restore possible leading '~'
 	$dflt =~ s|^~/||;			# Strip down (relative path under ~)
-	$Profile{'path'} = $dflt;
+	$Profile{'Path'} = $dflt;
 	local($mhprofile) = &'tilda_expand($cf'mhprofile || '~/.mh_profile');
 	unless (open(PROFILE, $mhprofile)) {
 		&'add_log("ERROR cannot open MH profile '$mhprofile': $!")
@@ -139,7 +136,7 @@ sub profile {
 	local($_);
 	while (<PROFILE>) {
 		next unless /^([^:]+):\s*(.*)/;
-		$Profile{"\L$1"} = $2;
+		$Profile{$1} = $2;
 	}
 	close PROFILE;
 }
@@ -232,7 +229,7 @@ sub unseen {
 
 	# Get the name of the sequences we need to update, save in %seq.
 	local(%seq);
-	foreach $seq (split(/,/, $Profile{'unseen-sequence'})) {
+	foreach $seq (split(/,/, $Profile{'Unseen-Sequence'})) {
 		$seq =~ s/^\s*//;	# Remove leading and trailing spaces
 		$seq =~ s/\s*$//;
 		$seq{$seq}++;		# Record unseen sequence

@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: misc.c,v 3.0.1.3 1997/09/15 15:03:04 ram Exp $
+ * $Id: misc.c,v 3.0.1.1 1994/09/22 13:45:30 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,12 +22,6 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: misc.c,v $
- * Revision 3.0.1.3  1997/09/15 15:03:04  ram
- * patch57: cosmetic change
- *
- * Revision 3.0.1.2  1996/12/24  13:59:15  ram
- * patch45: new my_exit() to allow exit code tracing for debugging
- *
  * Revision 3.0.1.1  1994/09/22  13:45:30  ram
  * patch12: added fallback implementation for strcasecmp()
  *
@@ -39,7 +33,6 @@
 #include "config.h"
 #include "portable.h"
 #include <ctype.h>
-#include "sysexits.h"
 #include "confmagic.h"
 
 extern char *malloc();				/* Memory allocation */
@@ -58,37 +51,6 @@ char *string;
 
 	strcpy(new, string);
 	return new;
-}
-
-public void my_exit(code)
-int code;
-{
-	/* Exit, but log the exit code... */
-
-	char *name;					/* Symbolic error code name */
-	char buf[20];				/* For unknown error codes */
-
-#define symname(x)		case x: name = STRINGIFY(x); break;
-
-	switch (code) {
-	symname(EX_OK);
-	symname(EX_USAGE);
-	symname(EX_UNAVAILABLE);
-	symname(EX_OSERR);
-	symname(EX_OSFILE);
-	symname(EX_CANTCREAT);
-	symname(EX_IOERR);
-	symname(EX_TEMPFAIL);
-	default:
-		sprintf(buf, "%d", code);
-		name = buf;
-		break;
-	}
-
-#undef symname
-
-	add_log(11, "exit %s", name);
-	exit(code);
 }
 
 #ifndef HAS_STRCASECMP

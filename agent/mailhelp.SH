@@ -20,7 +20,7 @@ $startperl
 	eval "exec perl -S \$0 \$*"
 		if \$running_under_some_shell;
 
-# $Id: mailhelp.SH,v 3.0.1.3 1996/12/24 14:07:01 ram Exp $
+# $Id: mailhelp.SH,v 3.0.1.2 1995/03/21 12:55:04 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -31,9 +31,6 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailhelp.SH,v $
-# Revision 3.0.1.3  1996/12/24 14:07:01  ram
-# patch45: silently discard hostile addresses
-#
 # Revision 3.0.1.2  1995/03/21  12:55:04  ram
 # patch35: added pl/cdir.pl to the list of appended files
 #
@@ -65,12 +62,6 @@ $dest = $ENV{'path'} if $dest eq '';	# If dest was ommitted
 
 # A single '-' as first argument stands for return path
 $dest = $ENV{'path'} if $dest eq '-';
-
-# Silently discard hostile addresses
-unless (&addr'valid($dest)) {
-	&add_log("FAILED (HOSTILE $dest)") if $loglvl > 1;
-	exit 0;
-}
 
 open(HELP, "$cf'spool/agenthelp") || &fatal("no help file!\n");
 open(MAILER, "|$cf'sendmail $cf'mailopt $dest") || &nofork;
@@ -110,6 +101,5 @@ $grep -v '^;#' pl/add_log.pl >>mailhelp
 $grep -v '^;#' pl/read_conf.pl >>mailhelp
 $grep -v '^;#' pl/secure.pl >>mailhelp
 $grep -v '^;#' pl/cdir.pl >>mailhelp
-$grep -v '^;#' pl/addr.pl >>mailhelp
 chmod 755 mailhelp
 $eunicefix mailhelp

@@ -1,4 +1,4 @@
-;# $Id: queue_mail.pl,v 3.0.1.5 1999/07/12 13:54:33 ram Exp $
+;# $Id: queue_mail.pl,v 3.0.1.2 1995/01/25 15:27:19 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,15 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: queue_mail.pl,v $
-;# Revision 3.0.1.5  1999/07/12 13:54:33  ram
-;# patch66: logs now include filenames in 'quotes'
-;#
-;# Revision 3.0.1.4  1999/01/13  18:15:50  ram
-;# patch64: writing to agent.wait is now more robust and uses locking
-;#
-;# Revision 3.0.1.3  1996/12/24  14:58:35  ram
-;# patch45: add as many trailing 'x' as necessary for unique queue file
-;#
 ;# Revision 3.0.1.2  1995/01/25  15:27:19  ram
 ;# patch27: ported to perl 5.0 PL0
 ;#
@@ -86,12 +77,6 @@ sub queue_mail {
 	local($ok) = 1;						# Print status
 	local($_);
 	&add_log("queuing mail ($type) for delayed processing") if $loglvl > 18;
-
-	if ($file_name ne '' && $file_name !~ m|^/|) {
-		local($cwd);
-		chop($cwd = `pwd`);
-		$file_name = "$cwd/$file_name"
-	}
 	chdir $cf'queue || &fatal("cannot chdir to $cf'queue");
 
 	local(%known_type) = (				# Known queue message types
@@ -109,7 +94,7 @@ sub queue_mail {
 	# and is incremented each time a mail is successfully queued.
 	$queue_file = "$type$$";		# Append PID for uniqueness
 	$queue_file = "$type${$}x" . $queue_count if -f "$queue_file";
-	$queue_file = "${queue_file}x" while -f "$queue_file";	# Paranoid
+	$queue_file = "${queue_file}x" if -f "$queue_file";	# Paranoid
 	++$queue_count;					# Counts amount of queued mails
 	&add_log("queue file is $queue_file") if $loglvl > 19;
 
@@ -166,20 +151,20 @@ sub queue_mail {
 	# attempt to record the temporary file name into the waiting file. If
 	# mail came from stdin, there is not much we can do, so we panic.
 	if (!$ok) {
-		&add_log("ERROR could not queue message '$file_name'") if $loglvl;
-		unlink $tmp_queue;
+		&add_log("ERROR could not queue message") if $loglvl > 0;
+		unlink "$tmp_queue";
 		if ($file_name) {
 			# The file processed is already on the disk
 			$dirname = $file_name;
 			$dirname =~ s|^(.*)/.*|$1|;	# Keep only basename
 			$cf'user = (getpwuid($<))[0] || "uid$<" if $cf'user eq '';
-			$tmp_queue = "$dirname/$cf'user.$$";
+			$tmp_queue = $dirname/$cf'user.$$;
 			$tmp_queue = $file_name if &mv($file_name, $tmp_queue);
 			&add_log("NOTICE mail held in $tmp_queue") if $loglvl > 4;
 		} else {
 			&fatal("mail may be lost");	# Mail came from filter via stdin
 		}
-		# If the mail is on the disk, add its name to the file $AGENT_WAIT
+		# If the mail is on the disk, add its name to the file $agent_wait
 		# in the queue directory. This file contains the names of the mails
 		# stored outside of the mailagent's queue and waiting to be processed.
 		$ok = &waiting_mail($tmp_queue);
@@ -208,46 +193,22 @@ sub queue_mail {
 # queue. Returns 1 if mail was successfully added to this list.
 sub waiting_mail {
 	local($tmp_queue) = @_;
-	local($error) = 0;
-	local($old_size) = -s $AGENT_WAIT;
-	local($locked) = 0 == &acs_rqst($AGENT_WAIT);
-
-	&add_log("WARNING updating $AGENT_WAIT without lock")
-		if !$locked && $loglvl > 5;
-
-	if (open(WAITING, ">>$AGENT_WAIT")) {
-		unless (print WAITING "$tmp_queue\n") {
-			&add_log("ERROR could not write in $AGENT_WAIT: $!") if $loglvl > 1;
-			$error++;
-		}
-		unless (close WAITING) {
-			&add_log("ERROR could not flush $AGENT_WAIT: $!") if $loglvl > 1;
-			$error++;
-		}
-	} else {
-		&add_log("ERROR unable to open $AGENT_WAIT: $!") if $loglvl > 0;
-		$error++;
-	}
-
-	&free_file($AGENT_WAIT) if $locked;
-
-	if (!error && defined $old_size) {
-		local($size) = -s $AGENT_WAIT;
-		local($expected) = $old_size + length($tmp_queue) + 1;
-		if ($size != $expected) {
-			&add_log("ERROR $AGENT_WAIT has $size bytes (expected $expected)")
+	local($status) = 0;
+	if (open(WAITING, ">>$agent_wait")) {
+		if (print WAITING "$tmp_queue\n") {
+			$status = 1;			# Mail more or less safely queued
+			&add_log("NOTICE processing deferred for $tmp_queue")
+				if $loglvl > 3;
+		} else {
+			&add_log("ERROR could not record $tmp_queue in $agent_wait")
 				if $loglvl > 1;
-			$error++;
 		}
-	}
-
-	if ($error) {
-		&add_log("ERROR has forgotten about $tmp_queue") if $loglvl;
+		close WAITING;
 	} else {
-		&add_log("NOTICE processing deferred for $tmp_queue") if $loglvl > 3;
+		&add_log("ERROR unable to open $agent_wait") if $loglvl > 0;
+		&add_log("WARNING left mail in $tmp_queue") if $loglvl > 1;
 	}
-
-	return $error ? 0 : 1;			# 1 means success
+	$status;		# 1 means success
 }
 
 # Performs a '/bin/mv' operation, but without the burden of an extra process.
@@ -268,14 +229,12 @@ sub mv {
 	&add_log("copying file $from to $to") if $loglvl > 19;
 	unless (open(FROM, $from)) {
 		&add_log("SYSERR open: $!") if $loglvl;
-		&add_log("ERROR cannot open source '$from' to copy to '$to'")
-			if $loglvl;
+		&add_log("ERROR cannot open source $from") if $loglvl;
 		return 1;
 	}
 	unless (open(TO, ">$to")) {
 		&add_log("SYSERR open: $!") if $loglvl;
-		&add_log("ERROR cannot create target '$to' to copy '$from' to it")
-			if $loglvl;
+		&add_log("ERROR cannot open target $to") if $loglvl;
 		close FROM;
 		return 1;
 	}
@@ -290,12 +249,12 @@ sub mv {
 	close FROM;
 	close TO;
 	unless ($ok) {
-		&add_log("ERROR could not copy '$from' to '$to'") if $loglvl;
-		unlink $to;
+		&add_log("ERROR could not copy $from to $to") if $loglvl;
+		unlink "$to";
 		return 1;
 	}
 	# Copy succeeded, remove original file
-	unlink $from;
+	unlink "$from";
 	0;					# Denotes success
 }
 

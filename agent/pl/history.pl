@@ -1,4 +1,4 @@
-;# $Id: history.pl,v 3.0.1.4 2001/03/13 13:14:32 ram Exp $
+;# $Id: history.pl,v 3.0.1.3 1994/10/29 17:46:13 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,9 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: history.pl,v $
-;# Revision 3.0.1.4  2001/03/13 13:14:32  ram
-;# patch71: message ids are now cleaned-up via msgid_cleanup()
-;#
 ;# Revision 3.0.1.3  1994/10/29  17:46:13  ram
 ;# patch20: now supports internet numbers in message IDs
 ;#
@@ -40,11 +37,8 @@ sub history_tag {
 
 	# If there is no message ID, use the concatenation of date + from fields.
 	if ($msg_id) {
-		# Keep only the first ID stored within <> brackets, clean it up
-		($msg_id) = $msg_id =~ m|(<[^>]*>)\s*|;
-		&header'msgid_cleanup(\$msg_id);	# Requires <> in message ID
-		$msg_id =~ s/^<//;					# Remove leading "<"
-		chop($msg_id);						# and trailing ">"
+		# Keep only the ID stored within <> brackets
+		($msg_id) = $msg_id =~ m|^<(.*)>\s*$|;
 	} else {
 		# Use date + from iff there is a date. We cannot use the from field
 		# alone, obviously!! We also have to ensure there is an '@' in the

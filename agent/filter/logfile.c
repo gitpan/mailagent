@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: logfile.c,v 3.0.1.5 2001/01/10 16:50:08 ram Exp $
+ * $Id: logfile.c,v 3.0.1.1 1994/07/01 14:53:21 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,18 +22,6 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: logfile.c,v $
- * Revision 3.0.1.5  2001/01/10 16:50:08  ram
- * patch69: fixed incorrect selection of sys_errlist[]
- *
- * Revision 3.0.1.4  1999/01/13  18:07:00  ram
- * patch64: only use last two digits from year in logfiles
- *
- * Revision 3.0.1.3  1997/02/20  11:36:23  ram
- * patch55: prefer open(O_APPEND) to fopen("a") for stdio append bugs
- *
- * Revision 3.0.1.2  1996/12/24  13:58:03  ram
- * patch45: log onto stderr if logfile not opened correctly
- *
  * Revision 3.0.1.1  1994/07/01  14:53:21  ram
  * patch8: metaconfig now defines Strerror instead of strerror
  *
@@ -58,20 +46,6 @@
 # include <sys/time.h>
 # undef KERNEL
 #endif
-
-/* Get the O_* constants */
-#ifdef I_FCNTL
-#include <fcntl.h>
-#endif
-#ifdef I_SYS_FILE
-#include <sys/file.h>
-#endif
-#ifndef I_FCNTL
-#ifndef I_SYS_FILE
-#include <sys/fcntl.h>	/* Try this one in last resort */
-#endif
-#endif
-
 #include "confmagic.h"
 
 #define MAX_STRING	1024			/* Maximum length for logging string */
@@ -110,26 +84,25 @@ long arg1, arg2, arg3, arg4, arg5;	/* Use long instead of int for 64 bits */
 	struct tm *ct;				/* Current time (pointer to static data) */
 	Time_t clock;				/* Number of seconds since the Epoch */
 	char buffer[MAX_STRING];	/* Buffer which holds the expanded %m string */
-	FILE *stdlog = logfile;		/* Where logging is to be done */
 
 	if (loglvl < level)			/* Logging level is not high enough */
 		return;
 
 	if (logfile == (FILE *) 0)	/* Logfile not opened for whatever reason */
-		stdlog = stderr;		/* User stderr then -- RAM, 21/10/96 */
+		return;
 
 	clock = time((Time_t *) 0);	/* Number of seconds */
 	ct = localtime(&clock);		/* Get local time from amount of seconds */
 	expand(format, buffer);		/* Expansion of %m and %e into buffer */
 
-	fprintf(stdlog, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
-		ct->tm_year % 100, ct->tm_mon + 1, ct->tm_mday,
+	fprintf(logfile, "%d/%.2d/%.2d %.2d:%.2d:%.2d %s[%d]: ",
+		ct->tm_year, ct->tm_mon + 1, ct->tm_mday,
 		ct->tm_hour, ct->tm_min, ct->tm_sec,
 		progname, progpid);
 
-	fprintf(stdlog, buffer, arg1, arg2, arg3, arg4, arg5);
-	putc('\n', stdlog);
-	fflush(stdlog);
+	fprintf(logfile, buffer, arg1, arg2, arg3, arg4, arg5);
+	putc('\n', logfile);
+	fflush(logfile);
 }
 
 public int open_log(name)
@@ -142,27 +115,7 @@ char *name;
 	if (logfile != (FILE *) 0)
 		fclose(logfile);
 	
-	/*
-	 * We used to perform an:
-	 *		fopen(name, "a");
-	 * at this point, but Sudish Joseph <joseph@cis.ohio-state.edu> has
-	 * mentionned a possible stdio library bug whereby "a" would do a seek
-	 * at the end before writing, hence being the target for a possible race
-	 * condition. Use O_APPEND to fix this, if available.
-	 */
-
-#ifdef O_APPEND
-	{
-		int fd;
-		fd = open(name, O_WRONLY | O_CREAT | O_APPEND, 0600);
-		if (fd == -1)
-			return -1;
-		logfile = fdopen(fd, "a");
-	}
-#else
 	logfile = fopen(name, "a");		/* Append to existing file */
-#endif
-
 	logname = strsave(name);		/* Save file name */
 
 	if (logfile == (FILE *) 0)
@@ -222,7 +175,7 @@ char *where;
 	 * it is available, otherwise simply print the error code number.
 	 */
 
-#if !defined(HAS_STRERROR) && defined(HAS_SYS_ERRLIST)
+#ifdef HAS_SYS_ERRLIST
 	extern int sys_nerr;					/* Size of sys_errlist[] */
 	extern char *sys_errlist[];				/* Maps error code to string */
 #endif

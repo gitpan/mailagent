@@ -1,4 +1,4 @@
-;# $Id: runcmd.pl,v 3.0.1.8 2001/01/10 16:57:23 ram Exp $
+;# $Id: runcmd.pl,v 3.0.1.5 1995/08/07 16:25:05 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,17 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: runcmd.pl,v $
-;# Revision 3.0.1.8  2001/01/10 16:57:23  ram
-;# patch69: new -b switch for POST to request biffing
-;#
-;# Revision 3.0.1.7  1998/03/31  15:27:18  ram
-;# patch59: declared the new "ON" command
-;#
-;# Revision 3.0.1.6  1997/09/15  15:17:32  ram
-;# patch57: NOP now returns a status
-;# patch57: added -t and -f switches for BEGIN and NOP
-;# patch57: $lastcmd now global from analyze_mail()
-;#
 ;# Revision 3.0.1.5  1995/08/07  16:25:05  ram
 ;# patch37: new BIFF command
 ;#
@@ -66,7 +55,6 @@
 ;#  MESSAGE vacation         Sends a vacation-like message back
 ;#  NOP                      No operation (useful only with ONCE)
 ;#  NOTIFY address message   Notifies address with a given message
-;#  ON (days) <cmd>          Executes any other single command on specified days
 ;#  ONCE (period) <cmd>      Executes any other single command once per period
 ;#  PASS program             Pass body to program and get new body back
 ;#  PERL script              Run script to perform some filtering actions
@@ -103,6 +91,7 @@ sub xeqte {
 	local($line) = shift(@_);		# Commands to execute
 	local(@cmd);					# The commands to be ran
 	local($status) = $FT_CONT;		# Status returned by run_command
+	local($lastcmd) = 0;			# Failure status from last command
 	local($_);
 
 	# Normally, a ';' separates each action. However, an escaped one as in \;
@@ -232,7 +221,6 @@ sub init_filter {
 		'MESSAGE', 'run_message',	# Send a vacation-like file
 		'NOP', 'run_nop',			# No operation
 		'NOTIFY', 'run_notify',		# Notify reception of message
-		'ON', 'run_on',				# On day control
 		'ONCE', 'run_once',			# Once control
 		'PASS', 'run_pass',			# Pass body to program with feedback
 		'PERL', 'run_perl',			# Perform actions from within a perl script
@@ -267,11 +255,9 @@ sub init_filter {
 		'AFTER',	'acns',
 		'ANNOTATE',	'du',
 		'BEEP',		'l',
-		'BEGIN',	'ft',
 		'BIFF',		'l',
 		'MACRO',	'rdp',
-		'NOP',		'tf',
-		'POST',		'lb',
+		'POST',		'l',
 		'PROTECT',	'lu',
 		'RECORD',	'acr',
 		'REJECT',	'ft',
@@ -308,6 +294,7 @@ sub init_filter {
 		'BEGIN', 1,
 		'KEEP', 1,
 		'MACRO', 1,
+		'NOP', 1,
 		'PROTECT', 1,
 		'REJECT', 1,
 		'RESTART', 1,

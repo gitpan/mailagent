@@ -1,4 +1,4 @@
-;# $Id: context.pl,v 3.0.1.3 1997/02/20 11:43:42 ram Exp $
+;# $Id: context.pl,v 3.0.1.2 1995/08/07 16:18:45 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,9 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: context.pl,v $
-;# Revision 3.0.1.3  1997/02/20 11:43:42  ram
-;# patch55: removed the 'do' workaround for perl5.001
-;#
 ;# Revision 3.0.1.2  1995/08/07  16:18:45  ram
 ;# patch37: fixed parsing bug in perl5.001
 ;#
@@ -143,7 +140,9 @@ sub autoclean {
 	&'add_log("autocleaning of dbr files") if $'loglvl > 8;
 	$period = &'seconds_in_period($cf'agemax);
 	&dbr'clean($period);
-	&set('last-clean', time);		# Update last cleaning time
+	# The following 'do' usage fixes up a weird parsing bug with perl5.001,
+	# whilst remaining compatible with perl4. Thanks to ukai@hplj.hpl.hp.com
+	do set('last-clean', time);		# Update last cleaning time
 }
 
 #

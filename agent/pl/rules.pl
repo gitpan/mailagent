@@ -1,4 +1,4 @@
-;# $Id: rules.pl,v 3.0.1.9 1998/03/31 15:27:04 ram Exp $
+;# $Id: rules.pl,v 3.0.1.6 1995/08/07 16:24:53 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,16 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rules.pl,v $
-;# Revision 3.0.1.9  1998/03/31 15:27:04  ram
-;# patch59: allow ~name expansion when specifying alternate rule files
-;#
-;# Revision 3.0.1.8  1997/01/31  18:08:02  ram
-;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
-;#
-;# Revision 3.0.1.7  1996/12/24  15:00:11  ram
-;# patch45: forgot to unlock rulecache on errors
-;# patch45: don't dataload hashkey(), used as a sort routine
-;#
 ;# Revision 3.0.1.6  1995/08/07  16:24:53  ram
 ;# patch37: skip possible spaces before trailing command ';' terminator
 ;#
@@ -216,8 +206,8 @@ sub dump_rules {
 		$rulenum++;
 		next unless &before($rulenum);				# Call 'before' hook
 		$rules = $_;		# Work on a copy
-		$rules =~ s/^([^{]*)\{// && ($mode = $1);	# First "word" is the mode
-		$rules =~ s/\s*(.*)\}// && ($action = $1);	# Then action within {}
+		$rules =~ s/^([^{]*){// && ($mode = $1);	# First "word" is the mode
+		$rules =~ s/\s*(.*)}// && ($action = $1);	# Then action within {}
 		$mode =~ s/\s*$//;							# Remove trailing spaces
 		print "<$mode> ";							# Mode in which it applies
 		$printed = length($mode) + 3;
@@ -325,7 +315,6 @@ sub write_cache {
 	unless (open(CACHE, ">$cf'rulecache")) {
 		&'add_log("ERROR cannot create rule cache $cf'rulecache: $!")
 			if $'loglvl;
-		&'free_file($cf'rulecache);	# Unlock cache
 		unlink $cf'rulecache;
 		return 0;
 	}
@@ -429,17 +418,12 @@ sub writevar_fd {
 	$error ? 0 : 1;		# Success when no error reported
 }
 
-# Perload OFF
-# (Used as a sort function, causes perl5 to dump core with native AUTOLOAD)
-
 # Sorting for hash keys used by %Rule
 sub hashkey {
 	local($c) = $a =~ /^H(\d+)/;
 	local($d) = $b =~ /^H(\d+)/;
 	$c <=> $d;
 }
-
-# Perload ON
 
 # The following sets-up a new rule environment and then transfers the control
 # to some other function, giving it the remaining parameters. That enables the
@@ -451,7 +435,6 @@ sub alternate {
 	local($'edited_rules) = 1;	# Signals that rules do not come from main file
 	local(@'Linerules);			# We're stuffing our new rules there
 
-	$rules =~ s/^~/$cf'home/;	# ~ substitution
 	unless (open(RULES, $rules)) {
 		&'add_log("ERROR cannot open alternate rule file $rules: $!")
 			if $'loglvl;

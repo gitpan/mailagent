@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.13 1997/09/15 15:03:51 ram Exp $
+ * $Id: parser.c,v 3.0.1.6 1995/08/31 16:25:42 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,28 +22,6 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
- * Revision 3.0.1.13  1997/09/15 15:03:51  ram
- * patch57: changed ordering of include files
- *
- * Revision 3.0.1.12  1997/02/20  11:38:07  ram
- * patch55: skip group-writable and exec-safe checks if told to
- *
- * Revision 3.0.1.11  1997/01/31  18:07:11  ram
- * patch54: forgot one more get_confval vs get_confstr translation
- *
- * Revision 3.0.1.10  1997/01/08  08:42:31  ram
- * patch53: must use get_confstr() to get at the execsafe variable
- *
- * Revision 3.0.1.9  1997/01/07  18:27:57  ram
- * patch52: don't perform extended exec() checks when execsafe is OFF
- *
- * Revision 3.0.1.8  1996/12/26  10:46:35  ram
- * patch51: include <unistd.h> for X_OK and define fallbacks
- *
- * Revision 3.0.1.7  1996/12/24  14:01:13  ram
- * patch45: enhanced security checks performed on files
- * patch45: the _ character was not correctly parsed in variables
- *
  * Revision 3.0.1.6  1995/08/31  16:25:42  ram
  * patch42: now uses say() to print messages on stderr
  *
@@ -69,7 +47,12 @@
 
 #include "config.h"
 #include "portable.h"
+#include "hash.h"
+#include "msg.h"
+#include "parser.h"
 #include <sys/types.h>
+#include "logfile.h"
+#include "environ.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -94,23 +77,6 @@
 #endif
 #endif
 
-#ifdef I_UNISTD
-#include <unistd.h>		/* X_OK and friends */
-#endif
-
-#ifdef I_FCNTL
-#include <fcntl.h>
-#endif
-#ifdef I_SYS_FILE
-#include <sys/file.h>	/* Needed for X_OK */
-#endif
-
-#ifndef I_FCNTL
-#ifndef I_SYS_FILE
-#include <sys/fcntl.h>	/* Try this one in last resort */
-#endif
-#endif
-
 /*
  * The following should be defined in <sys/stat.h>.
  */
@@ -120,38 +86,17 @@
 #ifndef S_IWGRP
 #define S_IWGRP 00020		/* Write permissions for group */
 #endif
-#ifndef S_ISUID
-#define S_ISUID 04000		/* Set user ID on execution */
-#endif
-#ifndef S_ISGID
-#define S_ISGID 02000		/* Set group ID on execution */
-#endif
 
-#ifndef X_OK
-#define X_OK	1			/* Test for execute (search) permission */
-#endif
-
-#include "hash.h"
-#include "msg.h"
-#include "parser.h"
-#include "logfile.h"
-#include "environ.h"
 #include "confmagic.h"
 
 #define MAX_STRING	2048			/* Maximum length for strings */
 #define SYMBOLS		50				/* Expected number of symbols */
 
-/* check_perm flags */
-#define MUST_OWN	0x0001			/* File/directory must be owned */
-#define MAY_PANIC 	0x0002			/* Whether we may panic */
-#define SECURE_ON 	0x0004			/* Force secure tests */
-
 /* Function declarations */
 public void read_conf();			/* Read configuration file */
 public void set_env_vars();			/* Set envrionment variables */
-public int exec_secure();			/* Checks whether exec() is safe on file */
 private void secure();				/* Perform basic security checks on file */
-private int check_perm();			/* Check permissions on file */
+private void check_perm();			/* Check permissions on file */
 private void get_home();			/* Extract home from /etc/passwd */
 private void substitute();			/* Variable and ~ substitutions */
 private void add_home();			/* Replace ~ with home directory */
@@ -169,14 +114,11 @@ extern char *strsave();				/* Save string value in memory */
 extern struct passwd *getpwuid();	/* Fetch /etc/passwd entry from uid */
 extern char *getenv();				/* Get environment variable */
 
-public void read_conf(myself, file)
-char *myself;
+public void read_conf(file)
 char *file;
 {
 	/* Read file in the home directory and build a symbol H table on the fly.
 	 * The ~ substitution and usual $var substitution occur (but not ${var}).
-	 * As we go, we perform basic sanity and security checks on the overall
-	 * configuration.
 	 */
 	
 	char path[MAX_STRING];			/* Full path of the config file */
@@ -184,7 +126,6 @@ char *file;
 	char mailagent[MAX_STRING];		/* Path of the configuration file */
 	FILE *fd;						/* File descriptor used for config file */
 	int line = 0;					/* Line number */
-	struct stat buf;				/* Statistics buffer */
 
 	if (home == (char *) 0)			/* Home not already artificially set */
 		get_home();					/* Get home directory via /etc/passwd */
@@ -226,32 +167,11 @@ char *file;
 	 * with the user's privileges.
 	 */
 
-	rules = get_confstr_opt("rules");	/* Fetch rules location */
-	if (rules)							/* No rule file is perfectly fine */
-		check_perm(rules, MUST_OWN | MAY_PANIC);	/* Might not exist */
+	rules = ht_value(&symtab, "rules");	/* Fetch rules location */
+	if (rules == (char *) 0)			/* No rule file, that's fine */
+		return;
 
-	/* Make sure I cannot get compromised... */
-	if (*myself == '/') {				/* Only possible with absoulte path */
-		add_log(19, "checking myself at %s", myself);
-		if (!exec_secure(myself)) {
-			char *error = "ERROR --FILTER PROGRAM CAN BE TAMPERED WITH--";
-			say(error);					/* Make sure they see it */
-			add_log(1, error);
-		}
-	}
-
-	/* And that the .forward which invoked me is secure... */
-	strcpy(path, home);
-	strcat(path, "/");
-	strcat(path, ".forward");
-	if (-1 != stat(path, &buf)) {	/* File exists, not called manually */
-		add_log(19, "checking %s", path);
-		if (!exec_secure(path)) {
-			char *error = "ERROR --YOUR .forward FILE CAN BE TAMPERED WITH--";
-			say(error);					/* Make sure they see it */
-			add_log(1, error);
-		}
-	}
+	check_perm(rules);				/* Might not exist, don't use secure() */
 }
 
 private void start_log()
@@ -264,11 +184,15 @@ private void start_log()
 	char *value;					/* Symbol value */
 	int level = 0;					/* Logging level wanted */
 
-	value = get_confstr("logdir", CF_MANDATORY);
+	value = ht_value(&symtab, "logdir");	/* Fetch logging directory */
+	if (value == (char *) 0)
+		fatal("logging directory not defined");
 	strcpy(logfile, value);
-	strcat(logfile, "/");						/* Logging directory */
+	strcat(logfile, "/");
 
-	value = get_confstr("log", CF_MANDATORY);	/* Log file basename*/
+	value = ht_value(&symtab, "log");		/* Basename of the log file */
+	if (value == (char *) 0)
+		fatal("logfile not defined");
 	strcat(logfile, value);
 
 	level = get_confval("level", CF_MANDATORY);
@@ -276,19 +200,6 @@ private void start_log()
 	set_loglvl(level);						/* Logging level wanted */
 	if (-1 == open_log(logfile))
 		say("cannot open logfile %s", logfile);
-}
-
-private void stat_check(file)
-char *file;
-{
-	/* Make sure we can stat() the file */
-
-	struct stat buf;				/* Statistics buffer */
-
-	if (-1 == stat(file, &buf)) {
-		add_log(1, "SYSERR stat: %m (%e)");
-		fatal("cannot stat file %s", file);
-	}
 }
 
 private void secure(file)
@@ -299,64 +210,24 @@ char *file;
 	 * Returning from this routine implies that the security checks succeeded.
 	 */
 
-	stat_check(file);
-	check_perm(file, MUST_OWN | MAY_PANIC);	/* Check permissions */
+	struct stat buf;			/* Statistics buffer */
+
+	if (-1 == stat(file, &buf)) {
+		add_log(1, "SYSERR stat: %m (%e)");
+		fatal("cannot stat file %s", file);
+	}
+
+	check_perm(file);		/* Check permissions */
 }
 
-public int exec_secure(file)
+private void check_perm(file)
 char *file;
-{
-	/* Same checks as secure(), but without file/directory ownership.
-	 * We propagate SECURE_ON only when execsafe is ON or when the
-	 * user is the superuser.
-	 *
-	 * When execskip is ON, we don't perform the exec() checks at all.
-	 * This variable if OFF by default, i.e. they must explicitely
-	 * turn it ON to disable checking.
-	 */
-
-	char *execsafe = get_confstr("execsafe", CF_DEFAULT, "OFF");
-	char *execskip = get_confstr("execskip", CF_DEFAULT, "OFF");
-	int flag = (0 == strcasecmp(execsafe, "ON") || ROOTID == geteuid()) ?
-		SECURE_ON : 0;
-
-	stat_check(file);
-	if (0 == strcasecmp(execskip, "ON"))
-		return 1;
-	return check_perm(file, flag);		/* Check permissions */
-}
-
-/* VARARGS3 */
-private void check_fatal(flags, reason, arg1, arg2, arg3, arg4, arg5)
-int flags;
-char *reason;
-long arg1, arg2, arg3, arg4, arg5;
-{
-	/* Die with a fatal error if MAY_PANIC is specified in flags, otherwise
-	 * simply log the error.
-	 */
-
-	char buffer[MAX_STRING];
-
-	if (flags & MAY_PANIC)
-		fatal(reason, arg1, arg2, arg3, arg4, arg5);
-
-	sprintf(buffer, "ERROR %s", reason);
-	add_log(1, buffer, arg1, arg2, arg3, arg4, arg5);
-}
-
-private int check_perm(file, flags)
-char *file;
-int flags;	/* MAY_PANIC | MUST_OWN */
 {
 	/* Check basic permissions on the specified file. It cannot be world
 	 * writable and must be owned by the user. If the file specified does not
 	 * exist, no error is reported however. If the 'secure' option is set
 	 * to ON, or if we are running with superuser credentials, further checks
 	 * are performed on the directory containing the file.
-	 *
-	 * We return true if the file is OK, false otherwise, unless MAY_PANIC
-	 * is activated in which case we don't return but exit with fatal().
 	 */
 
 	struct stat buf;			/* Statistics buffer */
@@ -364,41 +235,18 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 	char *cfsecure;				/* Config value for the 'secure' parameter */
 	char *c;					/* Last slash position in file name */
 	int wants_secure = 0;		/* Set to true for extra security checks */
-	int wants_group = 1;		/* Set to true unless 'groupsafe' is OFF */
 
 	if (-1 == stat(file, &buf))
-		return 0;				/* Missing file is not secure! */
+		return;
 
-	if (buf.st_mode & S_IWOTH) {
-		check_fatal(flags, "file %s is world writable!", file);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_mode & S_IWOTH)
+		fatal("file %s is world writable!", file);
 
-	if ((flags & MUST_OWN) && buf.st_uid != geteuid()) {
-		check_fatal(flags, "file %s not owned by user!", file);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_uid != geteuid())
+		fatal("file %s not owned by user!", file);
 
-	/*
-	 * If file is setuid of setgid, make sure only the owner can write to
-	 * it. It's too critical and the system might not clear the set[ug]id bit
-	 * on a write to the file.
-	 */
-
-	if (-1 != access(file, X_OK)) {			/* User may execute the file */
-		if ((buf.st_mode & S_ISUID) && (buf.st_mode & (S_IWOTH|S_IWGRP))) {
-			check_fatal(flags, "setuid file %s is writable!", file);
-			return 0;
-		}
-		if ((buf.st_mode & S_ISGID) && (buf.st_mode & (S_IWOTH|S_IWGRP))) {
-			check_fatal(flags, "setgid file %s is writable!", file);
-			return 0;
-		}
-	}
-
-	cfsecure = get_confstr_opt("secure");	/* Do they want extra security? */
+	cfsecure = ht_value(&symtab, "secure");	/* Do we need extra security? */
 	if (
-		(flags & SECURE_ON) ||				/* They want secure checks anyway */
 		(cfsecure != (char *) 0 &&			/* Ok, secure is defined */
 		0 == strcasecmp(cfsecure, "ON")) ||	/* And extra checks wanted */
 		geteuid() == ROOTID					/* Running as superuser */
@@ -407,7 +255,7 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 			
 	if (!wants_secure) {
 		add_log(12, "basic checks ok for file %s", file);
-		return 1;			/* OK */
+		return;
 	}
 
 	/*
@@ -416,13 +264,8 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 
 	add_log(17, "performing additional checks on %s", file);
 
-	if (0 == strcasecmp(get_confstr("groupsafe", CF_DEFAULT, "ON"), "OFF"))
-		wants_group = 0;			/* They trust all the groups! */
-
-	if (wants_group && (buf.st_mode & S_IWGRP)) {
-		check_fatal(flags, "file %s is group writable!", file);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_mode & S_IWGRP)
+		fatal("file %s is group writable!", file);
 
 	/*
 	 * Ok, go on and check the parent directory...
@@ -441,27 +284,19 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 
 	if (-1 == stat(parent, &buf)) {
 		add_log(1, "SYSERR stat: %m (%e)");
-		check_fatal(flags, "cannot stat directory %s", parent);
-		return 0;			/* Failed checks */
+		fatal("cannot stat directory %s", parent);
 	}
 
-	if (buf.st_mode & S_IWOTH) {
-		check_fatal(flags, "directory %s is world writable!", parent);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_mode & S_IWOTH)
+		fatal("directory %s is world writable!", parent);
 
-	if (wants_group && (buf.st_mode & S_IWGRP)) {
-		check_fatal(flags, "directory %s is group writable!", parent);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_mode & S_IWGRP)
+		fatal("directory %s is group writable!", parent);
 
-	if ((flags & MUST_OWN) && buf.st_uid != geteuid()) {
-		check_fatal(flags, "directory %s not owned by user!", parent);
-		return 0;			/* Failed checks */
-	}
+	if (buf.st_uid != geteuid())
+		fatal("directory %s not owned by user!", parent);
 
 	add_log(12, "file %s seems to be secure", file);
-	return 1;				/* OK */
 }
 
 public char *homedir()
@@ -512,14 +347,14 @@ char **envp;				/* The environment pointer */
 	 * present, we'll simply prepend the added path 'p_host' to the existing
 	 * value provided by sendmail, cron, or whoever invoked us.
 	 */
-	path_val = get_confstr_opt("path");
+	path_val = ht_value(&symtab, "path");
 	if (path_val != (char *) 0) {
 		if (-1 == set_env("PATH", path_val))
 			fatal("cannot initialize PATH");
 	}
 
 	sprintf(name, "p_%s", machine);		/* Name of field in ~/.mailagent */
-	path_val = get_confstr_opt(name);	/* Exists ? */
+	path_val = ht_value(&symtab, name);	/* Exists ? */
 	if (path_val != (char *) 0) {		/* Yes, prepend its value */
 		add_log(19, "updating PATH with '%s' from config file", name);
 		if (-1 == prepend_env("PATH", ":"))
@@ -533,25 +368,25 @@ char **envp;				/* The environment pointer */
 		fatal("cannot set HOME variable");
 
 	/* If there is a 'timezone' variable, set TZ accordingly */
-	tz = get_confstr("timezone", CF_DEFAULT, (char *) 0);	/* Exists ? */
+	tz = ht_value(&symtab, "timezone");	/* Exists ? */
 	if (tz != (char *) 0) {
 		if (-1 == set_env("TZ", tz))
 			add_log(1, "ERROR cannot set TZ variable");
 	}
 }
 
-public char *get_confstr(name, type, dflt)
+public int get_confval(name, type, dflt)
 char *name;		/* Option name */
 int type;		/* Type: mandatory or may be defaulted */
-char *dflt;		/* Default value to be used if option not defined */
+int dflt;		/* Default value to be used if option not defined */
 {
-	/* Return string value for option and use default if not defined, or
-	 * raise a fatal error when option is mandatory.
+	/* Return value for option and use default if not defined, or yield a
+	 * fatal error when option is mandatory.
 	 */
 
 	char buffer[MAX_STRING];
 	char *namestr;		/* String in H table */
-	char *val;			/* Returned value */
+	int val;			/* Returned value */
 
 	namestr = ht_value(&symtab, name);
 	if (namestr == (char *) 0) {
@@ -567,31 +402,10 @@ char *dflt;		/* Default value to be used if option not defined */
 			fatal("BUG: get_confval");
 		}
 	} else
-		val = namestr;
+		sscanf(namestr, "%d", &val);
 
 	return val;
 }
-
-public int get_confval(name, type, dflt)
-char *name;		/* Option name */
-int type;		/* Type: mandatory or may be defaulted */
-int dflt;		/* Default value to be used if option not defined */
-{
-	/* Return int value for option and use default if not defined, or yield a
-	 * fatal error when option is mandatory.
-	 */
-
-	char *namestr;		/* String in H table */
-	int val;			/* Returned value */
-
-	namestr = get_confstr(name, type, (char *) 0);
-	if (namestr == (char *) 0)		/* get_confstr() panics if CF_MANDATORY */
-		return dflt;
-
-	sscanf(namestr, "%d", &val);
-	return val;
-}
-
 
 private void substitute(value)
 char *value;
@@ -651,7 +465,7 @@ char **from;					/* Pointer to address in original text */
 
 	/* Get variable's name */
 	while (*name++ = *ptr) {
-		if (isalnum(*ptr) || *ptr == '_')
+		if (isalnum(*ptr))
 			ptr++;
 		else
 			break;

@@ -2,7 +2,7 @@
 # Configuration file for mailagent
 #
 
-# $Id: mailagent.cf,v 3.0.1.13 2001/03/17 18:03:59 ram Exp $
+# $Id: mailagent.cf,v 3.0.1.8 1995/09/15 13:39:50 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,21 +13,6 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
-# Revision 3.0.1.13  2001/03/17 18:03:59  ram
-# patch72: added two variables: domain and hidenet
-#
-# Revision 3.0.1.12  1998/07/28  16:56:21  ram
-# patch62: added servshell variable
-#
-# Revision 3.0.1.11  1998/03/31  14:35:29  ram
-# patch59: added "vacfixed" and "tofake" configuration parameters
-#
-# Revision 3.0.1.10  1997/02/20  11:33:49  ram
-# patch55: new groupsafe, execskip and lockwarn variables
-#
-# Revision 3.0.1.9  1997/01/07  18:26:06  ram
-# patch52: new execsafe configuration variable
-#
 # Revision 3.0.1.8  1995/09/15  13:39:50  ram
 # patch43: added locksafe, compspecs and comptag config variables
 # patch43: new "folder compression" section
@@ -78,14 +63,11 @@ p_rome   : ~/bin:~/bin/sun4:/base/common/GENERAL/sun4/bin
 user     : ram
 name     : Raphael
 email    : you@your.domain.top	# Your accurate e-mail address
-domain   : domain.top			# Your domain name (no leading '.')
-hidenet  : OFF					# Prefix domain with hostname when OFF
 
 # Vacation mode (on/off), vacation file and period
 vacation : OFF					# Vacation mode on/off
 vacfile  : ~/.vacation			# File to be sent back
 vacperiod: 1d					# Period between two vacation messages
-vacfixed : OFF					# Turn to on to solely allow vacfile message
 
 # Mail and news transport agents
 # By default, values for sendmail and sendnews are determined at configuration
@@ -114,13 +96,9 @@ timezone : PST8PDT				# Time zone location
 statfile : $spool/mailagent.st	# Statistics file
 rules    : ~/.rules				# Filter's rules location (optional)
 rulecache: $spool/rulecache		# Cache for compiled rules (optional)
-
-# Security checks
+nfslock  : OFF					# NFS-secure locking (optional)
 secure   : ON					# Make extended checks on sensitive files
 linkdirs : ON					# Also carefully check symlinks to dirs
-groupsafe: ON					# Allow group-writable files when OFF
-execsafe : OFF					# Make extended checks on exec()ed files
-execskip : OFF					# Turn to ON to avoid all checks on exec()
 
 # Mailbox parameters
 maildrop : /usr/mail			# System mail drop directory (optional)
@@ -131,7 +109,6 @@ mmdfbox  : OFF					# Force new folders to MMDF format
 fromesc  : ON					# Escape leading From into >From
 fromall  : OFF					# Escape all From, even within paragraph
 fromfake : ON					# Attempt creation of From: header when missing
-tofake   : ON					# Fake a To: line when missing
 
 # Biffing support
 biff     : ON					# Whether biff is wanted
@@ -155,8 +132,6 @@ lockmax  : 20					# Maximum number of locking attempts
 lockdelay: 2					# Amount of seconds between two lock attempts
 lockhold : 3600					# Amount of seconds before breaking lock
 locksafe : ON					# Locking style on mailboxes
-lockwarn : 20,300				# Warn on busy locks after 20s, then every 300
-nfslock  : OFF					# NFS-secure locking (optional)
 
 # Timeout parameters
 queuewait: 60					# Delay for filter before calling mailagent
@@ -187,7 +162,6 @@ agemax   : 1y					# Maximum lifetime for entries
 
 comserver: $spool/server		# Valid server commands
 servdir  : $spool/cmds			# Default path for perl server commands
-servshell: /bin/sh				# Shell used to spawn shell commands (optional)
 maxerrors: 10					# Allow at most ten errors before flushing
 maxcmds  : 10					# Allow maximum of ten commands in one request
 scriptcc : ON					# Send copy of sesssion transcripts to user?

@@ -1,6 +1,5 @@
-: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL60]
+: Makefile.SH generated from Jmake.tmpl and Jmakefile [jmake 3.0 PL53]
 : $X-Id: Jmake.tmpl,v 3.0.1.2 1995/01/11 14:50:21 ram Exp ram $
-
 case $CONFIG in
 '')
 	if test -f config.sh; then TOP=.;
@@ -55,9 +54,8 @@ SED = $sed
 ########################################################################
 # Automatically generated parameters -- do not edit
 
-USRINC = $usrinc
-OBJECTS =  \$(OBJ)
 SOURCES =  \$(SRC)
+OBJECTS =  \$(OBJ)
 
 ########################################################################
 # New suffixes and associated building rules -- edit with care
@@ -69,8 +67,7 @@ SOURCES =  \$(SRC)
 $spitshell >>Makefile <<'!NO!SUBS!'
 ########################################################################
 # Jmake rules for building libraries, programs, scripts, and data files
-# $X-Id: Jmake.rules,v 3.0.1.5 1995/09/25 09:07:19 ram Exp ram $
-
+# $X-Id: Jmake.rules,v 3.0.1.3 1995/03/21 08:35:28 ram Exp ram $
 ########################################################################
 # Force 'make depend' to be performed first -- do not edit
 
@@ -81,7 +78,7 @@ all:: .FORCE_DEPEND
 ########################################################################
 # Start of Jmakefile
 
-# $X-Id: Jmakefile,v 3.0.1.2 1997/02/20 11:34:01 ram Exp ram $
+# $X-Id: Jmakefile,v 3.0.1.1 1995/03/21 12:51:20 ram Exp ram $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -92,9 +89,6 @@ all:: .FORCE_DEPEND
 #  of the source tree for mailagent 3.0.
 #
 # $X-Log: Jmakefile,v $
-# Revision 3.0.1.2  1997/02/20  11:34:01  ram
-# patch55: added getopt.c and dup2.c files
-#
 # Revision 3.0.1.1  1995/03/21  12:51:20  ram
 # patch35: now creates the private library directory before installing
 #
@@ -104,7 +98,7 @@ all:: .FORCE_DEPEND
 
 # Files used to build the application
 SRC = environ.c hash.c io.c lock.c logfile.c main.c misc.c msg.c parser.c \
-	user.c getopt.c dup2.c
+	user.c
 
 # Derived object file names
 OBJ = \
@@ -117,9 +111,7 @@ OBJ = \
 	misc.o \
 	msg.o \
 	parser.o \
-	user.o \
-	getopt.o \
-	dup2.o 
+	user.o 
 
 # File config.h is in the top-level directory
 CFLAGS = -I$(TOP)
@@ -133,9 +125,7 @@ depend:: ../../mkdep
 depend::
 	($(SED) '/^# DO NOT DELETE/q' Makefile && \
 	$(MKDEP) $(SOURCES) | \
-	$(SED) -e 's:/usr/include[^ ]*::g; s:$(USRINC)[^ ]*::g; ' \
-	-e '/: / b print' -e 'H; d; n; : print' -e 'x; s/\\\n//g' \
-	-e 's/  */ /g; s/ :/:/;' -e '/: *$$/d' \
+	$(SED) 's/: \.\//: /; /\/usr\/include/d' \
 	) > Makefile.new
 	cp Makefile Makefile.bak
 	cp Makefile.new Makefile
@@ -217,7 +207,6 @@ install.man::
 
 deinstall.man::
 	@echo "deinstall.man in $(CURRENT) done."
-
 Makefiles::
 
 Makefiles.SH::

@@ -1,4 +1,4 @@
-;# $Id: stats.pl,v 3.0.1.4 1997/02/20 11:46:51 ram Exp $
+;# $Id: stats.pl,v 3.0.1.2 1995/02/03 18:04:36 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,12 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: stats.pl,v $
-;# Revision 3.0.1.4  1997/02/20 11:46:51  ram
-;# patch55: typo fixes and print() call cleanup to avoid run-time warnings
-;#
-;# Revision 3.0.1.3  1997/01/31  18:08:09  ram
-;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
-;#
 ;# Revision 3.0.1.2  1995/02/03  18:04:36  ram
 ;# patch30: avoid blank printing when the default rule was never applied
 ;#
@@ -191,14 +185,14 @@ sub main'write_stats {
 	# record of the old statistics file is removed and the remaining is
 	# appended.
 	print STATS "mailstat: $start_date\n";		# Magic line
-	print STATS join(' ', @Top[0..2]). "\n";
-	print STATS join(' ', @Top[3..$#Top]). "\n";
+	print STATS join(' ', @Top[0..2]), "\n";
+	print STATS join(' ', @Top[3..$#Top]), "\n";
 	&print_array(*Rule, "");			# Print rule matches statistics
 	&print_array(*Special, "");			# Print special stats
 	&print_array(*Command, "");			# Print actions executions
 	&print_array(*FCommand, "!");		# Print failed actions
 	&print_array(*Once, "@");			# Print once commands done
-	&print_array(*ROnce, "%@");			# Print once commands not retried
+	&print_array(*ROncem, "%@");		# Print once commands not retried
 	print STATS "------\n";
 	&rules'write_fd("stats'STATS");		# Append internal form of rules
 	# If there was no previous statistics file, it's done!
@@ -247,7 +241,7 @@ sub print_array {
 	local(@keys);
 	foreach (sort keys %name) {
 		@keys = split(/:/);
-		print STATS $leader . join(' ', @keys) . ' ' . $name{$_} . "\n";
+		print STATS $leader . join(' ', @keys) . ' ' . $name{$_}, "\n";
 	}
 }
 
@@ -515,7 +509,7 @@ sub print_stats {
 		}
 	}
 	&main'dump_rules(*print_header, *rule_stats);
-	print '=' x 79 . "\n";
+	print '=' x 79, "\n";
 	$lasttime = $current_time;
 }
 
@@ -548,7 +542,7 @@ sub print_general {
 	chop $last;
 	# Header of statistics
 	print "$what from $now to $last:\n";
-	print '~' x 79 . "\n";
+	print '~' x 79, "\n";
 	print "Processed $Top[3] mail";
 	print "s" unless $Top[3] == 1;
 	print " for a total of $Top[6] bytes";
@@ -579,7 +573,7 @@ sub print_general {
 
 # Print the commands executed, as found in %Command and @Top.
 sub print_commands {
-	print '~' x 79 . "\n";
+	print '~' x 79, "\n";
 	local($cmd, $mode);
 	local(%states, %fstates);
 	local(%cmds, %fcmds);
@@ -707,7 +701,7 @@ sub print_header {
 	local($percentage) = sprintf("%.2f", ($total_matches / $total) * 100);
 	$percentage = '0' if $total_matches == 0;
 	local($s) = $total_matches == 1 ? '' : 's';
-	print '-' x 79 . "\n";
+	print '-' x 79, "\n";
 	print "Rule #$rulenum, applied $total_matches time$s ($percentage %).\n";
 }
 
@@ -715,7 +709,7 @@ sub print_header {
 sub rule_stats {
 	return unless $opt_r;
 	local($rulenum) = @_;
-	local($mode) = $main'Rules[$rulenum - 1] =~ /^(.*)\s+\{/;
+	local($mode) = $main'Rules[$rulenum - 1] =~ /^(.*)\s+{/;
 	return unless $mode =~ /,/ || $mode eq 'ALL' || $mode =~ /!/;
 
 	# If there is only one mode <ALL>, more than one mode, or at least

@@ -1,4 +1,4 @@
-;# $Id: rfc822.pl,v 3.0.1.6 2001/03/17 18:14:00 ram Exp $
+;# $Id: rfc822.pl,v 3.0.1.2 1995/09/15 14:05:10 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,19 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rfc822.pl,v $
-;# Revision 3.0.1.6  2001/03/17 18:14:00  ram
-;# patch72: use "domain" config var instead of mydomain
-;#
-;# Revision 3.0.1.5  2001/01/10 16:57:11  ram
-;# patch69: dropped support of '_' and '.' stripping in last_name()
-;# patch69: added gen_message_id()
-;#
-;# Revision 3.0.1.4  1998/07/28  17:06:15  ram
-;# patch62: use non-greedy pattern match to avoid extra spaces
-;#
-;# Revision 3.0.1.3  1998/03/31  15:26:17  ram
-;# patch59: parser now allows no space between address and comment
-;#
 ;# Revision 3.0.1.2  1995/09/15  14:05:10  ram
 ;# patch43: internet_info now assumes local user when facing a single login
 ;#
@@ -51,12 +38,12 @@ sub parse_address {
 	local($_) = shift(@_);		# The address to be parsed
 	local($comment);
 	local($internet);
-	if (/^\s*(.*?)\s*<(\S+)>[^()]*$/) {		# comment <address>
+	if (/^\s*(.*)\s+<(\S+)>[^()]*$/) {		# comment <address>
 		$comment = $1;
 		$internet = $2;
 		$comment =~ s/^"(.*)"/$1/;			# "comment" -> comment
 		($internet, $comment);
-	} elsif (/^\s*([^()]+?)\s*\((.*)\)/) {	# address (comment) 
+	} elsif (/^\s*([^()]+)\s+\((.*)\)/) {	# address (comment) 
 		$comment = $2;
 		$internet = $1;
 		# Construct '<address> (comment)' is invalid but... priority to <>
@@ -65,7 +52,7 @@ sub parse_address {
 		($internet, $comment);
 	} elsif (/^\s*<(\S+)>\s*(.*)/) {		# <address> ...garbage...
 		($1, $2);
-	} elsif (/^\s*\((.*)\)\s*<?(.*)>?/) {	# (comment) [address or <address>]
+	} elsif (/^\s*\((.*)\)\s+<?(.*)>?/) {	# (comment) [address or <address>]
 		($2, $1);
 	} else {								# plain address, grab first word
 		/^\s*(\S+)\s*(.*)/;
@@ -99,9 +86,14 @@ sub login_name {
 	}
 }
 
-# Lower-case name only
+# Extract last name from a login name like First_name.Last_name and put it
+# in lowercase. Hence, Raphael.Manfredi will become manfredi. Since '_' or '.'
+# characters could be legitimely used in a login name (or distribution list),
+# we remove it only when followed by an upper-cased letter.
 sub last_name {
 	local($_) = shift(@_);			# The sender's login name
+	s/.*\.([A-Z]\w*)/$1/;			# Keep only the last name (. separation)
+	s/.*_([A-Z]\w*)/$1/;			# Same as above (_ separation)
 	tr/A-Z/a-z/;					# And lowercase it
 	$_;
 }
@@ -116,7 +108,7 @@ sub internet_info {
 	# We use the login name to anchor the last '!' or the first '@' or '%'
 	($internet) = /([^!]*)!$login/i;
 	($internet) = /$login[@%]([\w.-]*)/i unless $internet;
-	$internet = &myhostname . ".$cf::domain" unless $internet;
+	$internet = &myhostname . $mydomain unless $internet;
 	$internet =~ tr/A-Z/a-z/;				# Always lower-cased
 	local(@parts) = split(/\./, $internet);	# Break on dots
 	if (@parts == 1) {						# Only a host name
@@ -124,23 +116,9 @@ sub internet_info {
 		# it is local if there is an '@' sign, as in 'ram@lyon'. Otherwise, it
 		# is a uucp name, as in 'eiffel!ram'.
 		push(@parts, 'uucp') if /!$login/;	# UUCP name
-		push(@parts, split(/\./, $cf::domain)) if @parts == 1;
+		push(@parts, split(/\./, $mydomain)) if @parts == 1;
 	}
 	unshift(@parts, '') if @parts == 2;		# No host name
 	@parts[($#parts - 2) .. $#parts];		# ($host, $domain, $country)
-}
-
-# Generate a unique message ID
-sub gen_message_id {
-	my $now = time;
-	my @alphabet = ('a' .. 'z', '0' .. '9', 'A' .. 'Z');
-	my $randword = '';
-	for (my $i = 0; $i < 10; $i++) {
-		$randword .= $alphabet[rand @alphabet];
-	}
-	my $domain = &domain_addr;				# Local domain where we run
-	my $id = "<mailagent-$now-$randword\@$domain>";
-	&header'msgid_cleanup(\$id);			# Clean up: domain wrongly set?
-	return $id;
 }
 

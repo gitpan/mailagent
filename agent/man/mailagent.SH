@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.26 2001/03/17 18:08:30 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.15 1995/09/15 13:56:30 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,55 +31,6 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
-''' Revision 3.0.1.26  2001/03/17 18:08:30  ram
-''' patch72: documented new config vars: domain and hidenet
-''' patch72: various fixes from bug reports on Debian
-'''
-''' Revision 3.0.1.25  2001/03/13 13:10:47  ram
-''' patch71: documented SUBST/TR on header fields
-'''
-''' Revision 3.0.1.24  2001/01/10 16:51:38  ram
-''' patch69: changed semantics of "tome"
-''' patch69: updated POST to current practices
-''' patch69: documented biffing macros for news article
-'''
-''' Revision 3.0.1.23  1999/07/12  13:46:20  ram
-''' patch66: variables are now propagated back and forth through APPLY
-''' patch66: updated my e-mail address
-'''
-''' Revision 3.0.1.22  1999/01/13  18:10:52  ram
-''' patch64: added %Y macro for 4-digit year output
-''' patch64: agent.wait file moved from Queue to Spool
-'''
-''' Revision 3.0.1.21  1998/07/28  16:59:10  ram
-''' patch62: documented new "servshell" variable
-'''
-''' Revision 3.0.1.20  1998/03/31  14:40:01  ram
-''' patch59: added "vacfixed" and "tofake" configuration parameters
-''' patch59: new ON command to issue commands on certain days only
-''' patch59: the SERVER "set" command can now list defined variables
-''' patch59: added an example of alternate VACATION message selection
-'''
-''' Revision 3.0.1.19  1997/09/15  15:07:18  ram
-''' patch57: new -t and -f options for BEGIN and NOP
-''' patch57: all command options should now be output in bold
-''' patch57: documented _CALLOUT_ working state for callout queue
-'''
-''' Revision 3.0.1.18  1997/02/20  11:40:44  ram
-''' patch55: documents new execsafe, groupsafe and lockwarn variables
-''' patch55: the C filter can now redirect output via -o
-''' patch55: made it explicit that /pattern/i is legal
-'''
-''' Revision 3.0.1.17  1997/01/07  18:29:18  ram
-''' patch52: documented new execsafe configuration variable
-'''
-''' Revision 3.0.1.16  1996/12/24  14:12:58  ram
-''' patch45: examples are now shown in constant-width font if possible
-''' patch45: big emphasis about security issues, for RUN commands & filter
-''' patch45: new Relayed: pseudo header computations
-''' patch45: documented the %-H biffing macro with more details
-''' patch45: updated my e-mail address
-'''
 ''' Revision 3.0.1.15  1995/09/15  13:56:30  ram
 ''' patch43: folder compression can now deal with various compressors
 ''' patch43: added locksafe, compspecs and comptag config variables
@@ -154,13 +105,11 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .de Ex		\" Start of Example
 .sp
 .in +5
-.ft CW
 .nf
 ..
 .de Ef		\" End of Example
 .sp
 .in -5
-.ft R
 .fi
 ..
 .SH NAME
@@ -276,11 +225,6 @@ it to suit your needs. Comments held in it should be
 self explanatory. There is only a small section at the head of the
 script which needs to be edited.  You'll have to delete shell comments
 in the \fIfilter\fR script by yourself if your shell cannot deal with them.
-.PP
-As of version 3.0 PL44, I advise you to prefer the C version if you are
-concerned about security. If you are in a position where multiple architectures
-can process your \fI.forward\fR, then a shell wrapper selecting the proper
-executable based on the architecture will be required.
 '''
 .SS "Configuring Mailagent"
 .PP
@@ -432,13 +376,6 @@ A list of all the available distributions. See the sample held in
 \fILib/mailagent/distribs\fR. Needed by PROCESS only. (suggested:
 \$spool/distribs)
 .TP
-.I domain
-Your domain name, without the leading dot, as in \fIexample.com\fR.
-The value is appended to the value of \fIemail\fR when that variable
-does not have any '@', to construct a fully qualified e-mail address.
-See also the \fIhidenet\fR variable.
-(optional, defaults to the domain name determined at build time).
-.TP
 .I email
 Your electronic mail address. If left unspecified, mailagent will try to
 guess it. This address is used by mailagent when trying to send something
@@ -447,16 +384,6 @@ to the user (you!). (suggested: specify your e-mail address).
 .I emergdir
 Name of the directory which should be used for dumps, preferably. This is
 optional. (suggested: ~/tmp/lost+mail)
-.TP
-.I execsafe
-Whether to be strict before using \fIexec()\fR to launch a new process or
-not. The value of this variable is used in place of \fIsecure\fR when checking
-executable files. (defaults to OFF, suggested: ON if possible).
-.TP
-.I execskip
-Whether to skip the \fIexec()\fR security checks alltogether. Don't turn
-this ON unless you really trust all the users having access to your machine
-or file server. (optional, default to OFF, suggested: OFF).
 .TP
 .I fromall
 Whether or not \fImailagent\fR should escape all the \fIFrom\fR lines in the
@@ -477,12 +404,6 @@ Whether or not \fImailagent\fR should fake a From: line into the message
 header when it is absent. Naturally, it requires a valid leading From line to
 operate! (optional, defaults to ON, suggested: ON).
 .TP
-.I groupsafe
-If turned OFF, then group-writable files will be managed as if they were
-secure, from a security point of view. Leave it to ON if possible, or
-you may pass by a huge security hole without your noticing (optional,
-defaults to ON, suggested: ON).
-.TP
 .I hash
 The directory used for name hashing by the built-in database used by ONCE,
 UNIQUE and RECORD commands. Optional, unless you make use of those commands
@@ -492,15 +413,6 @@ or activate auto cleaning. The directory is placed in the spool area.
 .I helpdir
 Directory where help files for SERVER commands are kept.
 (suggested: \$spool/help)
-.TP
-.I hidenet
-When set to ON, the value of the variable \fIdomain\fR is the fully qualified
-name used.  When OFF, the hostname is prepended to the \fIdomain\fR.  If
-the hostname is already fully qualified, then the value of \fIdomain\fR is
-ignored.  Assuuming \fIdomain\fR is set to \fIexample.com\fR and the hostname
-is \fIhost\fR, then the fully qualified name will be \fIhost.example.com\fR
-if \fIhidenet\fR is OFF, and \fIexample.com\fR if ON.
-(optional, defaults to whatever was determined at build time)
 .TP
 .I home
 Defines where the home directory is. This must be accurate.
@@ -537,21 +449,6 @@ to be. Set it to OFF to let mailagent continue its mailbox delivery even
 though no locking was done, to ON if you want strict locking, to PARTIAL if
 you can live with partial locking. Messages not saved in a folder are
 dumped to an emergency mailbox. (optional, defaults to ON).
-.TP
-.I lockwarn
-This variable controls the time after which \fImailagent\fR should
-start emiting a warning when busy trying to acquire a lock.
-It is a comma separated list of values, in seconds. If two values are
-given, the first is the initial time threshold, the second is the
-repeat period. For instance, a value of "15,60" would cause a warning
-after 15 seconds, then every 60 seconds until the lock is taken or
-the locking attempt time is expired (see
-.I lockmax
-and
-.IR lockdelay ).
-If only one value is given, it is taken as being both the initial
-threshold and the period.
-(optional, defaults to: 20,300).
 .TP
 .I log
 Name of the log file which will be put in Log directory. (suggested: agentlog).
@@ -704,8 +601,7 @@ still in its queue as being old. (optional, defaults to: 86400, i.e. a day).
 .TP
 .I queuewait
 Time in seconds telling the C \fIfilter\fR program how long it must wait
-before launching \fImailagent\fR. (optional, defaults to: 60, but can be
-lowered to 0 if you don't want to wait to delay getting new messages).
+before launching \fImailagent\fR. (optional, defaults to: 60).
 .TP
 .I rulecache
 The name of the file used to cache the latest compiled rules. Since usually
@@ -759,15 +655,6 @@ The directory name where shell and perl server commands are stored. This is
 the default lookup place. Optional parameter unless SERVER is used.
 (suggested: \$spool/cmds).
 .TP
-.I servshell
-This is the name of the shell used to launch SERVER shell commands (actually
-to proces the wrapper file that will ultimately exec() the command). On some
-systems like HPUX 10.x, this has to be set to /usr/old/bin/sh to get the
-plain old Bourne shell, because /bin/sh is a braindead POSIX shell that
-closes file descriptors greater than 2 upon exec(), whereas the Bourne
-shell does not. (optional, suggested: /bin/sh unless you're on HPUX 10.x,
-as explained before).
-.TP
 .I spool
 Spool directory, required (suggested: ~/var/mailagent).
 .TP
@@ -775,21 +662,12 @@ Spool directory, required (suggested: ~/var/mailagent).
 File where statistics should be gathered. If no such file exists, no
 statistics will be recorded (suggested: \$spool/mailagent.st).
 .TP
-.I tofake
-Whether or not \fImailagent\fR should fake a To: line into the message
-header when it is absent, which will be used for filtering purposes (no
-physical alteration of the header occur). It uses Alternate-To: headers if
-found, otherwise it assumes the message was send to the user and takes the
-value from the \fIuser\fR configuration variable.
-(optional, defaults to ON, suggested: ON; turn it OFF only if you want to
-identify missing To: lines to detect SPAM).
-.TP
 .I tome
 This optional variable may contain a comma separated list of alternate logins
 that are also valid for the user (mail aliases). This is used in vacation
 mode to check whether the mail was sent to the user or to a mailing list.
-Matching is anchored on the login name, so saying "ro*" will match
-both \fIroot\fR and \fIrom\fR.
+If you have an alias like \fIFirst.Name\fR, then specify \fIname\fR only,
+since \fImailagent\fR reduces the login name to the family name.
 .TP
 .I track
 Set to \fIon\fR (case insensitively), this turns on the \fB\-t\fR option
@@ -817,12 +695,6 @@ A flag set to ON or OFF to switch the vacation mode accordingly.
 .TP
 .I vacfile
 The name of the file to be sent back in vacation mode (suggested: ~/.vacation).
-.TP
-.I vacfixed
-When ON, all changes to the vacation file (even locally) by means of the
-VACATION command are forbidden. This is useful if you usually have many
-customized vacation messages for different people but temporarily want to
-force one unique message (optional, defaults to: OFF).
 .TP
 .I vacperiod
 The minimum time elapsed between two vacation messages to a given address
@@ -872,17 +744,6 @@ and if a recipient has a \fI.forward\fR, its literal content is used in place
 of his e-mail address. Therefore, two local recipients with the same
 filtering string will be considered as one unique recipient and only one
 of them will get the message...
-.PP
-If your system does not allow shell redirection from within the .forward,
-you can use this instead (only supported by the C filter):
-.Ex
-"| exec /users/ram/mail/filter -o /users/ram/.bak"
-.Ef
-which in effect redirects \fIstdout\fR and \fIstderr\fR to the specified file
-for you, appending data at the end of the file.  If the filter runs setuid or
-setgid, you will not be allowed to create the file, nor to append to it
-unless the owner of the file is the \fIreal\fR uid invoking the program (for
-security reasons).
 .PP
 Note that the \fI.forward\fR file only pipes the mail to the \fIfilter\fR
 program and does not leave any copy in the mailbox. It is up to you to decide
@@ -1059,8 +920,7 @@ List the mailagent queue. Recently queued mails which are waited for by the
 This may be configured via the \fIqueuehold\fR variable. Really old messages
 (more than \fIqueuelost\fR seconds old) are flagged with a '#' character.
 Messages out of the queue (\fIqueue\fR variable) are flagged with a '*', whilst
-old messages out of the queue are signaled by an '@'. Locked messages have
-a '*' appended to their status.
+old messages out of the queue are signaled by an '@'.
 .TP
 .B \-L\fI level\fR
 Override the log level specified in the configuration file.
@@ -1297,14 +1157,11 @@ select lines #3 to #5 (included) from the mail body, whereas \fITo Cc <1,3>:\fR
 would focus on the first three addresses on each To: or Cc: header lines.
 Negative values refer to that many lines or addresses back from the end, i.e.
 \fICc <-2,->:\fR selects the last two addresses on the Cc: line.
-A single number such as \fI<2>\fR is understood as \fI<2, 2>\fR, i.e. it
-select only one item in the list, \fI<->\fR meaning everything (and being
-therefore redundant).
 .PP
 The selector is then followed by a pattern within '/' or by a single name.
 In order to ease the writing of the rules, the semantic of a single name varies
 depending on the selector used. For the special selectors "From:", "To:", "Cc:",
-"Sender:", their associated "Resent-" fields, "Reply-To:", "Envelope:"
+"Sender:", their associated "Resent-" fields, "Reply-To:"
 and "Apparently-To:", a single name is understood as a match on the \fIlogin
 name\fR of the address. Note that if no "To:" field is present in the header,
 one will be forged from the "Apparently-To:" for the purpose of filtering only
@@ -1323,8 +1180,7 @@ used and your pattern will not be modified in any way. The other special
 selector "Newsgroups:" works as "To:", excepted that newsgroups names are
 expected and a match is attempted on every item in the list. Every pattern
 match on a single name for an address-type field (i.e. "Newsgroups:" excluded),
-are made in case-insensitive mode. Otherwise, you can force a case-insensitive
-match by appending a trailing \fIi\fR option, as in \fI/pattern/i\fR.
+are made in case-insensitive mode.
 .PP
 There is also a little magic involved when matching on an address field. Namely,
 if the pattern is not a single word and is \fIanchored at the beginning\fR,
@@ -1333,10 +1189,7 @@ have a From: field whose value is \fIRaphael Manfredi <ram@eiffel.com>\fR, then
 the pattern \fI/Raphael/\fR would match, but not \fI/^Raphael/\fR. Instead,
 \fI/^ram@.*$/\fR would match, but this is more easily done with a single word
 pattern \fIram\fR, for it only focuses on the login name of the address and
-would also match if the address was written as \fIeiffel.com!ram\fR.  A single
-address in Internet form, as in \fIram@eiffel.com\fR is implicitely matching
-on the address part of the field, and you must not escape the '.' as you
-would have to in a regular expression.
+would also match if the address was written as \fIeiffel.com!ram\fR.
 .PP
 This may sound a little complex, but this design is meant to make things
 easier for the user. Here are some other examples:
@@ -1569,13 +1422,6 @@ User who sent the mail. This may differ from the \fIFrom:\fR line. If no
 such field exists, then the address in the first From line is used (mail
 envelope).
 .TP
-.I Relayed:
-This computed header is a comma-separated list of all the hosts where
-the message was relayed, in the proper transmission order. Each item in
-this list can be a machine name such as \fImail.hp.com\fR or an IP address
-such as \fI[15.125.38.12]\fR. The list is derived from the \fIReceived:\fR
-lines present in the message.
-.TP
 .I Reply-To:
 Where any reply should be sent. If no \fIReply-To:\fR field is present, then
 the \fIReturn-Path\fR is used (with <> stripped out), or the \fIFrom:\fR
@@ -1593,7 +1439,7 @@ For example, let's say the user receives cron outputs from various machines
 and wishes to save them on a per-machine basis, differentiating between
 daily outputs and weekly ones. Here is a solution:
 .Ex
-Subject: /output for host (\\\\w+)/	{ ASSIGN host '%1'; REJECT };
+Subject: /output for host (\\\\w+)/	{ ASSIGN host %1; REJECT };
 Subject: /^Daily output/	{ SAVE %#host/daily.%D };
 Subject: /^Weekly output/	{ SAVE %#host/weekly.%m-%d };
 .Ef
@@ -1660,12 +1506,12 @@ while doing pattern matching.
 .PP
 For instance:
 .Ex
-To: /(.*)/, Subject: /Output from (\\\\w+)/ { ASSIGN to '%1'; SAVE %2 };
+To: /(.*)/, Subject: /Output from (\\\\w+)/ { ASSIGN to %1; SAVE %2 };
 .Ef
 will save the To: field in variable 'to' and save the mail in a folder derived
 from the host name specified in the subject. However, if we say:
 .Ex
-Subject: /host (\\\\w+)/, /from (\\\\w+)/ { ASSIGN match '%1' };
+Subject: /host (\\\\w+)/, /from (\\\\w+)/ { ASSIGN match %1 };
 .Ef
 then there will be only one back-reference set, and it will come from the first
 pattern matching if it succeeds, or from the second. Should the second or
@@ -1700,7 +1546,7 @@ There is also a special macro %&, which lists (it's a comma separated list)
 all the selectors specified via a regular expression which indeed matched.
 For instance:
 .Ex
-Re.*: /york/		{ ASSIGN which '%&' };
+Re.*: /york/		{ ASSIGN which %& };
 .Ef
 would assign to \fIwhich\fR the list of all the fields matching the /Re.*/
 pattern which contained 'york', be it a Received: field or a Resent-From:
@@ -1724,11 +1570,11 @@ and RESTART. For every command returning such an exit status, the failure
 or success conditions are given at the end of each description. If nothing is
 specified, then the command does not return a meaningful status.
 .TP 10
-ABORT [\fB\-tf\fR] [\fImode\fR]
+ABORT [-tf] [\fImode\fR]
 Abort application of filtering rules immediately. See REJECT for the meaning
 of the optional parameters. (Does not modify existing status)
 .TP
-AFTER [\fB\-sanc\fR] \fI(time) action\fR
+AFTER [-sanc] \fI(time) action\fR
 Records a callback for after the specified \fItime\fR, where \fIaction\fR will
 be performed. By default, a mailagent filtering action is assumed (\fB\-a\fR
 option), on the current mail message. A shell command (\fB\-c\fR) may be
@@ -1737,29 +1583,16 @@ a plain shell command may be run (with no input) using the \fB\-s\fR option.
 The option \fB-n\fR may be used when the current mail message does not need
 to be kept for input. For instance:
 .Ex
-AFTER \fB\-an\fR (1 day) DO ~/process:proc'run(%u)
+AFTER \fB-an\fR (1 day) DO ~/process:proc'run(%u)
 .Ef
 would call \fIproc'run\fR defined in the \fI~/process\fR file in one day
 from now, without giving any input (the action here does not require any).
-.sp
-When running mailagent commands, the initial working mode is set to
-_CALLOUT_. This may matter if you call APPLY for instance. If the recorded
-time is less or equal than the current time (which is \fInow\fR), the callback
-will occur when mailagent is done with the messages in its queue, before
-exiting. This allows for the following cute trick, found out by Randal Schwartz:
-.Ex
-AFTER (now)		# fork a copy I can mangle
-	STRIP Reply-To \\\\; RESYNC \\\\;
-	ANNOTATE -du Reply-To %2 \\\\; RESYNC \\\\;
-	NOTIFY message %r \\\\; DELETE \\\\;
-	;
-.Ef
 Note that the command is not called \fIAT\fR because the call will only
 be performed at the next mailagent invocation after the specified time has
 elapsed. Dates are specified using the same format as in SELECT.
 (Fails if the action cannot be recorded in the callout queue).
 .TP
-ANNOTATE [\fB\-du\fR] \fIfield value\fR
+ANNOTATE [-du] \fIfield value\fR
 Annotate message by adding \fIfield\fR into the mail header, with the
 supplied \fIvalue\fR. This is like the MH command \fIanno\fR, but the
 annotation is performed at the end of the header, whereas MH does it at the
@@ -1782,13 +1615,7 @@ APPLY \fIrulefile\fR
 Get the rules held in \fIrulefile\fR and apply them to the current message.
 The filter will begin in whatever mode you were when using this command,
 but no feed back will occur, i.e. any mode changing will be lost when
-returning from the command.
-.sp
-Variables (see the %# macro) are propagated back and forth through APPLY,
-meaning you see variables set by the caller, and you may change their
-values or create new variables for the caller to later use.
-.sp
-If mail is saved during the application of
+returning from the command. If mail is saved during the application of
 the rules, then the corresponding flag is set in the main filter (the one
 that started the APPLY command). You may nest them, of course.
 (Fails if mail is not saved by the rules held in \fIrulefile\fR)
@@ -1820,7 +1647,7 @@ the command is taken as filter actions, which means the semantics of PASS,
 for instance, is changed: we do not take a body back but commands.
 (The execution status is that of the \fIcommand\fR)
 .TP
-BEEP [\fB\-l\fR] \fIcount\fR
+BEEP [-l] \fIcount\fR
 This command may be used to tune the amount of beeps emitted when biffing on
 the terminal, for each \fI%a\fR expansion. By default, that amount is set to 1.
 Using the \fB\-l\fR option alters the beep count locally for the rule.
@@ -1838,14 +1665,12 @@ to enable consecutive bells. Otherwise, \fIxterm\fR will swallow them during
 200 ms, hence making the BEEP command ineffective, apparently.
 (Does not modify existing status)
 .TP
-BEGIN [\fB\-ft\fR] \fIstate\fR
+BEGIN \fIstate\fR
 Enter a new state. An explicit REJECT or RESTART is necessary to abort the
 processing of the current rule. The processing begins in state INITIAL.
-If the \fB\-f\fR (resp. \fB\-t\fR) flag is specified, then the state change
-only occurs if the last command status indicated a failure (resp. a success).
 (Does not modify existing status)
 .TP
-BIFF [\fB\-l\fR] \fIon|off|path\fR
+BIFF [-l] \fIon|off|path\fR
 Allow or disallow biffing dynamically. When biffing is turned on via the
 configuration file or via this command, a message is printed on some of
 the terminals where the user is logged when mail is received,
@@ -1927,7 +1752,7 @@ Leave incoming mail in the system mailbox. This is the default action if no
 rule matched or if no saving occurred.
 (Fails if mail cannot be saved)
 .TP
-MACRO [\fB\-rdp\fR] \fIname\fR [= (\fIvalue\fR, \fItype\fR)]
+MACRO [-rdp] \fIname\fR [= (\fIvalue\fR, \fItype\fR)]
 Lets you specify user-defined macros, of the form %-(\fIname\fR). See the
 paragraph on user-defined macros for explanation about the available types
 (SCALAR, EXPR, CONST, FN, PROG, PROGC).
@@ -1947,36 +1772,15 @@ header of the message). The text of the message is run through the macro
 substitution mechanism (described later on).
 (Fails if message cannot be sent)
 .TP
-NOP [\fB\-ft\fR]
+NOP
 No operation. If this seems a bit odd, think of it in terms of a ONCE command.
-(Does not alter existing status unless \fB\-f\fR or \fB\-t\fR is used, in
-which case it forces a \fIfalse\fR \-\-failure\-\- or \fItrue\fR success status)
+(Does not alter existing status)
 .TP
 NOTIFY \fIfile\fR \fIaddress(es)\fR
 Send a notification message \fIfile\fR to a given address list. The text of the
 message is run through the macro substitution mechanism (described later on).
 As with FORWARD, file inclusion for address specification is possible.
 (Fails if message cannot be sent)
-.TP
-ON \fI(day list) command\fR
-Execute the specified filter command only on the specified day list. That list
-is a space-separated list of days, specified using the English names. Only the
-first three characters are taken into account, case-insensitively. Therefore,
-the shortest valid day specifications
-are \fIMon, Tue, Wed, Thu, Fri, Sat\fR and \fISun\fR.
-.sp
-This command can be used in conjunction with SELECT to do time-based selective
-bouncing of messages to, for instance, your home address:
-.Ex
-ON (Mon Tue Wed Thu) SELECT (18:30 .. 23:00) BOUNCE me@home.net;
-ON (Fri) SELECT (18:30 .. 23:59) BOUNCE me@home.net;
-ON (Sat Sun) BOUNCE me@home.net;
-.Ef
-That would bounce messages only on week-ends and during the week, after
-18:30, and until 23:00 (assuming that's bed time, other messages will be
-seen at work the next day). Note that on Fridays, we go as far as 23:59.
-(Propagates status from \fIcommand\fR. If the command is not executed, always
-return success)
 .TP
 ONCE \fI(name, tag, period) command\fR
 Execute the specified filter command once per \fIperiod\fR. The \fIname\fR and
@@ -2000,25 +1804,13 @@ Pipe the whole message to the specified program, but do not get anything
 back. Any output is mailed to the user who runs the \fImailagent\fR.
 (Returns the status of \fIprogram\fR)
 .TP
-POST [\fB\-lb\fR] \fInewsgroup(s)\fR
+POST [-l] \fInewsgroup(s)\fR
 Post the message to the specified newsgroup(s) after having cleaned-up the
-header: mail-related fields like Received: or In-Reply-To: are removed, a
-valid From: line is generated, the original To: and Cc: are renamed
-with an X- prefix, the References: line is updated/generated if necessary
-based on existing In-Reply-To, and NNTP-specific fields are stripped so
-that the server can add its own.
-.sp
-Running POST successfully acts as a saving.
-.sp
-If the first name is \fB\-l\fR as in "POST -l comp.mail.mh",
+header (by removing mail-related fields like Received: or To:). This acts
+as a saving. If the first name is \fB\-l\fR as in "POST -l comp.mail.mh",
 then a "Distribution: local" header is added to force a local delivery.
 Otherwise, the default \fIinews\fR distribution will be used (world,
 usually).
-.sp
-When the \fB-b\fR switch is given, a successful POST will result
-in biffing being activated (see section \fBMAIL BIFFING\fR) for
-the resulting news article.
-.sp
 If more than one newsgroup is specified, they should be space
 separated. It is possible to get a newsgroup list via file inclusion.
 (Fails if message cannot be posted)
@@ -2030,7 +1822,7 @@ The action associated by default to a mail having [Cc]ommand as its
 subject is PROCESS.
 (Always returns success)
 .TP
-PROTECT [\fB\-lu\fR] \fImode\fR
+PROTECT [-lu] \fImode\fR
 Sets the default protection mode that should be set on created folders
 (or created files when saving into an MH folder or a directory). By default,
 permissions are governed by the UMASK command, but this lets you override
@@ -2060,7 +1852,7 @@ that unless mailagent is invoked on a regular basis by \fIcron\fR, the
 mail will remain in the queue until another mail arrives.
 (Fails when mail cannot be queued)
 .TP
-RECORD [\fB\-acr\fR] [\fImode\fR] [\fI(tag-list)\fR]
+RECORD [-acr] [\fImode\fR] [\fI(tag-list)\fR]
 Record message in the history and enters mode _SEEN_ if the message was
 already present there. If the message is recorded for the first time, processing
 continues normally. Otherwise a REJECT is performed. This behavior may be
@@ -2074,7 +1866,7 @@ specifying any tag list means any occurrence, whether it is tagged or not.
 See paragraph \fBUsing Tags in Record and Unique\fR for more information.
 (Returns a failure status if mail was already recorded)
 .TP
-REJECT [\fB\-tf\fR] [\fImode\fR]
+REJECT [-tf] [\fImode\fR]
 Abort execution of current action, and continue matching. If \fB\-t\fR is
 specified, the reject will occur only if the previous action was successfully
 completed (return status of true), whilst \fB\-f\fR would cause the reject only
@@ -2092,7 +1884,7 @@ equivalent, the file "value" is not important, i.e. it does not have to end
 with a statement returning a true value.
 (Fails if file cannot be loaded)
 .TP
-RESTART [\fB\-tf\fR] [\fImode\fR]
+RESTART [-tf] [\fImode\fR]
 Abort execution of current action and restart the matching process from the
 beginning. To avoid loops, each rule may be walked through once in a given
 mode. See REJECT for the meaning of the optional parameters. RESTART resets
@@ -2128,10 +1920,10 @@ to the grammar, but it's before the Epoch so it does not mean anything). Other
 fancy dates like 'last month - 5 minutes' or '3 weeks ago' are also enabled.
 (Isn't that great to have a \fBreal\fR parser? The filtering rules could have
 been more elaborated if only I had known about this Berkeley \fIyacc\fR
-producing a \fIperl\fR parser...).
-(Returns the status of \fIcommand\fR, if run, otherwise returns true).
+producing a \fIperl\fR parser...). (Returns the status of \fIcommand\fR, if run,
+otherwise returns true).
 .TP
-SERVER [\fB\-t\fR] [\fB\-d \fIdisabled commands\fR]
+SERVER [-t] [-d \fIdisabled commands\fR]
 Activate server processing. The body of the message is interpreted as a list
 of commands to execute. See section \fBGENERIC MAIL SERVER\fR for more
 information about the server itself. The \fB\-t\fR option turns the server
@@ -2139,7 +1931,7 @@ into \fItrusted mode\fR, where \fIpowers\fR may be gained. The \fB\-d\fR
 option must be followed by a list of disabled commands, separated by commas
 with no intervening spaces between them.
 .TP
-SPLIT [\fB\-adeiw\fR] \fIfolder\fR
+SPLIT [-adeiw] \fIfolder\fR
 Split a mail in digest format into the specified folder (same naming
 conventions as in SAVE). If no folder is
 specified, each digest item is queued and will be analyzed as a single mail
@@ -2183,45 +1975,20 @@ header field name if you wish, but that is not strictly necessary. Headers
 may be specified via shell-style regular expressions or via "file" inclusion.
 (Does not alter execution status)
 .TP
-SUBST \fIvar/header expression\fR
+SUBST \fIvar expression\fR
 Substitutes the expression on the specified user-defined variable (name
-starting with a #) or back-reference (digit), or header field (optionally
-ending with ':').  For instance
-.Ex
-SUBST #foo /w/y/g
-.Ef
+starting with a #) or back-reference (digit). For instance, 'SUBST #foo /w/y/g'
 would substitute in user-defined variable \fIfoo\fR all the \fIw\fR by \fIy\fR.
 See also ASSIGN and TR.
-
-For substitutions on header fields, like:
-.Ex
-SUBST Subject: /\\\\[foo\\\\\]\\\\s+//;
-.Ef
-matching header lines will be reformatted when the substitution is successful,
-which likely means original continuations will not be preserved.  The target
-of the substitution is the whole header, with continuations normalized to
-one space.  You are therefore guaranteed to be independent from the actual
-header formatting in the original.
-
-Do not forget to issue a RESYNC after a header field SUBST, since some
-routines (like POST) probe into the parsed header hash table to generate
-the saved message.
-
 (Fails if error in \fIexpression\fR)
 .TP
-TR \fIvar/header translation\fR
-Perform the translation on the specified variable, back-reference or header
-field. For instance
-.Ex
-TR 1 /A-Z/a-z/
-.Ef
-would canonicalize content of reference 1 into
-lowercase.
-Successfully transliterated headers are reformatted, even when their overall
-size is not changed.
-See also ASSIGN and SUBST.  (Fails if error in \fItranslation\fR)
+TR \fIvar translation\fR
+Perform the translation on the specified variable or back-reference. For
+instance, 'TR 1 /A-Z/a-z/' would canonicalize content of reference 1 into
+lowercase. See also ASSIGN and SUBST.
+(Fails if error in \fItranslation\fR)
 .TP
-UMASK [\fB\-l\fR] \fImode\fR
+UMASK [-l] \fImode\fR
 Changes the process's umask to the specified \fImode\fR, which can be decimal,
 octal (if preceded by '0') or hexadecimal (starting with '0x'). The octal
 notation is the clearest way to specify the umask anyway. Aren't rumors saying
@@ -2231,14 +1998,13 @@ action rule only. Note that the default umask specified in your config file
 is used to reset \fImailagent\fR's umask at the start of each mail processing.
 (Does not alter execution status)
 .TP
-UNIQUE [\fB\-acr\fR] [\fImode\fR] [\fI(tag-list)\fR]
+UNIQUE [-acr] [\fImode\fR] [\fI(tag-list)\fR]
 Record message in the history and tag message as saved if it was
 already present there. If the message is recorded for the first time, processing
 continues normally. Otherwise a REJECT is performed. If \fB\-r\fR was used,
 a RESTART is used instead whilst \fB\-a\fR would run an ABORT.
 For instance, to remove duplicate messages from mailing lists, run a
-UNIQUE \fB\-a\fR before saving the mail.
-The \fB\-c\fR option may be used alone to
+UNIQUE -a before saving the mail. The \fB\-c\fR option may be used alone to
 actually prevent the command from disturbing the execution flow, and to later
 use the return status to see what happened:
 UNIQUE returns a failure status if the message was already recorded.
@@ -2248,7 +2014,7 @@ See also RECORD, and the paragraph entitled \fBUsing Tags in Record and
 Unique\fR for more information about the \fItag-list\fR.
 (Fails if mail was already recorded)
 .TP
-VACATION [\fB\-l\fR] \fIon|off|path\fR [\fIperiod\fR]
+VACATION [-l] \fIon|off|path\fR [\fIperiod\fR]
 Allow or disallow a vacation message. When vacation mode is turned on via the
 configuration file, a message is sent whenever the user receives a mail
 meeting some requirements, as explained under the section \fBVACATION MODE\fR.
@@ -2260,8 +2026,6 @@ Instead of \fIon\fR or \fIoff\fR, you can specify a file name (~ substitution
 allowed) being the new path to be used for locating the vacation file.
 Optionally, you may specify a last parameter, which will be taken as the
 period to apply when sending the vacation message.
-Changes to the vacation message \fIpath\fR are forbidden when the
-configuration variable \fIvacfixed\fR is set to ON.
 .sp
 If you use the \fB\-l\fR option, changes are made locally, for the duration of
 the rule only. If you REJECT to go to some other rule, your changes will be
@@ -2411,21 +2175,11 @@ The full path name of the folder (or message within an MH folder) where
 the last saving operation has occurred. This is intended to be used if
 you wish to construct your own mail reception notification.
 .TP
-.I \$length
-The message length, in bytes.
-.TP
-.I \$lines
-The number of lines in the message.
-.TP
 .I \$login
 The login name of the address on the From: line.
 .TP
 .I \$precedence
 The content of the Precedence: line, if any at all.
-.TP
-.I @relayed
-The list of host names (possibly raw IP addresses if no DNS mapping) listed
-in the (computed) Relayed: header line.
 .TP
 .I \$reply_to
 The e-mail address where a reply should be sent to, with comment suppressed.
@@ -2548,9 +2302,6 @@ Time of the last modification on mailed file (commands MESSAGE and NOTIFY)
 .TP
 %U
 Full name of the user
-.TP
-%Y
-Full year, with four digits (so-called \fIyyyy format\fR)
 .TP
 %_
 A white space (useful to put white spaces in single patterns)
@@ -2822,12 +2573,12 @@ and you want to save one instance of the message in each folder, but still
 guard against duplicates. You may say:
 .Ex
 To Cc: unix-wizards	{
-	UNIQUE (wizards);
+	UNIQUE (wizards); REJECT -f;
 	SAVE wizards;
 	REJECT;
 };
 To Cc: majordomo-users	{
-	UNIQUE (majordomo);
+	UNIQUE (majordomo); REJECT -f;
 	SAVE majordomo;
 	REJECT;
 };
@@ -2839,17 +2590,17 @@ messages cross-posted to both \fIdist-users\fR and \fIagent-users\fR, but
 have a separate copy if also cross-posted to \fImajordomo-users\fR, then say:
 .Ex
 To Cc: majordomo-users	{
-	UNIQUE (majordomo);
+	UNIQUE (majordomo); REJECT -f;
 	SAVE majordomo;
 	REJECT;
 };
 To Cc: dist-users {
-	UNIQUE (dist, agent);
+	UNIQUE (dist, agent); REJECT -f;
 	SAVE dist-users;
 	REJECT;
 };
 To Cc: agent-users {
-	UNIQUE (dist, agent);
+	UNIQUE (dist, agent); REJECT -f;
 	SAVE dist-users;
 	REJECT;
 };
@@ -3020,26 +2771,6 @@ You cannot use the same scheme to allow vacation messages to special
 users like \fIroot\fR, because the test for "specialness" occurs after the
 vacation mode flag. This is construed as a feature as it prevents stupid
 mistakes, like using \fIr*\fR instead of \fIram\fR in the previous rule.
-.PP
-You may also want to setup a different vacation message, meant only for people
-in your organization given the sensitive nature of the information revealed ;-).
-A simple way of doing that is:
-.Ex
-From: /^\\\\w+\$/, /^\\\\w+@\\\\w+\$/, /^[\\\\w.-]+@.*\\\\.hp\\\\.com\$/i
-	{ VACATION ~/.hp_vacation 1w; REJECT HP };
-.Ef
-Assuming the domain of my organization is \fI.hp.com\fR and that messages
-not bearing any domain are local messages, the above rule sets up the
-file \fI~/.hp_vacation\fR, sent once a week, for all HP employees.
-.PP
-The VACATION command will not let you change the message path (but will
-allow frequency changes anyway) when the \fIvacfixed\fR configuration
-variable is set to ON. This is meant to be used in emergency situations,
-when only one vacation message will fit. For instance, when you are on
-a sick leave, a simple trigger message to your mailagent from home could
-change your \fI~/.mailagent\fR configuration to force the \fI~/.i_am_sick\fR
-message, regardless of what the various rules have to say. Actually, this
-is precisely why this feature was added, amazing... :-)
 .SH VARIABLES
 The following variables are paid attention to: they may come from the
 environment or be set in the rule file:
@@ -3260,7 +2991,7 @@ characters in the command fields.
 .PP
 If the file referred to by the \fIcompspecs\fR configuration variable
 cannot be accessed for whatever reason, a default entry is hard-wired
-into mailagent (knows about both \fIcompress\fR and \fIgzip\fR programs):
+into mailagent (knows about both \fIcompress\fR and \fIgzip\R programs):
 .Ex
 compress <TAB> .Z <TAB> compress <TAB> uncompress <TAB> zcat
 gzip <TAB> .gz <TAB> gzip <TAB> gunzip <TAB> gunzip -c
@@ -3313,9 +3044,7 @@ behaviour. Don't forget to run the shell command "\fIbiff y\fR" on the
 terminals where you want to get notification (you may do that on several ttys,
 one for each virtual display for instance).
 .PP
-Upon mail reception and saving on a folder
-or posting to a newsgroup,
-\fImailagent\fR locates all the
+Upon mail reception and saving on a folder, \fImailagent\fR locates all the
 ttys where you are logged on, then selects those where biffing was requested,
 finally emitting a message and making a beeping sound (if your terminal
 supports this and you are using the standard format--see below).
@@ -3336,12 +3065,7 @@ Same as writing %-H, new line, %-B
 The body part of the biffing message
 .TP
 %-H
-The header part of the biffing message. If shows only From:, To: Subject: and
-Date: headers, or whatever you have set the \fIbiffhead\fR configuration
-variable to. All headers are showed as one line of text, regardless of their
-actual length. There will be three trailing dots at the end to signal that
-truncation occurred.  For a news article (biffing after a POST -b), the To:
-and Cc: fields are never shown, even if specified in \fIbiffhead\fR.
+The header part of the biffing message
 .TP
 %-T
 Same as %-B, but trimming is activated. The purpose of trimming is to remove
@@ -3353,16 +3077,15 @@ file.
 .TP
 %B
 The relative path under %d of the message folder, full path (%p) if not
-saved under that directory.  The newsgroup name for news articles.
+saved under that directory.
 .TP
 %D
 The directory where the message is stored. If an MH folder, this is the
-folder full path. The home directory is replaced by a ~.  Empty
-for news articles.
+folder full path. The home directory is replaced by a ~.
 .TP
 %F
 The base name (last path component) of the message. For an MH message, this
-is the message number.  Empty for news articles.
+is the message number.
 .TP
 %P
 The folder path. It has the correct semantics for MH and directory folders,
@@ -3380,22 +3103,16 @@ As opposed to %a, this only expands to give \fBone\fR bell.
 %d
 Full path where folders such as the one being saved into are stored if not
 qualified (i.e. your MH path for MH folders, of something like \fI~/Mail\fR
-for other folders).  Empty for news articles.
+for other folders).
 .TP
 %f
-Folder where mail was saved, home replaced by ~ for short.  The newsgroup
-when article was posted for news.
+Folder where mail was saved, home replaced by ~ for short.
 .TP
 %m
 A '+' sign if the folder is an MH one, empty otherwise.
 .TP
 %p
 The full path name (same as %f) of the message, but without any ~ shortcut.
-The newsgroup name for news articles.
-.TP
-%t
-The type of message: usually "mail", but set to "article" for biffing after
-a POST command.
 .PD
 .PP
 You can get the standard macro expansion by using \fI%:f\fR for instance,
@@ -3410,7 +3127,7 @@ Here is the format you need to use to get the same behaviour as the
 default hardwired format:
 .Ex
 %b
-New %t for %u has arrived in %f:
+New mail for %u has arrived in %f:
 ----
 %-A
 ----%b
@@ -3712,7 +3429,7 @@ copy directly, while local changes may be made with:
 .Ex
 	&env'local('umask', 0722);
 .Ef
-to set-up a new local value. The first time \fI&env'local\fR is called on
+to set-up a new local value. The first time \fI\&env'local\fR is called on
 a variable, its value is saved somewhere, and will be restored upon exiting
 the scope of the rule. Then the new value is affected to the variable.
 .PP
@@ -4171,8 +3888,6 @@ variables like the EOF marker value, or change some command environment.
 The user may define his own variables for his commands.
 For \fIflag\fR-type variable, a value of \fIon\fR, \fIyes\fR or \fItrue\fR sets
 the variable to \fI1\fR, any other string sets it to \fI0\fR (false).
-Used all by itself as \fIset\fR, the list of all the defined variables along
-with their respective values is returned.
 .TP
 .I setauth power password
 Replace power clearance file with one obtained from standard mail input up to
@@ -4214,7 +3929,7 @@ the string \fBEOF\fR on a line by itself) and those data are fed to shell
 commands via \fIstdin\fR and to perl commands via the \fI@buffer\fR variable
 set up in the environment package named \fIcmdenv\fR (in which the command is
 loaded and run).
-.PP
+..PP
 If you define your own variables (types \fIvar\fR or \fIflag\fR), you may
 use the builtin \fIset\fR command to modify their values. Note that no default
 value can be provided when defining your variable. A suitable default value
@@ -4512,7 +4227,7 @@ esac
 
 # Perhaps a shell was defined... Otherwise, use /bin/sh
 case "\$shell" in
-\&'') shell='/bin/sh';;
+'') shell='/bin/sh';;
 esac
 
 # Normally, a shell command has its output included in the transcript only in
@@ -4705,20 +4420,11 @@ mailagent is running, that mail is queued and will be processed later by the
 For the same reason, messages sent back by mailagent are queued by
 \fIsendmail\fR, to avoid the cost of mail transfer while processing commands.
 .SH "SECURITY"
-First, let me discuss what \fIsecurity\fR means here. It does \fBnot\fR mean
-system safety against intruder attacks. If your system allows \fI.forward\fR
-hooks and/or \fIcron\fR jobs to be set by regular users, then your system is
-not secure at all. Period. So we're not bothering with security at the
-system level, but rather at your own account level where all sort of precious
-data is held.
-.PP
-To avoid any pernicious intrusion via Trojan horses, the C \fIfilter\fR will
-refuse to run if the configuration
+To avoid any problems, the \fIfilter\fR will refuse to run if the configuration
 file \fI~/.mailagent\fR or the rule file specified are world writable or not
 owned by the user. Those tests are enforced even if the \fIfilter\fR does
 not run setuid, because they compromise the security of your account.
-The \fImailagent\fR will also perform some of those checks, in case it is
-not invoked via the C \fIfilter\fR.
+The \fImailagent\fR will also perform those checks.
 .PP
 Indeed, if someone can write into your \fI~/.mailagent\fR file, then he can
 easily change your \fIrules\fR configuration parameter to point to another
@@ -4731,29 +4437,6 @@ And, no surprise, the same rules apply for your \fInewcmd\fR file, which is
 used to describe extended filtering commands. Otherwise it would allow someone
 to quietly redefine a commonly used standard command like LEAVE and later
 be able to assume your identity.
-.PP
-Versions after 3.0 PL44 come with an improved (from a security point of view) C
-\fIfilter\fR that will not only perform the aforementionned checks but will
-also ensure that the \fIperl\fR executable and the \fImailagent\fR script
-it is about to exec are not loosely protected (when \fIexecsafe\fR is ON or
-when running with superuser privileges).
-Furthermore, if the \fIfilter\fR
-is set up in your \fI.forward\fR as described in this man page, it will be
-able to check itself for safety and will warn you loundly if it can be
-tampered with, which could defeat all security checks.
-.PP
-Mailagent was also extended so that all programs executed via RUN and friends,
-as well as mail hooks, are checked for obvious protection flaws before being
-actually run
-Interpreted scripts (starting with the #! magic token) and
-perl scripts following the magic "exec perl if \$under_shell" incantation are
-specially checked for further security of the relevant interpretor. Those
-checks are performed systematically
-(when \fIexecsafe\fR is ON or when running with superuser privileges)
-even if the \fIsecure\fR parameter was
-not set to ON. Also, all files about to be \fIexec()\fRed are checked using
-the same extended check method used when \fIsecure\fR is ON (ownership tests
-are skipped however when checking for \fIexec()\fR-ness of a file).
 .SH FILES
 .PD 0
 .TP 20
@@ -4778,10 +4461,9 @@ directory holding templates and samples.
 Log/agentlog
 mailagent's log file.
 .TP
-Spool/agent.wait
+Queue/agent.wait
 list of mails waiting to be processed and stored outside of mailagent's
-queue directory. Even when logically empty, this file is kept around and
-still holds one blank line to reserve a block on the filesystem.
+spool directory.
 .TP
 Queue/qmXXXXX
 mail spooled by \fIfilter\fR.
@@ -4818,7 +4500,7 @@ Parsing of the rule file should be done by a real parser and not lexically.
 Or at least, it should be possible to escape otherwise meaningful characters
 like ';' or '}' within the rules.
 .SH AUTHOR
-Raphael Manfredi <Raphael_Manfredi@pobox.com>.
+Raphael Manfredi <ram@hptnos02.grenoble.hp.com>.
 .SH "SEE ALSO"
 maildist($manext), mailhelp($manext), maillist($manext), mailpatch($manext),
 perl(1).

@@ -20,7 +20,7 @@ $startperl
 	eval "exec perl -S \$0 \$*"
 		if \$running_under_some_shell;
 
-# $Id: maillist.SH,v 3.0.1.6 1996/12/24 14:07:48 ram Exp $
+# $Id: maillist.SH,v 3.0.1.5 1995/08/07 16:12:48 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -31,10 +31,6 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: maillist.SH,v $
-# Revision 3.0.1.6  1996/12/24 14:07:48  ram
-# patch45: silently discard hostile addresses
-# patch45: knows about command forwarding
-#
 # Revision 3.0.1.5  1995/08/07  16:12:48  ram
 # patch37: forgot to define phostname, needed for NFS-secure locks
 #
@@ -77,12 +73,6 @@ $dest = $ENV{'path'} if $dest eq '';	# If dest was ommitted
 # A single '-' as first argument stands for return path
 $dest = $ENV{'path'} if $dest eq '-';
 
-# Silently discard hostile addresses
-unless (&addr'valid($dest)) {
-	&add_log("FAILED (HOSTILE $dest)") if $loglvl > 1;
-	exit 0;
-}
-
 &read_dist;			# Read distributions and descriptions
 
 open(INFO, "$cf'proglist") ||
@@ -120,11 +110,10 @@ Detailed instructions can be obtained by:
 ";
 
 foreach $pname (keys %Program) {
-	($system, $version) = $pname =~ /^([\w-]+)\|([\w\.]+)*$/;
+	($system, $version) = $pname =~ /^(\w+)\|([\w\.]+)*$/;
 	$version = '---' if $version eq '0';
 	$location = $Location{$pname};
 	&add_log("dealing with $system $version") if $loglvl > 19;
-	$forwarded = '';	# Set to forwarded addresses when .forward found...
 
 	# Look for highest patchlevel (even if not maintained)
 	$tmp = "";			# Temporary directory created
@@ -194,7 +183,7 @@ foreach $pname (keys %Program) {
 				if $loglvl > 5;
 		} else {
 			while (<PATCHLEVEL>) {
-				if (/.*PATCHLEVEL[ \t]*([\w-]+)/) {	# May have letters
+				if (/.*PATCHLEVEL[ \t]*(\w+)/) {	# May have letters
 					$Patch_level{$pname} = $1;
 					last;
 				}
@@ -213,13 +202,6 @@ foreach $pname (keys %Program) {
 	} else {
 		$Patch_level{$pname} = -2;		# Signals: no patchlevel
 		&add_log("no patchlevel for $system $version") if $loglvl > 18;
-	}
-
-	# If a .forward file is present, maintenance activity is now remotely
-	# handled, and all command mails like mailpath and maildist will be
-	# forwarded according to that file.
-	if (-f '.forward') {
-		$forwarded = join(", ", &forward_list);
 	}
 	
 	&clean_dir;			 # Remove tmp directory, if necessary
@@ -245,10 +227,6 @@ foreach $pname (keys %Program) {
 	print XHEAD " (patches only)" if $Patch_only{$pname};
 	print XHEAD " (official patches available)" if $Patches{$pname};
 	print XHEAD "\n";
-	if ($forwarded) {
-		print XHEAD $Maintained{$pname} ? "Maintained-by: " : "Contact: ";
-		print XHEAD "$forwarded\n";
-	}
 	if ($Maintained{$pname}) {
 		if ($Patch_level{$pname} > 0) {
 			print XHEAD "Highest patch: #$Patch_level{$pname}\n";
@@ -316,7 +294,5 @@ $grep -v '^;#' pl/plsave.pl >>maillist
 $grep -v '^;#' pl/secure.pl >>maillist
 $grep -v '^;#' pl/cdir.pl >>maillist
 $grep -v '^;#' pl/hostname.pl >>maillist
-$grep -v '^;#' pl/addr.pl >>maillist
-$grep -v '^;#' pl/forward.pl >>maillist
 chmod 755 maillist
 $eunicefix maillist

@@ -1,4 +1,4 @@
-;# $Id: matching.pl,v 3.0.1.5 2001/03/17 18:12:50 ram Exp $
+;# $Id: matching.pl,v 3.0.1.2 1994/07/01 15:02:33 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,16 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: matching.pl,v $
-;# Revision 3.0.1.5  2001/03/17 18:12:50  ram
-;# patch72: fixed longstanding lie in man; "To: gue@eiffel.fr" now works
-;#
-;# Revision 3.0.1.4  1999/07/12  13:52:50  ram
-;# patch66: specialized <3> to mean <3,3> in mrange()
-;#
-;# Revision 3.0.1.3  1996/12/24  14:56:12  ram
-;# patch45: new Envelope and Relayed selectors
-;# patch45: protect all un-escaped @ in patterns, for perl5
-;#
 ;# Revision 3.0.1.2  1994/07/01  15:02:33  ram
 ;# patch8: allow macro substitution on patterns if rulemac is ON
 ;#
@@ -41,7 +31,6 @@
 # The %Amatcher gives the name of the fields which contains an address.
 sub init_matcher {
 	%Matcher = (
-		'Envelope',			'match_single',
 		'From',				'match_single',
 		'To',				'match_list',
 		'Cc',				'match_list',
@@ -53,11 +42,9 @@ sub init_matcher {
 		'Resent-Cc',		'match_list',
 		'Resent-Sender',	'match_single',
 		'Reply-To',			'match_single',
-		'Relayed',			'match_list',
 	);
 	%Amatcher = (
 		'From',				1,
-		'Envelope',			1,
 		'To',				1,
 		'Cc',				1,
 		'Apparently-To',	1,
@@ -118,9 +105,7 @@ sub match {
 		$matched = &apply_match($selector, $pattern, $range);
 	} else {
 		# Load patterns from file whose name is given between "quotes"
-		# All un-escaped @ in patterns are escaped for perl5.
 		local(@filepat) = &include_file($pattern, 'pattern');
-		grep(s/([^\\](\\\\)*)@/$1\\@/g && undef, @filepat);
 		# Now do the match for all the patterns. Stop as soon as one matches.
 		foreach (@filepat) {
 			$matched = &apply_match($selector, $_, $range);
@@ -273,28 +258,15 @@ sub match_single {
 	unless (defined $buffer) {		# No buffer for matching was supplied
 		$buffer = $Header{$selector};
 	}
-	#
 	# If we attempt a match on a field holding e-mail addresses and the pattern
 	# is anchored at the beginning with a /^, then we only keep the address
-	# part and remove the comment if any.
-	#
-	# If the field holds a full e-mail address and only that, we automatically
-	# select the address part of the field for matching. -- RAM, 17/03/2001
-	#
-	# Otherwise, the field is left alone.
-	#
-	# If the pattern is only a single name, we extract the login name for
-	# matching purposes...
-	#
+	# part and remove the comment if any. Otherwise, the field is left alone.
+	# Of course, if the pattern is only a single name, we extract the login
+	# name for matching purposes...
 	if ($Amatcher{$selector}) {					# Field holds an e-mail address
-		if (
-			$pattern =~ m|^/\^| ||
-			$pattern =~ m|^[-\w.*?]+(\\\@[-\w.*?]+)?\s*$|
-		) {
-			$buffer = (&parse_address($buffer))[0];
-			&add_log("matching buffer reduced to '$buffer'") if $loglvl > 18;
-		}
+		$buffer = (&parse_address($buffer))[0] if $pattern =~ m|^/\^|;
 		if ($pattern =~ m|^[-\w.*?]+\s*$|) {	# Single name may have - or .
+			$buffer = (&parse_address($buffer))[0];
 			$buffer = &login_name($buffer);		# Match done only on login name
 			$pattern =~ tr/A-Z/a-z/;	# Cannonicalize name to lower case
 		}
@@ -409,14 +381,10 @@ sub update_backref {
 # maximum value. An arbitrarily large number is returned in that case. If a
 # negative value is used, it is added to the number of items and rounded towards
 # 1 if still negative. That way, it is possible to request the last 10 items.
-# As a special case, <3> stands for <3,3> and thus <-> means everything.
 sub mrange {
 	local($range, $items) = @_;
 	local($min, $max) = (1, 9_999_999);
-	local($rmin, $rmax);
-	$rmin = $rmax = $1 if $range =~ /<\s*([\d-]+)\s*>/;
-	($rmin, $rmax) = $range =~ /<\s*([\d-]*)\s*,\s*([\d-]*)\s*>/
-		unless defined $rmin;
+	local($rmin, $rmax) = $range =~ /<\s*([\d-]*)\s*,\s*([\d-]*)\s*>/;
 	$rmin = $min if $rmin eq '' || $rmin eq '-';
 	$rmax = $max if $rmax eq '' || $rmax eq '-';
 	$rmin = $rmin + $items + 1 if $rmin < 0;

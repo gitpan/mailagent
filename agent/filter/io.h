@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.h,v 3.0.1.1 1997/02/20 11:35:33 ram Exp $
+ * $Id: io.h,v 3.0 1993/11/29 13:48:11 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,9 +22,6 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.h,v $
- * Revision 3.0.1.1  1997/02/20 11:35:33  ram
- * patch55: declared io_redirect()
- *
  * Revision 3.0  1993/11/29  13:48:11  ram
  * Baseline for mailagent 3.0 netwide release.
  *
@@ -36,6 +33,5 @@
 extern void process();				/* Process mail */
 extern int emergency_save();		/* Save mail in emeregency file */
 extern int was_queued();			/* Was mail safely queued or not? */
-extern int io_redirect();			/* Redirect stderr and stdout */
 
 #endif

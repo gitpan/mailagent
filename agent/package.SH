@@ -20,7 +20,7 @@ $startperl
 	eval "exec perl -S \$0 \$*"
 		if \$running_under_some_shell;
 
-# $Id: package.SH,v 3.0.1.9 1997/01/07 18:30:34 ram Exp $
+# $Id: package.SH,v 3.0.1.6 1995/08/07 16:15:18 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -33,15 +33,6 @@ $startperl
 #  Original Author: Graham Stoney, 1993
 #
 # $Log: package.SH,v $
-# Revision 3.0.1.9  1997/01/07 18:30:34  ram
-# patch52: the "no change" optimization was overzealous
-#
-# Revision 3.0.1.8  1996/12/26  10:46:55  ram
-# patch51: added undocumented 'badaddress' request for PATBOUNCE
-#
-# Revision 3.0.1.7  1996/12/24  14:44:44  ram
-# patch45: added command forwarding support
-#
 # Revision 3.0.1.6  1995/08/07  16:15:18  ram
 # patch37: added support for locking on filesystems with short filenames
 # patch37: forgot to define phostname, needed for NFS-secure locks
@@ -240,7 +231,6 @@ if ((($theirpl eq '-') && $request eq '') ||
 elsif ($request eq '')			{ $letter = 'U'; }	# just a user
 elsif ($request eq 'mailpatches')	{ $letter = 'M'; }	# want patches
 elsif ($request eq 'notifypatches')	{ $letter = 'N'; }	# notify only
-elsif ($request eq 'badaddress')	{ $leavealone = 1; $letter = 'B'; }
 else {
 	open(MAILER, "|$cf'sendmail $cf'mailopt $path $cf'email") || &nofork;
 	print MAILER
@@ -262,10 +252,8 @@ Your package command requested `$request', and I don't know what that means.
 	exit 0;
 }
 
-# Go to the package root directory and check for possible forwarding...
-chdir($Location{$pname}) || &abort("cannot chdir to $Location{$pname}: $!");
-&check_forward;			# Returns only if command is not forwarded
-
+# Go to the system directory.
+chdir "$Location{$pname}" || &abort("cannot go to $Location{$pname}");
 open(PATCHLEVEL, "patchlevel.h") || &abort("cannot open patchlevel.h");
 $maxnum = 0;
 while (<PATCHLEVEL>) {
@@ -373,10 +361,7 @@ if (open(USERLIST, $userlist)) {
 }
 
 # optimize a little...
-if (
-	$found == 1 && $oldstatus eq $letter &&
-	($theirpl eq '-' || $oldpl eq $theirpl)
-) {
+if ($found == 1 && $oldstatus eq $letter && $oldpl eq $theirpl) {
 	&add_log("NOTICE no change for $dest") if $loglvl > 6;
 	close USERLIST;
 	&free_file($userlist);
@@ -390,11 +375,6 @@ if (!$found) {
 		&free_file($userlist);
 		&send_closest;
 		&add_log("FAILED (UNREGISTERED $dest)") if $loglvl > 1;
-		exit 0;
-	} elsif ($letter eq 'B') {
-		&add_log("WARNING unknown $dest bounced back") if $loglvl > 5;
-		&free_file($userlist);
-		&add_log("FAILED (BAD BOUNCE ADDRESS $dest)") if $loglvl > 1;
 		exit 0;
 	} else {
 		push(@name, $dest);
@@ -502,6 +482,5 @@ $grep -v '^;#' pl/free_file.pl >>package
 $grep -v '^;#' pl/checklock.pl >>package
 $grep -v '^;#' pl/signals.pl >>package
 $grep -v '^;#' pl/hostname.pl >>package
-$grep -v '^;#' pl/forward.pl >>package
 chmod 755 package
 $eunicefix package

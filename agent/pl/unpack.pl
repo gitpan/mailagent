@@ -1,4 +1,4 @@
-;# $Id: unpack.pl,v 3.0.1.1 1996/12/24 15:01:04 ram Exp $
+;# $Id: unpack.pl,v 3.0 1993/11/29 13:49:18 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,9 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: unpack.pl,v $
-;# Revision 3.0.1.1  1996/12/24 15:01:04  ram
-;# patch45: allow '-' in package names
-;#
 ;# Revision 3.0  1993/11/29  13:49:18  ram
 ;# Baseline for mailagent 3.0 netwide release.
 ;#
@@ -48,7 +45,7 @@ sub unpack {
 		$unpack .= "cpio -icmd";
 	}
 	system "< $path (cd $dir; $unpack)";
-	$path =~ s|.*/([\w-]+)|$1|;	# Keep only basename
+	$path =~ s|.*/(\w+)|$1|;	# Keep only basename
 	local ($stat) = $?;			# Return status
 	if ($stat) {
 		&clean_tmp;

@@ -2,7 +2,7 @@
  * Jmakefile for filter
  */
 
-;# $Id: Jmakefile,v 3.0.1.2 1997/02/20 11:34:01 ram Exp $
+;# $Id: Jmakefile,v 3.0.1.1 1995/03/21 12:51:20 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -13,9 +13,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: Jmakefile,v $
-;# Revision 3.0.1.2  1997/02/20 11:34:01  ram
-;# patch55: added getopt.c and dup2.c files
-;#
 ;# Revision 3.0.1.1  1995/03/21  12:51:20  ram
 ;# patch35: now creates the private library directory before installing
 ;#
@@ -25,7 +22,7 @@
 
 ;# Files used to build the application
 SRC = environ.c hash.c io.c lock.c logfile.c main.c misc.c msg.c parser.c \
-	user.c getopt.c dup2.c
+	user.c
 
 ;# Derived object file names
 OBJ = \

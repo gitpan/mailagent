@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.21 2001/03/17 18:10:47 ram Exp $
+;# $Id: actions.pl,v 3.0.1.12 1995/09/15 14:01:17 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,40 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
-;# Revision 3.0.1.21  2001/03/17 18:10:47  ram
-;# patch72: use the "email" config var verbatim in FORWARD
-;# patch72: removed unused var in POST
-;#
-;# Revision 3.0.1.20  2001/03/13 13:13:15  ram
-;# patch71: made fixup of header fields in POST be a warning
-;# patch71: fixed RESYNC, copied continuation fix from parse_mail()
-;# patch71: added support for SUBST/TR on mail headers
-;#
-;# Revision 3.0.1.19  2001/01/10 16:52:58  ram
-;# patch69: replaced calls to fake_date() by mta_date()
-;# patch69: rewrote the POST command, and added the -b switch
-;#
-;# Revision 3.0.1.18  1999/07/12  13:49:01  ram
-;# patch66: use servshell instead of /bin/sh for commands
-;# patch66: make sure that we do not get an empty header when filtering
-;#
-;# Revision 3.0.1.17  1999/01/13  18:12:18  ram
-;# patch64: only use last two digits from year in logfiles
-;#
-;# Revision 3.0.1.16  1997/09/15  15:10:53  ram
-;# patch57: don't blindly chop command error message, remove trailing \n
-;# patch57: annotation was not performed for value "0"
-;#
-;# Revision 3.0.1.15  1997/02/20  11:42:06  ram
-;# patch55: made 'perl -cw' clean and fixed a couple of typos
-;#
-;# Revision 3.0.1.14  1997/01/07  18:31:14  ram
-;# patch52: allow for @SH help to be understood, whatever the case
-;#
-;# Revision 3.0.1.13  1996/12/24  14:46:16  ram
-;# patch45: now reads 'help' as 'mailhelp' in command messages
-;# patch45: locate and perform security checks on launched executables
-;#
 ;# Revision 3.0.1.12  1995/09/15  14:01:17  ram
 ;# patch43: now escapes shell metacharacters for popen() on FORWARD and BOUNCE
 ;# patch43: will now make a note when delivering to an unlocked folder
@@ -121,9 +87,9 @@ sub leave {
 sub save {
 	local($mailbox) = @_;			# Where mail should be saved
 	local($failed) = 0;				# Printing status
-	if ($mailbox eq '') {			# Empty mailbox (e.g. SAVE %1 with no match)
+	unless ($mailbox) {				# Empty mailbox (e.g. SAVE %1 with no match)
+		&add_log("WARNING empty folder name, using mailbox") if $loglvl > 5;
 		$mailbox = &mailbox_name;
-		&add_log("WARNING empty folder name, using $mailbox") if $loglvl > 5;
 	}
 	local($biffing) = $env'biff =~ /ON/i;	# Whether we should biff or not
 	local($type) = 'file';					# Folder type, for biffing macros
@@ -310,7 +276,6 @@ sub process {
 			s/^mial(\w*)/mail$1/;		# Common mis-spellings
 			s/^mailpath/mailpatch/;
 			s/^mailist/maillist/;
-			s/^help/mailhelp/i;
 			# Now fetch command's name (first symbol)
 			if (/^([^ \t]+)[ \t]/) {
 				$first = $1;
@@ -358,18 +323,12 @@ sub process {
 		$fullcmd =~ /^[ \t]*(\w+)/;		# extract first word
 		$cmdname = $1;		# this is the command name
 		$trace = "$cf'tmpdir/trace.cmd$$";
-
-		# For HPUX-10.x, grrr... have to use our own shell otherwise that
-		# silly posix /bin/sh dumps core when fed the $cmdfile we built above.
-		local($shell) = &cmdserv'servshell;
-
 		$pid = fork;						# We fork here
 		$pid = -1 unless defined $pid;
-
 		if ($pid == 0) {
 			open(STDOUT, ">$trace");		# Where output goes
 			open(STDERR, ">&STDOUT");		# Make it follow pipe
-			exec $shell, "$cmdfile";		# Don't use sh -c
+			exec '/bin/sh', "$cmdfile";		# Don't use sh -c
 		} elsif ($pid == -1) {
 			# Set the error report code, and the mail will remain in queue
 			# for later processing. Any @RR in the message will be re-executed
@@ -558,7 +517,7 @@ sub send_message {
 	# Do not put the year in %T if it is the same as the current one.
 	++$mon;						# Month in the range 1-12
 	if ($this_year != $year) {
-		$macro_T = sprintf("%.2d/%.2d/%.2d", $year % 100, $mon, $mday);
+		$macro_T = sprintf("%.2d/%.2d/%.2d", $year, $mon, $mday);
 	} else {
 		$macro_T = sprintf("%.2d/%.2d", $mon, $mday);
 	}
@@ -633,7 +592,7 @@ sub send_message {
 	print MAILER "\n";			# Header separated from body
 	# Now write the body
 	local($tmp);				# Because of a bug in perl 4.0 PL19
-	while (defined ($tmp = <MSG>)) {
+	while ($tmp = <MSG>) {
 		next if $tmp =~ /^$/ && $. == 1;	# Escape sequence to protect header
 		&macros_subst(*tmp);		# In-place macro substitutions
 		print MAILER $tmp;			# Write message line
@@ -658,7 +617,7 @@ sub send_message {
 # The "FORWARD" command
 sub forward {
 	local($addresses) = @_;			# Address(es) mail should be forwarded to
-	local($address) = $cf'email;	# Address of user
+	local($address) = &email_addr;	# Address of user
 	# Any address included withing "" is in fact a file name where actual
 	# forwarding addresses are found.
 	$addresses =
@@ -727,7 +686,7 @@ sub bounce {
 sub post {
 	local($newsgroups) = @_;		# Newsgroup(s) mail should be posted to
 	local($localdist) = $opt'sw_l;	# Local distribution if POST -l
-	local($wantbiff) = $opt'sw_b;	# Biffing activated upon success
+	local($address) = &email_addr;	# Address of user
 	unless (open(NEWS,"|$cf'sendnews $cf'newsopt -h")) {
 		&add_log("ERROR cannot run $cf'sendnews to post message: $!")
 			if $loglvl;
@@ -735,178 +694,35 @@ sub post {
 	}
 	&add_log("distribution of posting is local")
 		if $loglvl > 18 && $localdist;
-
-	# The From: header we're generating in the news is correctly formatted
-	# and escaped, to avoid rejects by the news server.
-	# We'll let any Reply-To header through, since RFC-1036 defines them
-	# for this purpose (i.e. the same as for mail), but we don't reformat
-	# the Reply-To since it's not a required header.
-	my ($faddr, $fcom) = &parse_address($Header{'From'});
-	$fcom = '"' . $fcom . '"' if $fcom =~ /[@.\(\)<>,:!\/=;]/;
-	if ($fcom ne '') {
-		print NEWS "From: $fcom <$faddr>\n";	# One line
-	} else {
-		print NEWS "From: $faddr\n";
-	}
-
-	# The Date: field must be parseable by INN, and not be in the future
-	# or the article would be rejected.  Articles too far in the past (outside
-	# the history range) are also rejected, but we don't know what is
-	# configured.  As a precaution, dates older than 14 days (the default INN
-	# setting) are patched.
-	unless (defined $Header{'Date'} && $Header{'Date'} ne '') {
-		&add_log("WARNING no Date, faking one") if $loglvl > 5;
-		my $date = &header'mta_date();
-		print NEWS "Date: $date\n";
-	} else {
-		my $str = $Header{'Date'};
-		my $when = &header'parsedate($str);
-		my $now = time;
-		my $date;
-		my $AGEMAX = 14 * 86400;		# 14 days
-		my $THRESH = 86400;				# 1 day
-		my $WARN_THRESH = 600;			# 10 minutes
-		if ($when < 0) {
-			&add_log("WARNING can't parse Date field '$str', adjusting")
-				if $loglvl > 5;
-			$date = &header'mta_date($now);
-		} elsif ($when > $now) {
-			my $rel = &relative_age($when - $now);
-			my $adjusting = '';
-			my $stamp = $when;
-			my $delta = $when - $now;
-			if ($delta >= $THRESH) {	# More than a day, adjust!
-				$stamp = $now;
-				$adjusting = ", adjusting";
-			}
-			&add_log("WARNING Date field is $rel in the future$adjusting")
-				if $loglvl > 5 && $delta >= $WARN_THRESH;
-			$date = &header'mta_date($stamp);
-		} elsif (($now - $when) >= $AGEMAX) {
-			my $rel = &relative_age($now - $when);
-			&add_log("WARNING Date field too ancient ($rel), adjusting")
-				if $loglvl > 5;
-			$date = &header'mta_date($now - $AGEMAX + 3600);
-		} else {
-			$date = &header'mta_date($when);	# Regenerate properly
-		}
-		print NEWS "Date: $date\n";
-		print NEWS "X-Orig-Date: $str\n" if lc($date) ne lc($str);
-	}
-
-	# If no Subject is present, fake one to make inews happy
-	unless (defined($Header{'Subject'}) && $Header{'Subject'} ne '') {
-		&add_log("WARNING no Subject, faking one") if $loglvl > 5;
-		print NEWS "Subject: <none>\n";
-	} else {
-		my $subject = $Header{'Subject'};
-		$subject =~ tr/\n/ /;				# Multiples instances collapsed
-		print NEWS "Subject: $subject\n";
-	}
-
-	# If no proper Message-ID is present, generate one
-	# If one is present, perform sanity fixups because INN is really picky
-	my $msgid;
-	unless (defined($Header{'Message-Id'}) && $Header{'Message-Id'} ne '') {
-		&add_log("WARNING no Message-Id, faking one") if $loglvl > 5;
-		$msgid = &gen_message_id;
-	} else {
-		($msgid) = $Header{'Message-Id'} =~ /(<[^>]+@[^>]+>)/;
-		if ($msgid ne '') {
-			# Fixups are always the same, therefore they don't prevent proper
-			# duplicate detection provided all feeds are done from mailagent
-			# But we also need to fix places using those message IDs, i.e.
-			# the References line, to preserve correct threading (see below).
-			my $fixup = &header'msgid_cleanup(\$msgid);
-			&add_log("WARNING fixed Message-Id line for news")
-				if $loglvl > 5 && $fixup;
-		} else {
-			&add_log("WARNING bad Message-Id line, faking one") if $loglvl > 5;
-			$msgid = &gen_message_id;
-		}
-	}
-	print NEWS "Message-ID: $msgid\n";
-
 	# Protect Sender: lines in the original message and clean-up header
 	local($last_was_header);		# Set to true when header is skipped
-
-	# Need at most one MIME header, lest article might be rejected
-	my %mime = map { lc($_) => 0 } qw(
-		Mime-Version
-		Content-Transfer-Encoding
-		Content-Type
-	);
-
 	foreach (split(/\n/, $Header{'Head'})) {
-		s/^Sender:/Prev-Sender:/i;
-		s/^(To|Cc):/X-$1:/i;				# Keep distribution info
-		s/^(Resent-\w+):/X-$1:/i;
+		s/^Sender:\s*(.*)/Prev-Sender: $1/;
 		next if /^From\s/;					# First From line...
 		if (
-			/^From:/i				||		# This one was cleaned up above
-			/^Subject:/i			||		# This one handled above
-			/^Message-Id:/i			||		# idem
-			/^Date:/i				||		# idem
-			/^In-Reply-To:/i		||
-			/^References:/i			||		# One will be faked if missing
-			/^Apparently-To:/i		||
-			/^Distribution:/i		||		# No mix-up, please
-			/^Control:/i			||
-			/^X-Server-[\w-]+:/i	||
-			/^Xref:/i				||
-			/^NNTP-Posting-.*:/i	||		# Cleanup for NNTP server
-			/^Originator:/i			||		# Probably from news->mail gateway
-			/^X-Loop:/i				||		# INN does not like this field
-			/^X-Trace:/i			||		# idem
-			/^Newsgroups:/i			||		# Reply from news reader
-			/^Return-Receipt-To:/i	||		# Sendmail's acknowledgment
-			/^Received:/i			||		# We want to remove received
-			/^Precedence:/i			||
-			/^Errors-To:/i					# Error report redirection
+			/^To:/ ||
+			/^Cc:/ ||
+			/^Apparently-To:/ ||
+			/^Distribution:/ ||				# No mix-up, please
+			/^X-Mailer:/ ||					# Mailer identification
+			/^Newsgroups:/ ||				# Reply from news reader
+			/^Return-Receipt-To:/ ||		# Sendmail's acknowledgment
+			/^Received:/ ||					# We want to remove received
+			/^Errors-To:/ ||				# Error report redirection
+			/^Resent-[\w-]*:/				# Resent tags
 		) {
 			$last_was_header = 1;			# Mark we discarded the line
 			next;							# Line is skipped
-		}
-		if (/^([\w-]+):/ && exists $mime{"\L$1"}) {
-			my $field = lc($1);
-			if ($mime{$field}++) {
-				my $nfield = &header'normalize($field);
-				&add_log("WARNING stripping dup $nfield header")
-					if $loglvl > 5 && $mime{$field} == 2;
-				$last_was_header = 1;		# Mark we discarded the line
-				next;						# Line is skipped
-			}
 		}
 		next if /^\s/ && $last_was_header;	# Skip removed header continuations
 		$last_was_header = 0;				# We decided to keep header line
 		print NEWS $_, "\n";
 	}
-
-	# For correct threading, we need a References: line.
-	my $refs = $Header{'References'};		# Will probably be missing
-	$refs =~ tr/\n/ /;						# Must be ONE line
-	my $inreply = $Header{'In-Reply-To'};	# Should not be missing for replies
-	my ($replyid) = $inreply =~ /(<[^>]+>)/;
-
-	# Warn only when there's no message ID in the In-Reply-To header and
-	# there is no References line: this will prevent correct threading.
-	# We assume the References line was correctly setup when it is present.
-	&add_log("WARNING In-Reply-To header did not contain any message ID")
-		if $loglvl > 5 && $inreply ne '' && $replyid eq '' && $refs =~ /^\s*$/;
-
-	if ($replyid ne '' && $refs ne '' && $refs !~ /\Q$replyid/) {
-		$refs .= " $replyid";
-		&add_log("NOTICE added missing In-Reply-To ID to References")
-			if $loglvl > 6;
+	# If no subject is present, fake one to make inews happy
+	unless (defined($Header{'Subject'}) && $Header{'Subject'} ne '') {
+		&add_log("WARNING no subject, faking one") if $loglvl > 5;
+		print NEWS "Subject: <none>\n";
 	}
-	$refs = $replyid unless $refs ne '';
-	if ($refs ne '') {
-		my $fixup = &header'msgid_cleanup(\$refs);
-		&add_log("WARNING fixed References line for news")
-			if $loglvl > 5 && $fixup;
-		print NEWS "References: $refs\n";	# One big happy line
-	}
-
 	# Any address included withing "" means addresses are stored in a file
 	$newsgroups = &complete_list($newsgroups, 'newsgroup');
 	$newsgroups =~ s/\s/,/g;	# Cannot have spaces between them
@@ -920,8 +736,6 @@ sub post {
 	local($failed) = $?;		# Status of forwarding
 	if ($failed) {
 		&add_log("ERROR could not post to $newsgroups") if $loglvl > 1;
-	} else {
-		&biff($newsgroups, "news") if $wantbiff;
 	}
 	$failed;		# 0 for success
 }
@@ -1112,7 +926,7 @@ sub shell_command {
 	$SIG{'ALRM'} = 'DEFAULT';		# Restore default behaviour
 	local($msg) = $@;
 	$@ = '';						# Clear this global for our caller
-	if ($msg =~ /^failed/) {		# Something went wrong?
+	if ($msg =~ /^failed/) {			# Something went wrong?
 		&add_log("ERROR couldn't run '$program'") if $loglvl > 0;
 		return 1;					# Failed
 	} elsif ($msg =~ /^aborted/) {	# Writing to program failed
@@ -1129,7 +943,6 @@ sub shell_command {
 		&add_log("WARNING program returned non-zero status") if $loglvl > 5;
 		return 1;
 	} elsif ($msg) {
-		$msg =~ s/\n$//;			# Not sure it's there... don't chop!
 		&add_log("ERROR $msg") if $loglvl > 0;
 		return 1;					# Failed
 	}
@@ -1176,17 +989,11 @@ sub alarm_clock {
 # Execute the command, ran in an eval to protect against SIGPIPE signals
 sub execute_command {
 	local($program, $input, $feedback) = @_;
-
-	local($location) = &locate_program($program);
-	die "can't locate $location in PATH\n" unless $location =~ m|/|;
-	die "unsecure $location\n" unless &exec_secure($location);
-
 	local($trace) = "$cf'tmpdir/trace.run$$";	# Where output goes
 	local($error) = "failed";				# Error reported by popen_failed
 	pipe(READ, WRITE);						# Open a pipe
 	local($pid) = fork;						# We fork here
 	$pid = -1 unless defined $pid;
-
 	if ($pid == 0) {						# Child process
 		alarm 0;
 		close WRITE;						# The child reads from pipe
@@ -1195,27 +1002,23 @@ sub execute_command {
 		unless (open(STDOUT, ">$trace")) {	# Where output goes
 			&add_log("WARNING couldn't create $trace: $!") if $loglvl > 5;
 			if ($feedback == $FEEDBACK) {	# Need trace if feedback
-				kill 'SIGPIPE', getppid;	# Parent still waiting
+				kill 'SIGPIPE', $ppid;		# Parent still waiting
 				exit 1;
 			}
 		}
 		open(STDERR, ">&STDOUT");			# Make it follow pipe
-		# Using a sub-block ensures exec() is followed by nothing
-		# and makes mailagent "perl -cw" clean, whatever that means ;-)
-		{ exec $program }					# Run the program now
+		exec $program;						# Run the program now
 		&add_log("ERROR couldn't exec '$program': $!") if $loglvl > 1;
 		exit 1;
 	} elsif ($pid == -1) {
 		&add_log("ERROR couldn't fork: $!") if $loglvl;
 		return;
 	}
-
 	close READ;								# The parent writes to its child
 	$error = "aborted";						# Error reported by popen_failed
 	select(WRITE);
 	$| = 1;									# Hot pipe wanted
 	select(STDOUT);
-
 	# Now feed the program with the mail
 	if ($input == $BODY_INPUT) {			# Pipes body
 		print WRITE $Header{'Body'};
@@ -1225,7 +1028,6 @@ sub execute_command {
 		print WRITE $Header{'Head'};
 	}
 	close WRITE;							# Close input, before waiting!
-
 	wait();									# Wait for our child
 	local($status) = $? ? "failed" : "ok";
 	if ($?) {
@@ -1238,7 +1040,6 @@ sub execute_command {
 			die "feedback\n";				# Longjmp to shell_command
 		}
 	}
-
 	&handle_output;			# Take appropriate action with command output
 	unlink "$trace";		# Remove output of command
 	die "non-zero status\n" unless $status eq 'ok';
@@ -1336,11 +1137,6 @@ sub feed_back {
 				$temp .= $_;
 			}
 		}
-		if ($head =~ /^\s*$/s) {			# A perl5 construct
-			&add_log("ERROR got empty header from $trace") if $loglvl > 1;
-			unlink "$trace";				# Maybe I should leave it around
-			die "feedback\n";				# Return to shell_command
-		}
 		$Header{'Head'} = $head;
 	}
 	close TRACE;
@@ -1384,13 +1180,10 @@ sub header_resync {
 	local($value);							# Value of current field
 	foreach (split(/\n/, $Header{'All'})) {
 		if ($in_header) {					# Still in header of message
-			if (/^$/) {						# End of header
-				$in_header = 0;
-				next;
-			}
+			$in_header = 0 if /^$/;			# End of header
 			if (/^\s/) {					# It is a continuation line
 				s/^\s+/ /;					# Swallow multiple spaces
-				$Header{$last_header} .= $_ if $last_header ne '';
+				$Header{$last_header} .= "\n$_" if $last_header ne '';
 			} elsif (/^([\w-]+):\s*(.*)/) {	# We found a new header
 				$value = $2;				# Bug in perl 4.0 PL19
 				$last_header = &header'normalize($1);
@@ -1403,17 +1196,6 @@ sub header_resync {
 				}
 			} elsif (/^From\s+(\S+)/) {		# The very first From line
 				$first_from = $1;
-			} else {
-				# Did not identify a header field nor a continuation
-				# Maybe there was a wrong header split somewhere?
-				if ($last_header eq '') {
-					&add_log("ERROR ignoring header garbage: $_")
-						if $loglvl > 1;
-				} else {
-					&add_log("ERROR missing continuation for $last_header")
-						if $loglvl > 1;
-					$Header{$last_header} .= " " . $_;
-				}
 			}
 		} else {
 			$lines++;						# One more line in body
@@ -1488,101 +1270,13 @@ sub annotate_header {
 		return 1;
 	}
 	local($annotation) = '';		# Annotation made
-	$annotation = "$field: " . &header'mta_date() . "\n" unless $opt'sw_d;
-	$annotation .= &header'format("$field: $value") . "\n" if $value ne '';
+	$annotation = "$field: " . &header'fake_date . "\n" unless $opt'sw_d;
+	$annotation .= &header'format("$field: $value") . "\n" if $value;
 	&header_append($annotation);	# Add field into %Header
 	0;
 }
 
-
-# Utilitity routine for alter_field()
-# Performs $op on $bufref, the value of the header field $header, and insert
-# result in the head (pointed to by $headref), or the original raw buffer if
-# there was no change.
-# Returns whether there was a change or not, undef on eval() error.
-sub runop_on_field {
-	my ($header, $op, $bufref, $raw_bufref, $headref) = @_;
-
-	&add_log("running $op for $header: " . $$bufref) if $loglvl > 19;
-	my $changed = eval "\$\$bufref =~ $op";
-	if ($@) {
-		&add_log("ERROR operation $op failed: $@") if $loglvl > 1;
-		return undef;		# Abort further processing
-	}
-	&add_log("changed buffer: " . $$bufref) if $changed && $loglvl > 19;
-	$$headref .= $changed ?
-		&header'format("$header: " . $$bufref) :
-		("$header: " . $$raw_bufref);
-	$$headref .= "\n";
-
-	return $changed ? 1 : 0;
-}
-
-# The "TR" and "SUBST" commands targetted to header field.
-# The operation (s/// or tr//) is performed on the header field.
-# If a match occurrs, the whole header is reformatted.
-# Returns failure status (0 means OK)
-sub alter_field {
-	my ($header_field, $op) = @_;
-	$header_field = &header'normalize($header_field);
-
-	my $head = ' ' x length $Header{'Head'};
-	$head = '';
-	my $last_header = '';		# Non-empty indicates header field to process
-	my $buffer;					# Holds value of field to process
-	my $raw_buffer;				# Holds raw lines of field to process
-	my $ever_changed = 0;
-
-	foreach (split(/\n/, $Header{'Head'})) {
-		if (/^\s/) {
-			if ($last_header eq '') {
-				$head .= $_ . "\n";
-			} else {
-				$raw_buffer .= "\n$_";		# In case there's no change
-				s/^\s+/ /;
-				$buffer .= $_;				# What we'll run $op on
-			}
-		} elsif (my ($field, $value) = /^([\w-]+)\s*:\s*(.*)/) {
-
-			# Perform operation on $buffer if previous header matched.
-			if ($last_header ne '') {
-				my $changed = runop_on_field($last_header, $op,
-					\$buffer, \$raw_buffer, \$head);
-				return 1 unless defined $changed;	# Abort, because $op failed
-				$ever_changed++ if $changed;
-				$last_header = '';
-			}
-
-			if (&header'normalize($field) eq $header_field) {
-				$last_header = $field;			# Indicates a match
-				$raw_buffer = $buffer = $value;
-			} else {
-				$head .= $_ . "\n";
-			}
-		} else {
-			$head .= $_ . "\n";
-		}
-	}
-
-	# Perform operation on $buffer if last header seen matched.
-	if ($last_header ne '') {
-		my $changed = runop_on_field($last_header, $op,
-			\$buffer, \$raw_buffer, \$head);
-		return 1 unless defined $changed;	# Abort, because $op failed
-		$ever_changed++ if $changed;
-	}
-
-	# Resynchronize pseudo-headers if there was any change
-	if ($ever_changed) {
-		$Header{'All'} = $head . "\n" . $Header{'Body'};
-		$Header{'Head'} = $head;
-	}
-
-	&add_log("changed $ever_changed $header_field line" .
-		($ever_changed == 1 ? '' : 's') . " with $op") if $loglvl > 6;
-}
-
-# The "TR" and "SUBST" commands -- main entry point
+# The "TR" and "SUBST" commands
 sub alter_value {
 	local($variable, $op) = @_;	# Variable and operation to performed
 	local($lvalue);				# Perl variable to be modified
@@ -1597,9 +1291,6 @@ sub alter_value {
 	} elsif ($variable =~ /^\d\d?$/) {
 		$variable = int($variable) - 1;
 		$lvalue = '$Backref[' . $variable . ']';
-	} elsif ($variable =~ /^([\w-]+):?$/) {
-		my $field = $1;						# Dataloading will change $1
-		return alter_field($field, $op);	# More complex, handle separately
 	} else {
 		&add_log("ERROR incorrect variable name '$variable'") if $loglvl > 1;
 		return 1;
@@ -1760,6 +1451,7 @@ sub after {
 	local($time, $action) = @_;
 	local($no_input) = $opt'sw_n;
 	local($shell_cmd) = $opt'sw_s;
+	local($cmd_cmd) = $opt'sw_c;
 	local($agent_cmd) = $opt'sw_a || !($opt'sw_n || $opt'sw_s || $opt'sw_c);
 	local($now) = time;					# Current time
 	local($start);						# Action's starting time

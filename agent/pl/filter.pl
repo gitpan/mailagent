@@ -1,4 +1,4 @@
-;# $Id: filter.pl,v 3.0.1.11 2001/03/13 13:13:37 ram Exp $
+;# $Id: filter.pl,v 3.0.1.7 1995/08/07 16:18:57 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,21 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
-;# Revision 3.0.1.11  2001/03/13 13:13:37  ram
-;# patch71: changed SUBST/TR parameter parsing to support header fields
-;#
-;# Revision 3.0.1.10  1998/03/31  15:22:19  ram
-;# patch59: when "vacfixed" is on, forbid any change of vacation message
-;# patch59: new ON command to process commands on certain days only
-;#
-;# Revision 3.0.1.9  1997/09/15  15:15:04  ram
-;# patch57: fixed ASSGINED -> ASSIGNED typo in log message
-;# patch57: implemented new -t and -f flags for BEGIN and NOP
-;# patch57: insert user e-mail address if no address for NOTIFY
-;#
-;# Revision 3.0.1.8  1996/12/24  14:51:51  ram
-;# patch45: added initial logging of the SELECT command
-;#
 ;# Revision 3.0.1.7  1995/08/07  16:18:57  ram
 ;# patch37: new BIFF command
 ;#
@@ -68,7 +53,7 @@
 ;#  $ever_saved which states whether a saving/discarding action occurred
 ;#  $cont is the continuation status, modified by REJECT and friends
 ;#  $vacation which is a boolean stating whether vacation messages are allowed
-;# The following variable is inherited from analyze_mail:
+;# The following variable is inherited from xeqte:
 ;#  $lastcmd is the failure status of the last command (among those to be kept)
 ;# The working mode is held in $wmode (comes from analyze_mail).
 ;#
@@ -196,7 +181,6 @@ sub run_notify {
 	local($msg) = shift(@args);				# First argument is message text
 	$msg =~ s/~/$cf'home/g;					# ~ substitution
 	local($address) = join(' ', @args);		# Address list
-	$address = $cf'email if $address eq '';	# No address, defaults to user
 	local($failed) = &notify($msg, $address);
 	unless ($failed) {
 		$msg = &tilda($msg);				# Replace the home directory by ~
@@ -233,8 +217,6 @@ sub run_resync {
 # Run the BEGIN command
 sub run_begin {
 	local($newstate) = @_;		# New state wanted
-	return 0 if $opt'sw_t && $lastcmd;		# -t means change only if true
-	return 0 if $opt'sw_f && !$lastcmd;		# -f means change only if false
 	$newstate = 'INITIAL' unless $newstate;
 	$wmode = $newstate;			# $wmode comes from analyze_mail
 	&add_log("BEGUN new state $newstate") if $loglvl > 4;
@@ -396,56 +378,6 @@ sub run_back {
 	$lastcmd;			# Propage error status we got from the $command
 }
 
-# Run the ON command
-sub run_on {
-	local($_) = $cmd;					# The whole command line
-	local(@days) = split(' ', 'Sun Mon Tue Wed Thu Fri Sat');
-	local(%days);
-	local($daynum) = 0;
-	foreach $day (@days) {				# Initialize Sun => 0, Mon => 1, etc...
-		$days{$day} = $daynum++;
-	}
-	local(@on);							# List of specified days
-	local(%on);							# Hash '0' (for sunday) => 1 if selected
-	if (s/^ON\s*\(([^\)]*)\)//) {		# List of days, like (Mon Tue)
-		@on = split(/,?\s+/, $1);		# Allow (Mon Thu) and (Mon, Thu)
-		local($non);
-		foreach $on (@on) {
-			$non = $on;					# New $on will be canonicalized
-			$non =~ s/^(...).*/\u\L$1/;	# Keep only first 3 letters
-			unless (defined $days{$non}) {
-				&add_log("WARNING ignoring bad day $on in ON (@on)")
-					if $loglvl > 5;
-				next;
-			}
-			$on{$days{$non}}++;			# E.g sets $on{1} for Mon
-		}
-		&add_log("on (@on)") if $loglvl > 18;
-	} else {
-		&add_log("ERROR bad ON syntax (did not parse right)") if $loglvl > 1;
-		return 1;
-	}
-
-	# Calling run_command will set $lastcmd to the status of the command. In
-	# case we are running a command which does not alter this status, assume
-	# everything is fine.
-
-	$lastcmd = 0;						# Assume command will run correctly
-	s/^\s*//;							# Remove leading spaces
-
-	local($wday) = (localtime(time))[6];
-
-	if (defined $on{$wday}) {
-		&add_log("ON (@on) $_") if $loglvl > 7;
-		s/%/%%/g;						# Protect against 2nd macro substitution
-		$cont = &run_command($_);		# Run command and update control flow
-	} else {
-		&add_log("not a good day for $_") if $loglvl > 12;
-	}
-
-	$lastcmd;							# Propagates execution status
-}
-
 # Run the ONCE command
 sub run_once {
 	local($_) = $cmd;					# The whole command line
@@ -516,8 +448,6 @@ sub run_select {
 	# everything is fine.
 	$lastcmd = 0;						# Assume command will run correctly
 
-	&add_log("SELECT ($sec_start, $sec_end) at $now") if $loglvl > 11;
-
 	s/^\s*//;							# Remove leading spaces
 	if ($now >= $sec_start && $now <= $sec_end) {
 		&add_log("SELECT ($start .. $end) $_") if $loglvl > 7;
@@ -532,12 +462,8 @@ sub run_select {
 
 # Run the NOP command
 sub run_nop {
-	local($what) = $opt'sw_f ? 'failure' : ($opt'sw_t ? 'success' : '');
-	local($force) = $what ? " forcing $what" : '';
-	&add_log("NOP [$mfile]$force") if $loglvl > 7;
-	return 1 if $opt'sw_f;		# -f forces failure
-	return 0 if $opt'sw_t;		# -t forces failure
-	$lastcmd;					# Propagates curremt exec status
+	&add_log("NOP [$mfile]") if $loglvl > 7;
+	0;
 }
 
 # Run the STRIP command
@@ -578,31 +504,28 @@ sub run_assign {
 	# within simple quotes, then those are stripped and no evaluation is made.
 	unless ($value =~ s/^'(.*)'$/$1/) {
 		eval "\$eval = $value";			# Maybe value is an expression?
-		if ($@) {
-			chop($@);
-			&add_log("WARNINIG can't evaluate '$value': $@");
-		} else {
-			$value = $eval;
-		}
+	} else {
+		$eval = $value;					# Leading and trailing ' trimmed
 	}
+	$value = $eval if $eval && $@ eq '';
 	if ($var =~ s/^://) {
 		&extern'set($var, $value);		# Persistent variable is set
 	} else {
 		$Variable{$var} = $value;		# User defined variable is set
 	}
-	&add_log("ASSIGNED '$value' to '$var' [$mfile]") if $loglvl > 7;
+	&add_log("ASSGINED '$value' to '$var' [$mfile]") if $loglvl > 7;
 	0;
 }
 
 # Run the TR command
 sub run_tr {
-	local($variable, $tr) = $cms =~ m|^(\S+)\s+(.*)|;
+	local($variable, $tr) = $cms =~ m|^(#?:?\w+)\s+(.*)|;
 	&alter_value($variable, "tr$tr");
 }
 
 # Run the SUBST command
 sub run_subst {
-	local($variable, $s) = $cms =~ m|^(\S+)\s+(.*)|;
+	local($variable, $s) = $cms =~ m|^(#?:?\w+)\s+(.*)|;
 	&alter_value($variable, "s$s");
 }
 
@@ -653,15 +576,10 @@ sub run_vacation {
 	&env'local('vacation', $allowed) if $opt'sw_l;
 	$env'vacation = $allowed;			# Won't hurt given the above local call
 	if ($allowed && $mode !~ /^on$/i) {	# New vacation path given
-		if ($cf'vacfixed =~ /on/i) {	# Not allowed if vacfixed is ON
-			&add_log("WARNING no message change allowed by 'vacfixed'")
-				if $loglvl > 5;
-		} else {
-			$mode =~ s/^~/$cf'home/;		# ~ substitution
-			&env'local('vacfile', $mode) if $opt'sw_l;
-			$env'vacfile = $mode;
-			&add_log("vacation message in file $mode$l") if $loglvl > 7;
-		}
+		$mode =~ s/^~/$cf'home/;		# ~ substitution
+		&env'local('vacfile', $mode) if $opt'sw_l;
+		$env'vacfile = $mode;
+		&add_log("vacation message in file $mode$l") if $loglvl > 7;
 	}
 	if ($allowed && $period) {
 		&env'local('vacperiod', $period) if $opt'sw_l;

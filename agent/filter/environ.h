@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: environ.h,v 3.0.1.1 1996/12/24 13:52:15 ram Exp $
+ * $Id: environ.h,v 3.0 1993/11/29 13:48:08 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,9 +22,6 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: environ.h,v $
- * Revision 3.0.1.1  1996/12/24 13:52:15  ram
- * patch45: declared get_env()
- *
  * Revision 3.0  1993/11/29  13:48:08  ram
  * Baseline for mailagent 3.0 netwide release.
  *
@@ -38,7 +35,6 @@ extern void init_env();				/* Initializes the environment table */
 extern char **make_env();			/* Make a new system environment */
 extern int append_env();			/* Append value to environment */
 extern int prepend_env();			/* Prepend value to environment */
-extern char *get_env();				/* Get environment value */
 extern int set_env();				/* Set environment value */
 
 #endif

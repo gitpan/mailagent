@@ -1,6 +1,6 @@
 # Make sure filter queues messages correctly
 
-# $Id: filter.t,v 3.0.1.3 1999/01/13 18:16:41 ram Exp $
+# $Id: filter.t,v 3.0.1.2 1995/08/07 16:27:05 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,9 +11,6 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: filter.t,v $
-# Revision 3.0.1.3  1999/01/13 18:16:41  ram
-# patch64: agent.wait file moved from queue to spool dir
-#
 # Revision 3.0.1.2  1995/08/07  16:27:05  ram
 # patch37: added support for locking on filesystems with short filenames
 #
@@ -27,7 +24,7 @@
 do '../pl/init.pl';
 do '../pl/logfile.pl';
 chdir '../out' || exit 0;
-open(WAIT, ">agent.wait") || print "1\n";
+open(WAIT, ">queue/agent.wait") || print "1\n";
 close WAIT;
 `chmod u-w queue`;
 $? == 0 || print "2\n";
@@ -41,10 +38,10 @@ close FILTER;
 $? == 0 || print "4\n";		# Must terminate correctly (stored in agent.wait)
 &get_log(5);
 &check_log('memorized', 6);	# Make sure mail has been memorized
--s 'agent.wait' || print "7\n";
+-s 'queue/agent.wait' || print "7\n";
 $file = <emerg/*>;
 if (-f "$file") {
-	chop($what = `cat agent.wait`);
+	chop($what = `cat queue/agent.wait`);
 	chop($pwd = `pwd`);
 	$what eq "$pwd/$file" || print "8\n";
 	unlink "$file";
@@ -52,7 +49,7 @@ if (-f "$file") {
 	print "8\n";
 }
 `chmod u+w queue`;
-unlink 'agent.wait', 'agentlog';
+unlink 'queue/agent.wait', 'agentlog';
 open(FILTER, "|$filter -t >/dev/null 2>&1") || print "9\n";
 print FILTER <<EOF;
 Dummy mail

@@ -1,4 +1,4 @@
-;# $Id: mailhook.pl,v 3.0.1.2 1996/12/24 14:55:06 ram Exp $
+;# $Id: mailhook.pl,v 3.0.1.1 1994/09/22 14:26:22 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,10 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mailhook.pl,v $
-;# Revision 3.0.1.2  1996/12/24 14:55:06  ram
-;# patch45: correctly initializes @cc to be the Cc: field
-;# patch45: added @relayed and $lines, $length
-;#
 ;# Revision 3.0.1.1  1994/09/22  14:26:22  ram
 ;# patch12: propagates folder_saved as msgpath in PERL escapes
 ;#
@@ -42,15 +38,12 @@ sub hook'initvar {
 :	$from = $header{'From'};
 :	$to = $header{'To'};
 :	$cc = $header{'Cc'};
-:	$lines = $header{'Lines'};
-:	$length = $header{'Length'};
 :	$envelope = $header{'Envelope'};
 :	($reply_to) = &'parse_address($header{'Reply-To'});
 :	($address, $friendly) = &'parse_address($from);
 :	$login = &'login_name($address);
 :	@to = split(/,/, $to);
-:	@cc = split(/,/, $cc);
-:	@relayed = split(/,\s*/, $header{'Relayed'});
+:	@cc = split(/,/, $to);
 :	# Leave only the address part in @to and @cc
 :	grep(($_ = (&'parse_address($_))[0], 0), @to);
 :	grep(($_ = (&'parse_address($_))[0], 0), @cc);

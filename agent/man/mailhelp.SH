@@ -20,7 +20,7 @@ $spitshell >mailhelp.$manext <<!GROK!THIS!
 .TH MAILHELP $manext ram
 ''' @(#) Manual page for mailagent's commands -- (c) ram February 1991
 '''
-''' $Id: mailhelp.SH,v 3.0.1.3 1999/07/12 13:46:52 ram Exp $
+''' $Id: mailhelp.SH,v 3.0.1.1 1995/08/07 16:14:40 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,12 +31,6 @@ $spitshell >mailhelp.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailhelp.SH,v $
-''' Revision 3.0.1.3  1999/07/12 13:46:52  ram
-''' patch66: updated my e-mail address
-'''
-''' Revision 3.0.1.2  1996/12/24  14:41:59  ram
-''' patch45: documented command forwarding
-'''
 ''' Revision 3.0.1.1  1995/08/07  16:14:40  ram
 ''' patch37: updated my e-mail address
 '''
@@ -143,23 +137,6 @@ note giving the latest version number for that system.
 For a more accurate description of these commands (user's point of vue),
 you may want to have a look at the help file or send help to yourself
 using the \fImailhelp\fR command.
-.SH FORWARDING
-When the author of a package wishes to relinquish all maintenance duty, he
-is most often stuck by the weight of the past: Configure scripts have his
-e-mail address hardwired (see unit MailAuthor.U) and Command messages for
-package registration and/or patch requests will continue to reach him.
-.PP
-The answer to that is to leave a \fI.forward\fR file at the top of the package
-tree and commands will automatically forge new requests and forward them
-to the address listed in the .forward file. Now the recipient
-surely needs a mailagent at the other end to deal with forwarded requests!
-.PP
-Only plain e-mail address(es) are allowed in the .forward. The "|command"
-processing hook is not supported, since it's not \fIsendmail\fR which interprets
-that file but the command itself.
-.PP
-Forwarding applies to \fImaildist\fR, \fImailpatch\fR and \fIpackage\fR commands
-only.
 .SH FILES
 .PD 0
 .TP 20
@@ -188,8 +165,8 @@ mailagent's log file
 The \fIproglist\fR file ought to make a distinction between different
 versions of a same system.
 .SH AUTHOR
-Raphael Manfredi <Raphael_Manfredi@pobox.com>
+Raphael Manfredi <ram@hptnos02.grenoble.hp.com>
 .SH "SEE ALSO"
-mailagent($manext), package($manext).
+mailagent($manext).
 !GROK!THIS!
 chmod 444 mailhelp.$manext

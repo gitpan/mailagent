@@ -15,7 +15,7 @@ case "$0" in
 */*) cd `expr X$0 : 'X\(.*\)/'` ;;
 esac
 echo "Extracting config.h (with variable substitutions)"
-sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-def!#undef!'
+sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
 /*
  * This file was produced by running the config_h.SH script, which
  * gets its values from config.sh, which is generally produced by
@@ -25,53 +25,22 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
  * that running config_h.SH again will wipe out any changes you've made.
  * For a more permanent change edit config.sh and rerun config_h.SH.
  *
- * \$Id: config_h.SH,v 3.0.1.11 1999/07/12 13:58:36 ram Exp $
+ * \$Id: config_h.SH,v 3.0.1.7 1995/08/07 16:29:31 ram Exp $
  */
 
-/*
- * Package name      : $package
- * Source directory  : $src
- * Configuration time: $cf_time
- * Configured by     : $cf_by
- * Target system     : $myuname
+/* Configuration time: $cf_time
+ * Configured by: $cf_by
+ * Target system: $myuname
  */
 
 #ifndef _config_h_
 #define _config_h_
-
-/* STRINGIFY:
- *	This macro surrounds its token with double quotes.
- */
-#if $cpp_stuff == 1
-#define STRINGIFY(a)"a"
-#define SQuoTe(a)"a
-#define EQuoTe(a)a"
-#endif
-#if $cpp_stuff == 42
-#define StGiFy(a)# a
-#define STRINGIFY(a)StGiFy(a)
-#endif
-#if $cpp_stuff != 1 && $cpp_stuff != 42
-#include "Bletch: How does this C preprocessor catenate tokens?"
-#endif
 
 /* HAS_BCOPY:
  *	This symbol is defined if the bcopy() routine is available to
  *	copy blocks of memory.
  */
 #$d_bcopy HAS_BCOPY	/**/
-
-/* HAS_DUP2:
- *	This symbol, if defined, indicates that the dup2 routine is
- *	available to duplicate file descriptors.
- */
-#$d_dup2 HAS_DUP2	/**/
-
-/* HAS_FCNTL:
- *	This symbol, if defined, indicates to the C program that
- *	the fcntl() function exists.
- */
-#$d_fcntl HAS_FCNTL		/**/
 
 /* FLEXFILENAMES:
  *	This symbol, if defined, indicates that the system supports filenames
@@ -100,11 +69,6 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
 #$d_uname HAS_UNAME		/**/
 #$d_phostname PHOSTNAME "$aphostname"	/* How to get the host name */
 
-/* HAS_GETOPT:
- *	This symbol, if defined, indicates that the getopt() routine exists.
- */
-#$d_getopt HAS_GETOPT		/**/
-
 /* HAS_RENAME:
  *	This symbol, if defined, indicates that the rename routine is available
  *	to rename files.  Otherwise you should do the unlink(), link(), unlink()
@@ -113,8 +77,8 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
 #$d_rename HAS_RENAME	/**/
 
 /* HAS_SETPGID:
- *	This symbol, if defined, indicates that the setpgid(pid, gpid)
- *	routine is available to set process group ID.
+ *	This symbol, if defined, indicates that the setpgid routine is
+ *	available to set process group ID.
  */
 #$d_setpgid HAS_SETPGID	/**/
 
@@ -122,25 +86,13 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
  *	This symbol, if defined, indicates that the setpgrp routine is
  *	available to set the current process group.
  */
-/* USE_BSD_SETPGRP:
- *	This symbol, if defined, indicates that setpgrp needs two
- *	arguments whereas USG one needs none.  See also HAS_SETPGID
- *	for a POSIX interface.
+/* USE_BSDPGRP:
+ *	This symbol, if defined, indicates that the BSD notion of process
+ *	group is to be used. For instance, you have to say setpgrp(pid, pgrp)
+ *	instead of the USG setpgrp().
  */
 #$d_setpgrp HAS_SETPGRP		/**/
-#$d_bsdsetpgrp USE_BSD_SETPGRP	/**/
-
-/* HAS_SETRGID:
- *	This symbol, if defined, indicates that the setrgid routine is available
- *	to change the real gid of the current program.
- */
-#$d_setrgid HAS_SETRGID		/**/
-
-/* HAS_SETRUID:
- *	This symbol, if defined, indicates that the setruid routine is available
- *	to change the real uid of the current program.
- */
-#$d_setruid HAS_SETRUID		/**/
+#$d_bsdpgrp USE_BSDPGRP		/**/
 
 /* HAS_SETSID:
  *	This symbol, if defined, indicates that the setsid routine is
@@ -287,15 +239,9 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
 #$i_systime I_SYS_TIME		/**/
 #$i_systimek I_SYS_TIME_KERNEL		/**/
 
-/* I_UNISTD:
- *	This symbol, if defined, indicates to the C program that it should
- *	include <unistd.h>.
- */
-#$i_unistd I_UNISTD		/**/
-
 /* INTSIZE:
- *	This symbol contains the value of sizeof(int) so that the C
- *	preprocessor can make decisions based on it.
+ *	This symbol contains the size of an int, so that the C preprocessor
+ *	can make decisions based on it.
  */
 #define INTSIZE $intsize		/**/
 
@@ -324,18 +270,6 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
  *	If defined, this macro indicates that the C compiler can handle
  *	function prototypes.
  */
-/* NXT_ARG:
- *	This macro is used to separate arguments in the declared argument list.
- */
-/* V_FUNC:
- *	This macro is used to declare "public" (non-static) functions.
- *	It takes three arguments: the function type and name, a parenthesized
- *	traditional (comma separated) argument list, and the declared argument
- *	list (in which arguments are separated with NXT_ARG, and additional
- *	arbitrary arguments are specified with DOTS).  For example:
- *
- *		V_FUNC(int main, (argc, argv), int argc NXT_ARG char *argv[])
- */
 /* _:
  *	This macro is used to declare function parameters for folks who want
  *	to make declarations with prototypes using a different style than
@@ -345,12 +279,8 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef\(.*/\)\*!/\*#define\1 \*!' -e 's!^#un-
  */
 #$prototype	CAN_PROTOTYPE	/**/
 #ifdef CAN_PROTOTYPE
-#define	NXT_ARG ,
-#define	V_FUNC(name, arglist, args)name(args)
 #define	_(args) args
 #else
-#define	NXT_ARG ;
-#define	V_FUNC(name, arglist, args)name arglist args;
 #define	_(args) ()
 #endif
 

@@ -1,4 +1,4 @@
-;# $Id: listqueue.pl,v 3.0.1.6 1999/07/12 13:51:28 ram Exp $
+;# $Id: listqueue.pl,v 3.0.1.3 1995/01/25 15:24:09 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,15 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: listqueue.pl,v $
-;# Revision 3.0.1.6  1999/07/12 13:51:28  ram
-;# patch66: added one extra char for filename in queue listings
-;#
-;# Revision 3.0.1.5  1999/01/13  18:13:53  ram
-;# patch64: there may be empty lines in the agent.wait file
-;#
-;# Revision 3.0.1.4  1997/09/15  15:15:40  ram
-;# patch57: now clearly spot locked files in queue with a '*'
-;#
 ;# Revision 3.0.1.3  1995/01/25  15:24:09  ram
 ;# patch27: avoid problems on slow machines in test mode for queue timestamps
 ;#
@@ -42,18 +33,17 @@ sub list_queue {
 	}
 	local(@dir) = readdir DIR;		# Slurp the whole directory
 	closedir DIR;
-	local(@files) = grep(s!^(q|f|c)m!$cf'queue/${1}m! && !/$lockext$/o, @dir);
+	local(@files) = grep(s!^(q|f|c)m!$cf'queue/${1}m!, @dir);
 	undef @dir;
-	if (-f $AGENT_WAIT) {
-		if (open(WAITING, $AGENT_WAIT)) {
+	if (-f "$cf'queue/$agent_wait") {
+		if (open(WAITING, "$cf'queue/$agent_wait")) {
 			while (<WAITING>) {
 				chop;
-				next unless length $_;	# Empty lines ignored
 				push(@files, $_);
 			}
 			close WAITING;
 		} else {
-			&add_log("ERROR cannot open $AGENT_WAIT: $!") if $loglvl;
+			&add_log("ERROR cannot open $cf'queue/$agent_wait: $!") if $loglvl;
 		}
 	}
 	# The @files array now contains the path name of all the queued mails
@@ -78,7 +68,7 @@ Filename      Size Queue time  Status    Sender / Recipient list
 	local(%seen);				# Records addresses already seen
 	$: = " ,";					# Break recipients on white space or colon
 	format STDOUT =
-@<<<<<<<<<@>>>>>>>@@<<<<<<<<<< @<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+@<<<<<<<< @>>>>>>>@@<<<<<<<<<< @<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 $file     $size $star $queued  $status   $sender
                                          ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                          $recipient
@@ -178,9 +168,6 @@ $file     $size $star $queued  $status   $sender
 			$star = '#';
 			$star = '@' if $directory ne $cf'queue;
 		}
-
-		$status .= '*' if -f ($_ . $lockext);	# Locked file
-
 		write(STDOUT);
 	}
 }

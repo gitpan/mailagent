@@ -1,4 +1,4 @@
-;# $Id: analyze.pl,v 3.0.1.9 1999/07/12 13:49:39 ram Exp $
+;# $Id: analyze.pl,v 3.0.1.5 1995/01/03 18:06:33 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,19 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
-;# Revision 3.0.1.9  1999/07/12 13:49:39  ram
-;# patch66: moved localization of the %Variable hash for APPLY
-;#
-;# Revision 3.0.1.8  1997/09/15  15:13:15  ram
-;# patch57: $lastcmd now global from analyze_mail() for BACK processing
-;# patch57: indication of relaying hosts now selectively emitted
-;#
-;# Revision 3.0.1.7  1997/01/31  18:07:47  ram
-;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
-;#
-;# Revision 3.0.1.6  1996/12/24  14:47:17  ram
-;# patch45: forgot to return 0 at the end of special_user()
-;#
 ;# Revision 3.0.1.5  1995/01/03  18:06:33  ram
 ;# patch24: now makes use of rule environment vars from the env package
 ;# patch24: removed old broken umask handling (now a part of rule env)
@@ -71,7 +58,6 @@ sub analyze_mail {
 	local($file) = shift(@_);	# Mail file to be parsed
 	local($mode) = 'INITIAL';	# Initial working mode
 	local($wmode) = $mode;		# Needed for statistics routines
-	local(%Variable);			# User-defined variables, visible through APPLY
 
 	# Set-up proper environment. Dynamic scoping is used on those variables
 	# for the APPLY command (see the &apply function). Note that the $wmode
@@ -93,7 +79,7 @@ sub analyze_mail {
 
 	# Parse the mail message in file
 	&parse_mail($file);			# Parse the mail and fill-in H tables
-	return 1 unless defined $Header{'All'};		# Mail not parsed correctly
+	return 0 unless defined $Header{'All'};		# Mail not parsed correctly
 	&reception if $loglvl > 8;	# Log mail reception
 	&run_builtins;				# Execute builtins, if any
 
@@ -134,7 +120,6 @@ sub analyze_mail {
 		}
 	}
 
-	local($lastcmd) = 0;		# Failure status from last command
 	&apply_rules($mode, 1);		# Now apply the filtering rules on it.
 
 	# Deal with vacation mode. It applies only on mail not previously seen.
@@ -190,6 +175,7 @@ sub apply_rules {
 	local(@Executed);			# Records already executed rules
 	local($selist);				# Key used to detect identical selector lists
 	local(%Inverted);			# Records inverted '!' selectors which matched
+	local(%Variable);			# User-defined variables
 
 	# The @Executed array records whether a specified action for a rule was
 	# executed. Loops are possible via the RESTART action, and as there is
@@ -222,8 +208,8 @@ sub apply_rules {
 		undef %Matched;							# Reset matching patterns
 		undef %Inverted;						# Reset negated patterns
 		$rules = $_;							# Work on a copy
-		$rules =~ s/^([^{]*)\{// && ($mode = $1);	# First word is the mode
-		$rules =~ s/\s*(.*)\}// && ($action = $1);	# Followed by action }
+		$rules =~ s/^([^{]*){// && ($mode = $1);	# First word is the mode
+		$rules =~ s/\s*(.*)}// && ($action = $1);	# Followed by action }
 		$mode =~ s/\s*$//;							# Remove trailing spaces
 		$rules =~ s/^\s+//;						# Remove leading spaces
 		$last_selector = "";					# Last selector used
@@ -438,55 +424,19 @@ sub special_user {
 			if $loglvl > 8;
 		return 1;
 	}
-	0;	# Not from special user!
-}
-
-# Compare a machine and an e-mail address and return true if the domain
-# for that address matches the domain of the machine. We allow an extra
-# level of "domain indirection".
-sub fuzzy_domain {
-	local($first, $fhost) = @_;
-	$fhost =~ s/^\S+@([\w-.]+)/$1/;					# Keep hostname part
-	$fhost =~ tr/A-Z/a-z/;							# perl4 misses lc()
-	$first =~ tr/A-Z/a-z/;
-	local(@fhost) = split(/\./, $fhost);
-	local(@first) = split(/\./, $first);
-	if (@fhost > @first) {
-		shift(@fhost);					# Allow extra machine name
-	} elsif (@first > @fhost) {
-		shift(@first);
-	} elsif (@fhost >= 3) {				# Has at least machine.domain.top
-		shift(@first);					# Allow server1.domain.top to match
-		shift(@fhost);					# server2.domain.top
-	}
-	$fhost = join('.', @fhost);
-	$first = join('.', @first);
-	return $fhost eq $first;
 }
 
 # Log reception of mail (sender and subject fields). This is mainly intended
 # for people like me who parse the logfile once in a while to do more 
-# statistics about mail reception. Hence the other distinction between
+# statistics about mail reception. Hence the another distinction between
 # original mails and answers.
 sub reception {
 	local($subject) = $Header{'Subject'};
 	local($sender) = $Header{'Sender'};
 	local($from) = $Header{'From'};
 	&add_log("FROM $from");
-	local($faddr) = (&parse_address($from))[0];		# From address
-	local($saddr) = '';
-
-	if ($sender ne '') {
-		$saddr = (&parse_address($sender))[0];
-		&add_log("VIA $sender") if $saddr ne $faddr;
-	}
-
-	# Trace relaying hosts as well if the first host is unrelated to sender
-	local($relayed) = $Header{'Relayed'};
-	local($first) = (split(/,\s+/, $relayed))[0];	# First relaying host
-	&add_log("RELAYED $relayed") if $relayed ne '' &&
-		!(&fuzzy_domain($first, $saddr) || &fuzzy_domain($first, $faddr));
-
+	&add_log("VIA $sender") if $sender ne '' &&
+		(&parse_address($sender))[0] ne (&parse_address($from))[0];
 	if ($subject ne '') {
 		if ($subject =~ s/^Re:\s*//) {
 			&add_log("REPLY $subject");

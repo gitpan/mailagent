@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.17 2001/03/17 18:07:49 ram Exp $
+# $Id: magent.sh,v 3.0.1.12 1995/09/15 13:54:28 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,25 +35,6 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
-# Revision 3.0.1.17  2001/03/17 18:07:49  ram
-# patch72: mydomain and hiddennet now superseded by config vars
-# patch72: changed email_addr() and domain_addr() to honour new config vars
-#
-# Revision 3.0.1.16  1999/01/13  18:08:48  ram
-# patch64: changed agent_wait to AGENT_WAIT, now holding full path
-#
-# Revision 3.0.1.15  1997/09/15  15:05:06  ram
-# patch57: call new pmail() routine to process main message
-# patch57: fixed typo in -r usage
-#
-# Revision 3.0.1.14  1997/02/20  11:39:31  ram
-# patch55: used $* variable for no purpose
-#
-# Revision 3.0.1.13  1996/12/24  14:06:02  ram
-# patch45: rule file path is now absolute, so caching can be safe
-# patch45: changed queue processing/sleeping logic for better interactivity
-# patch45: new stat constants, and updated usage line
-#
 # Revision 3.0.1.12  1995/09/15  13:54:28  ram
 # patch43: rewrote mbox_lock routine to deal with new locksafe variable
 # patch43: will now warn if configured to do flock() but can't actually
@@ -183,6 +164,7 @@ while ($ARGV[0] =~ /^-/) {
 		++$dump_rule;
 	}
 	elsif ($_ eq '-e') {	# Rule supplied on command line
+		local($*) = 1;
 		$_ = shift;
 		s/\n/ /g;
 		push(@Linerules, $_);
@@ -216,7 +198,6 @@ while ($ARGV[0] =~ /^-/) {
 	elsif ($_ eq '-r') {	# Specify alternate rule file
 		++$nolock;			# Immediate processing wanted
 		$rule_file = shift;
-		$rule_file = &cdir($rule_file);		# Make it an absolute path
 	}
 	elsif (/^-s(\S*)/) {	# Print statistics
 		++$has_option;		# Incompatible with other special options
@@ -264,12 +245,11 @@ $file_name = shift;				# File name to be processed (null if stdin)
 $ENV{'IFS'}='' if $ENV{'IFS'};	# Shell separation field
 &init_constants;				# Constants definitions
 &get_configuration;				# Get a suitable configuration package (cf)
-&patch_constants;				# Change some constants after config
 select(STDERR); $| = 1;			# In case we get perl warnings...
 select(STDOUT);					# and because the -t option writes on STDOUT,
 $| = 1;							# make sure it is flushed before we fork().
+$agent_wait = "agent.wait";		# Waiting file for out-of-the-queue mails
 $privlib = "$cf'home/../.." if $test_mode;	# Tests ran from test/out
-$AGENT_WAIT = "$cf'spool/agent.wait";		# Waiting file for mails
 
 $orgname = &tilda_expand($orgname);		# Perform run-time ~name substitution
 
@@ -355,25 +335,20 @@ if ($mbox_mail) {
 &read_stats;					# Load statistics into memory for fast update
 &newcmd'load if $cf'newcmd;		# Load user-defined command definitions
 
-#
-# If -q is not specfied, we need to process the file which was given to us
-# on the command line. We're calling pmail() to process it via locking,
-# but unfortunately we can't allow pmail() to unlink the processed file,
-# because it might be something the user wants to keep around...
-# However, if we were invoked by the filter program, the processed mail
-# will be unlinked later on. The trouble is the file was unlocked and
-# there is a slight time window were the message could be processed again by
-# another mailagent. If the 'queuehold' variable is reasonably set, such a
-# message will be skipped anyway, so it's not that critical.
-#
-
 if (!$run_queue) {				# Do not enter here if -q
-	if (0 != &pmail($file_name, 0)) {
-		&add_log("ERROR while processing main message--queing it") if $loglvl;
+	if (0 != &analyze_mail($file_name)) {	# Analyze the mail
+		&add_log("ERROR while processing main message--queing it")
+			if ($loglvl > 0);
 		&queue_mail($file_name, 'fm');
 		unlink $lockfile;
 		exit 0;					# Do not continue
-	} 
+	} else {
+		$file = $file_name;		# Never corrupt $file_name
+		$file =~ s|.*/(.*)|$1|;	# Keep only basename
+		$file = "<stdin>" if $file eq '';
+		local($len) = 0 + $Header{'Length'};	# Force numeric value
+		&add_log("FILTERED [$file] $len bytes") if $loglvl > 4;
+	}
 }
 
 unless ($test_mode) {
@@ -389,9 +364,9 @@ unless ($test_mode) {
 	$sleep = 1;					# Give others a chance to queue their mail
 	$sleep = 0 if $loglvl > 11 || $run_queue;
 
-	do {						# Eventually process the queue
+	while (&pqueue) {			# Eventually process the queue
 		sleep 30 if $sleep;		# Wait in case new mail arrives
-	} while (&pqueue);
+	}
 } else {
 	&pqueue;					# Process the queue once in test mode
 }
@@ -411,7 +386,7 @@ exit 0;
 # Print usage and exit
 sub usage {
 	print STDERR <<EOF;
-Usage: $prog_name [-dhilqtFIV] [-s{umaryt}] [-f file] [-e rules] [-c config]
+Usage: $prog_name [-dhilqtFIV] [-s{umary}] [-f file] [-e rules] [-c config]
        [-L level] [-r file] [-o def] [mailfile]
   -c : specify alternate configuration file.
   -d : dump filter rules (special).
@@ -422,7 +397,7 @@ Usage: $prog_name [-dhilqtFIV] [-s{umaryt}] [-f file] [-e rules] [-c config]
   -l : list message queue (special).
   -o : overwrite config file with supplied definition.
   -q : process the queue (special).
-  -r : specify alternate rule file.
+  -r : sepcify alternate rule file.
   -s : report gathered statistics (special).
   -t : track rules on stdout.
   -F : force processing on already filtered messages.
@@ -468,10 +443,8 @@ sub init_constants {
 	$LOCK_UN = 8;				# Unlock the file
 
 	# Stat constants for file rights
-	$S_IWOTH = 00002;			# Writable by world (no .ph files here)
-	$S_IWGRP = 00020;			# Writable by group
-	$S_ISUID = 04000;			# Set user ID on exec
-	$S_ISGID = 02000;			# Set group ID on exec
+	$S_IWOTH = 02;				# Writable by world (no .ph files here)
+	$S_IWGRP = 020;				# Writable by group
 
 	# Status used by filter
 	$FT_RESTART = 0;			# Abort current action, restart from scratch
@@ -510,13 +483,6 @@ sub init_constants {
 
 	# Miscellaneous constants
 	$MAX_LINKS = 100;			# Maximum number of symbolic link levels
-}
-
-# Change some constants after configuration file was parsed
-sub patch_constants {
-	local($address) = &email_addr;	# Will prefer cf vars to hardwired ones
-	$FILTER =
-		"X-Filter: mailagent [version $mversion PL$patchlevel] for $address";
 }
 
 # Initializes environment. All the variables are initialized in XENV array
@@ -632,13 +598,7 @@ sub mbox_unlock {
 # Can't rely on the value of $cf'user since config file may not have
 # been parsed when this routine is first called. This routine is also used
 # to set a default value for $cf'email.
-# Once $cf'email exists however, its value is used.
 sub email_addr {
-	if (defined $cf'email) {
-		my $mail = $cf'email;
-		$mail .= '@' . &domain_addr unless $mail =~ /@/;
-		return $mail;
-	}
 	return $email_addr_cached if defined $email_addr_cached;
 	local($user);
 	($user) = getpwuid($>);
@@ -649,21 +609,12 @@ sub email_addr {
 }
 
 # Domain name address for current host
-# Use $cf'domain and $cf'hidenet when available.
 sub domain_addr {
 	local($_);							# Our host name
-	if (defined $cf'domain) {
-		$_ = $cf'domain;
-		if (lc($cf'hidenet) ne "on" || $_ eq '') {
-			$_ = &hostname;
-			$_ .= ".$cf::domain" unless /\./;
-		}
-	} else {
-		$_ = $hiddennet if $hiddennet ne '';
-		if ($_ eq '') {
-			$_ = &hostname;					# Must fork to get hostname, grr...
-			$_ .= $mydomain unless /\./;	# We want something fully qualified
-		}
+	$_ = $hiddennet if $hiddennet ne '';
+	if ($_ eq '') {
+		$_ = &hostname;					# Must fork to get hostname, grr...
+		$_ .= $mydomain unless /\./;	# We want something fully qualified
 	}
 	$_;
 }

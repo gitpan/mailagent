@@ -1,4 +1,4 @@
-;# $Id: cmdserv.pl,v 3.0.1.7 1999/07/12 13:50:49 ram Exp $
+;# $Id: cmdserv.pl,v 3.0.1.2 1995/08/07 16:18:26 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,23 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
-;# Revision 3.0.1.7  1999/07/12 13:50:49  ram
-;# patch66: factorized servshell handling in function
-;#
-;# Revision 3.0.1.6  1998/07/28  17:02:15  ram
-;# patch62: shell used is now customized by the "servshell" variable
-;#
-;# Revision 3.0.1.5  1998/03/31  15:20:35  ram
-;# patch59: changed "set" to dump variables when not given any argument
-;#
-;# Revision 3.0.1.4  1997/02/20  11:43:12  ram
-;# patch55: made 'perl -cw' clean
-;#
-;# Revision 3.0.1.3  1996/12/24  14:50:16  ram
-;# patch45: all power-sensitive actions can now be logged separately
-;# patch45: launch sendmail only when session is done to avoid timeouts
-;# patch45: perform security checks on all server commands
-;#
 ;# Revision 3.0.1.2  1995/08/07  16:18:26  ram
 ;# patch37: fixed symbol table lookups for perl5 support
 ;#
@@ -248,25 +231,13 @@ sub process {
 	# Make sure sender address is not hostile
 	unless (&addr'valid($cmdenv'uid)) {
 		&add_log("ERROR $cmdenv'uid is an hostile sender address")
-			if $'loglvl > 1;
+			if $loglvl > 1;
 		return 1;	# Failed, will discard whole mail message then
 	}
 
 	# Set up a mailer pipe to send the transcript back to the sender
-	#
-	# We used to do a simple:
-	#	open(MAILER, "|$cf'sendmail $cf'mailopt $cmdenv'uid $metoo")
-	# here but this had a nasty side effect with smart mailers: a
-	# lengthy command could cause a timeout, breaking the pipe and leading
-	# to a failure.
-	#
-	# Intead, we just create a temporary file somewhere, and immediately
-	# unlink it. Keeping the fd preciously lets us manipulate this temporary
-	# file with the insurance that it will not leave any trace should we
-	# fail abruptly.
-
-	unless (open(MAILER, "+>$cf'tmpdir/serv.mail$$")) {
-		&'add_log("ERROR cannot create temporary mail transcript: $!")
+	unless (open(MAILER, "|$cf'sendmail $cf'mailopt $cmdenv'uid $metoo")) {
+		&'add_log("ERROR cannot start $cf'sendmail to mail transcript: $!")
 			if $'loglvl > 1;
 	}
 
@@ -360,37 +331,7 @@ $main'MAILER
 
     ---- End of mailagent session transcript ----
 EOM
-
-	# We used to simply close MAILER at this point, but it is now a fd on
-	# a temporary file. We're going to rewind in and copy it onto the SENDMAIL
-	# real mailer descriptor.
-
-	unless (open(SENDMAIL, "|$cf'sendmail $cf'mailopt $cmdenv'uid $metoo")) {
-		&'add_log("ERROR cannot start $cf'sendmail to mail transcript: $!")
-			if $'loglvl > 1;
-		unless (open(SENDMAIL, ">> $cf'emergdir/serv-msg.$$")) {
-			&'add_log("ERROR can't even dump into $cf'emergdir/serv-msg.$$: $!")
-				if $'loglvl > 1;
-			# Last chance, print on STDOUT
-			open(SENDMAIL, '>&STDOUT');
-			&'add_log("NOTICE dumping server transcript on stdout")
-				if $'loglvl > 6;
-			print STDOUT "*** dumping server transcript: ***\n";
-		}
-	}
-
-	unless (seek(MAILER, 0, 0)) {
-		&'add_log("ERROR cannot seek back to start of transcript: $!")
-			if $'loglvl > 1;
-	}
-
-	local($l);
-	while (defined ($l = <MAILER>)) {
-		print SENDMAIL $l;
-	}
-	close MAILER;			# Bye bye temporary file
-
-	unless (close SENDMAIL) {
+	unless (close MAILER) {
 		&'add_log("ERROR cannot mail transcript to $cmdenv'uid")
 			if $'loglvl > 1;
 	}
@@ -479,23 +420,6 @@ sub exec_shell {
 		}
 	}
 
-	# Ensure the command we're about to execute is secure
-	local(@argv) = split(' ', $cmdenv'cmd);
-	$argv[0] = $Path{$cmdenv'name} if defined $Path{$cmdenv'name};
-	local($cmd) = &'locate_program($argv[0]);
-	unless ($cmd =~ m|/|) {
-		&'add_log("ERROR cannot locate $cmd") if $'loglvl;
-		unlink $input if $input;
-		print MAILER "Unable to locate command.\n";
-		return 1;			# Failed
-	}
-	unless (&'exec_secure($cmd, 'server command')) {
-		&'add_log("ERROR unsecure command $cmd") if $'loglvl;
-		unlink $input if $input;
-		print MAILER "Unable to locate command.\n";	# Don't tell them the truth!
-		return 1;			# Failed
-	}
-
 	# Create shell command file, whose purpose is to set up the environment
 	# properly and do the appropriate file descriptors manipulations, which
 	# is easier to do at the shell level, and cannot fully be done in perl 4.0
@@ -526,8 +450,10 @@ sub exec_shell {
 	# the collect buffer, if any, and file descriptor #3 is a path to the
 	# session transcript.
 	local($redirect);
-	local($extra) = $Extra{$cmdenv'name};
 	$redirect = "<$input" if $input;
+	local(@argv) = split(' ', $cmdenv'cmd);
+	local($extra) = $Extra{$cmdenv'name};
+	$argv[0] = $Path{$cmdenv'name} if defined $Path{$cmdenv'name};
 	(print CMD "cd $cf'home\n") || $error++;	# Make sure we start from home
 	(print CMD "exec 3>&2 2>&1\n") || $error++;	# See dup2 hack below
 	(print CMD "$argv[0] $extra @argv[1..$#argv] $redirect\n") || $error++;
@@ -576,23 +502,12 @@ sub exec_shell {
 		# 'exec 3>&2 2>&1', meaning the file #3 is the original MAILER and
 		# stdout and stderr for the script go to the same trace file, as
 		# intiallly attached to stdout.
-		#
 		open(STDOUT, '>&TRACE');	# Redirect stdout to the trace file
 		open(STDERR, '>&MAILER');	# Temporarily mapped to the MAILER file
 		close(STDIN);				# Make sure there is no input
-
-		# For HPUX-10.x, grrr... have to use /bin/ksh otherwise that silly
-		# posix shell closes all the file descriptors greater than 2, defeating
-		# all our cute setting here...
-
-		local($shell) = &servshell;
-
-		# Using a sub-block ensures exec() is followed by nothing
-		# and makes mailagent "perl -cw" clean, whatever that means ;-)
-		{ exec "$shell $cmdfile" }	# Don't let perl use sh -c
-
+		exec "sh $cmdfile";			# Don't let perl use sh -c
 		&'add_log("SYSERR exec: $!") if $'loglvl;
-		&'add_log("ERROR cannot exec $shell $cmdfile") if $'loglvl;
+		&'add_log("ERROR cannot exec /bin/sh $cmdfile") if $'loglvl;
 		print MAILER "Cannot exec command file ($!).\n";
 		exit(9);
 	}
@@ -654,7 +569,7 @@ sub exec_help {
 "Following is a list of the known commands. Some additional help is available
 on a command basis by using 'help <command>', unless the command name is
 followed by a '*' character in which case no further help may be obtained.
-Commands collecting input until an EOF mark are flagged with a trailing '='.
+Commands which collect input until an eof mark are marked with a trailing '='.
 
 ";
 		local(@cmds);			# List of known commands
@@ -803,11 +718,11 @@ sub run_password {
 	$required = $name if $name eq 'root' || $name eq 'security';
 	unless (&cmdenv'haspower($required)) {
 		print MAILER "Permission denied (not enough power).\n";
-		&power'add_log("ERROR $cmdenv'uid tried a password change for '$name'")
-			if $'loglvl > 1;
 		return 1;
 	}
-	return &change_password($name, $new);
+	return 0 if 0 == &power'set_passwd($name, $new);
+	print MAILER "Could not change password, sorry.\n";
+	1;
 }
 
 # Set new power password. The syntax is:
@@ -822,34 +737,14 @@ sub run_password {
 sub run_passwd {
 	local($x, $name, $old, $new) = split(' ', $cmdenv'cmd);
 	unless (&power'authorized($name, $cmdenv'uid)) {
-		&power'add_log("ERROR $cmdenv'uid tried a password change for '$name'")
-			if $'loglvl > 1;
 		print MAILER "Permission denied (lacks authorization).\n";
 		return 1;
 	}
 	unless (&power'valid($name, $old)) {
-		&power'add_log("ERROR $cmdenv'uid gave wrong old password for '$name'")
-			if $'loglvl > 1;
 		print MAILER "Permission denied (invalid pasword).\n";
 		return 1;
 	}
-	return &change_password($name, $new);
-}
-
-# Change password for power 'name' to be $new.
-# All security checks have been performed at this point, so we may indeed
-# attempt the change. Note that this subroutine is common for the two
-# passwd and password commands.
-# Returns 0 if OK, 1 on error.
-sub change_password {
-	local($name, $new) = @_;
-	if (0 == &power'set_passwd($name, $new)) {
-		&power'add_log("user $cmdenv'uid changed password for power '$name'")
-			if $'loglvl > 2;
-		return 0;
-	}
-	&power'add_log("ERROR user $cmdenv'uid failed change password for '$name'")
-		if $'loglvl > 1;
+	return 0 if 0 == &power'set_passwd($name, $new);
 	print MAILER "Could not change password, sorry.\n";
 	1;
 }
@@ -980,7 +875,6 @@ sub newpower {
 	if (-1 == &power'set_passwd($name, $password)) {
 		print MAILER "Warning: could not insert password.\n";
 	}
-	&power'add_log("NEW power '$name' created by $cmdenv'uid") if $'loglvl > 2;
 	0;
 }
 
@@ -1032,7 +926,6 @@ sub delpower {
 		print MAILER "Failed (cannot remove password entry).\n";
 		return 1;
 	}
-	&power'add_log("DELETED power '$name' by $cmdenv'uid") if $'loglvl > 2;
 	0;
 }
 
@@ -1128,28 +1021,14 @@ sub run_getauth {
 # Set internal variable. The syntax is:
 #    set <variable> <value>
 # and the corresponding variable from cmdenv package is set.
-# If <variable> is missing, dump all the known variables.
 sub run_set {
 	local($x, $var, @args) = split(' ', $cmdenv'cmd);
-	if ($var eq '') {				# Dump defined variables
-		local($type, $val);
-		foreach $name (keys %Set) {
-			$type = $Set{$name};	# Variable type 'flag' or 'var'
-			$val = eval "defined(\$cmdenv'$name) ? \$cmdenv'$name : undef";
-			next unless defined $val;
-			$val = $val ? 'true' : 'false' if $type eq 'flag';
-			$val = "'$val'" if $type ne 'flag';
-			print MAILER "$name=$val\n";
-		}
-		return 0;
-	}
 	unless (defined $Set{$var}) {
 		print MAILER "Unknown or read-only variable '$var'.\n";
 		return 1;		# Failed
 	}
 	local($type) = $Set{$var};		# The variable type
-	local($_);						# Value to assign to variable
-	local($val);					# Final assigned value
+	local($_)	;					# Value to assign to variable
 	if ($type eq 'flag') {
 		$_ = $args[0];
 		if ($_ eq '' || /on/i || /yes/i || /true/i) {
@@ -1239,18 +1118,6 @@ sub disable {
 		$Disabled{$cmd}++;
 	}
 	$cmdenv'disabled = join(',', sort keys %Disabled);	# No duplicates
-}
-
-# Get shell to run our commands
-sub servshell {
-	local($shell) = defined($cf'servshell) ? $cf'servshell : 'sh';
-	$shell = &'locate_program($shell);
-	if (defined($cf'servshell) && !-x($shell)) {
-		&'add_log("WARNING invalid configured servshell $shell, using sh")
-			if $'loglvl > 2;
-		$shell = 'sh';
-	}
-	$shell;
 }
 
 #

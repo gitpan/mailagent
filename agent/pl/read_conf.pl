@@ -1,4 +1,4 @@
-;# $Id: read_conf.pl,v 3.0.1.11 2001/03/17 18:13:41 ram Exp $
+;# $Id: read_conf.pl,v 3.0.1.8 1995/09/15 14:04:08 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,15 +9,6 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: read_conf.pl,v $
-;# Revision 3.0.1.11  2001/03/17 18:13:41  ram
-;# patch72: computes suitable defaults for new "domain" and "hidenet"
-;#
-;# Revision 3.0.1.10  1997/01/07  18:33:25  ram
-;# patch52: new execsafe variable defaults to OFF when missing
-;#
-;# Revision 3.0.1.9  1996/12/24  14:59:00  ram
-;# patch45: default for locksafe is now OFF
-;#
 ;# Revision 3.0.1.8  1995/09/15  14:04:08  ram
 ;# patch43: added suitable defaults for compspec, comptag and locksafe
 ;#
@@ -104,7 +95,7 @@ sub parse {
 			$value = $2;
 			$value =~ s/\s*$//;						# remove trailing spaces
 			$eval .= "\$$var = \"$value\";\n";
-			$eval .= "\$$var =~ s|~|\$myhome|g;\n";	# ~ substitution
+			$eval .= "\$$var =~ s|~|$myhome|g;\n";	# ~ substitution
 		}
 	}
 	eval $eval;			# evaluate configuration parameters within package
@@ -155,8 +146,7 @@ EOM
 	$email = $user unless defined $email;
 	$compspec = "$spool/compressors" unless defined $compspec;
 	$comptag = 'compress' unless defined $comptag;
-	$locksafe = 'OFF' unless defined $locksafe;
-	$execsafe = 'OFF' unless defined $execsafe;
+	$locksafe = 'ON' unless defined $locksafe;
 
 	# For backward compatibility, we force a .lock locking on mailboxes.
 	# For system ones (name = login), there's no problem because the lock
@@ -169,12 +159,7 @@ EOM
 
 	$mboxlock = '%f.lock' unless defined $mboxlock;
 
-	# Backward compatibility -- RAM, 17/03/2001
-	$domain = $main::hiddennet || $main::mydomain unless defined $domain;
-	$hidenet = $main::hiddennet eq '' ? 'OFF' : 'ON' unless defined $hidenet;
-
 	$umask = oct($umask) if $umask =~ /^0/;	 # Translate umask into decimal
-	$domain =~ s/^\.*//;					 # Strip leading '.'
 
 	# Update @INC perlib search path with the perlib variable. Paths not
 	# starting by a '/' are supposed to be under the mailagent private lib
