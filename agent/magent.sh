@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.14 1997/02/20 11:39:31 ram Exp $
+# $Id: magent.sh,v 3.0.1.15 1997/09/15 15:05:06 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,6 +35,10 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
+# Revision 3.0.1.15  1997/09/15  15:05:06  ram
+# patch57: call new pmail() routine to process main message
+# patch57: fixed typo in -r usage
+#
 # Revision 3.0.1.14  1997/02/20  11:39:31  ram
 # patch55: used $* variable for no purpose
 #
@@ -343,20 +347,25 @@ if ($mbox_mail) {
 &read_stats;					# Load statistics into memory for fast update
 &newcmd'load if $cf'newcmd;		# Load user-defined command definitions
 
+#
+# If -q is not specfied, we need to process the file which was given to us
+# on the command line. We're calling pmail() to process it via locking,
+# but unfortunately we can't allow pmail() to unlink the processed file,
+# because it might be something the user wants to keep around...
+# However, if we were invoked by the filter program, the processed mail
+# will be unlinked later on. The trouble is the file was unlocked and
+# there is a slight time window were the message could be processed again by
+# another mailagent. If the 'queuehold' variable is reasonably set, such a
+# message will be skipped anyway, so it's not that critical.
+#
+
 if (!$run_queue) {				# Do not enter here if -q
-	if (0 != &analyze_mail($file_name)) {	# Analyze the mail
-		&add_log("ERROR while processing main message--queing it")
-			if ($loglvl > 0);
+	if (0 != &pmail($file_name, 0)) {
+		&add_log("ERROR while processing main message--queing it") if $loglvl;
 		&queue_mail($file_name, 'fm');
 		unlink $lockfile;
 		exit 0;					# Do not continue
-	} else {
-		$file = $file_name;		# Never corrupt $file_name
-		$file =~ s|.*/(.*)|$1|;	# Keep only basename
-		$file = "<stdin>" if $file eq '';
-		local($len) = 0 + $Header{'Length'};	# Force numeric value
-		&add_log("FILTERED [$file] $len bytes") if $loglvl > 4;
-	}
+	} 
 }
 
 unless ($test_mode) {
@@ -405,7 +414,7 @@ Usage: $prog_name [-dhilqtFIV] [-s{umaryt}] [-f file] [-e rules] [-c config]
   -l : list message queue (special).
   -o : overwrite config file with supplied definition.
   -q : process the queue (special).
-  -r : sepcify alternate rule file.
+  -r : specify alternate rule file.
   -s : report gathered statistics (special).
   -t : track rules on stdout.
   -F : force processing on already filtered messages.

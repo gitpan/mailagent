@@ -1,4 +1,4 @@
-;# $Id: filter.pl,v 3.0.1.8 1996/12/24 14:51:51 ram Exp $
+;# $Id: filter.pl,v 3.0.1.9 1997/09/15 15:15:04 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,11 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
+;# Revision 3.0.1.9  1997/09/15  15:15:04  ram
+;# patch57: fixed ASSGINED -> ASSIGNED typo in log message
+;# patch57: implemented new -t and -f flags for BEGIN and NOP
+;# patch57: insert user e-mail address if no address for NOTIFY
+;#
 ;# Revision 3.0.1.8  1996/12/24  14:51:51  ram
 ;# patch45: added initial logging of the SELECT command
 ;#
@@ -56,7 +61,7 @@
 ;#  $ever_saved which states whether a saving/discarding action occurred
 ;#  $cont is the continuation status, modified by REJECT and friends
 ;#  $vacation which is a boolean stating whether vacation messages are allowed
-;# The following variable is inherited from xeqte:
+;# The following variable is inherited from analyze_mail:
 ;#  $lastcmd is the failure status of the last command (among those to be kept)
 ;# The working mode is held in $wmode (comes from analyze_mail).
 ;#
@@ -184,6 +189,7 @@ sub run_notify {
 	local($msg) = shift(@args);				# First argument is message text
 	$msg =~ s/~/$cf'home/g;					# ~ substitution
 	local($address) = join(' ', @args);		# Address list
+	$address = $cf'email if $address eq '';	# No address, defaults to user
 	local($failed) = &notify($msg, $address);
 	unless ($failed) {
 		$msg = &tilda($msg);				# Replace the home directory by ~
@@ -220,6 +226,8 @@ sub run_resync {
 # Run the BEGIN command
 sub run_begin {
 	local($newstate) = @_;		# New state wanted
+	return 0 if $opt'sw_t && $lastcmd;		# -t means change only if true
+	return 0 if $opt'sw_f && !$lastcmd;		# -f means change only if false
 	$newstate = 'INITIAL' unless $newstate;
 	$wmode = $newstate;			# $wmode comes from analyze_mail
 	&add_log("BEGUN new state $newstate") if $loglvl > 4;
@@ -467,8 +475,12 @@ sub run_select {
 
 # Run the NOP command
 sub run_nop {
-	&add_log("NOP [$mfile]") if $loglvl > 7;
-	0;
+	local($what) = $opt'sw_f ? 'failure' : ($opt'sw_t ? 'success' : '');
+	local($force) = $what ? " forcing $what" : '';
+	&add_log("NOP [$mfile]$force") if $loglvl > 7;
+	return 1 if $opt'sw_f;		# -f forces failure
+	return 0 if $opt'sw_t;		# -t forces failure
+	$lastcmd;					# Propagates curremt exec status
 }
 
 # Run the STRIP command
@@ -518,7 +530,7 @@ sub run_assign {
 	} else {
 		$Variable{$var} = $value;		# User defined variable is set
 	}
-	&add_log("ASSGINED '$value' to '$var' [$mfile]") if $loglvl > 7;
+	&add_log("ASSIGNED '$value' to '$var' [$mfile]") if $loglvl > 7;
 	0;
 }
 

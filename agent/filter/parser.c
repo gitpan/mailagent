@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.12 1997/02/20 11:38:07 ram Exp $
+ * $Id: parser.c,v 3.0.1.13 1997/09/15 15:03:51 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
+ * Revision 3.0.1.13  1997/09/15  15:03:51  ram
+ * patch57: changed ordering of include files
+ *
  * Revision 3.0.1.12  1997/02/20  11:38:07  ram
  * patch55: skip group-writable and exec-safe checks if told to
  *
@@ -66,12 +69,7 @@
 
 #include "config.h"
 #include "portable.h"
-#include "hash.h"
-#include "msg.h"
-#include "parser.h"
 #include <sys/types.h>
-#include "logfile.h"
-#include "environ.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -133,6 +131,11 @@
 #define X_OK	1			/* Test for execute (search) permission */
 #endif
 
+#include "hash.h"
+#include "msg.h"
+#include "parser.h"
+#include "logfile.h"
+#include "environ.h"
 #include "confmagic.h"
 
 #define MAX_STRING	2048			/* Maximum length for strings */

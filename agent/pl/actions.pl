@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.15 1997/02/20 11:42:06 ram Exp $
+;# $Id: actions.pl,v 3.0.1.16 1997/09/15 15:10:53 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.16  1997/09/15  15:10:53  ram
+;# patch57: don't blindly chop command error message, remove trailing \n
+;# patch57: annotation was not performed for value "0"
+;#
 ;# Revision 3.0.1.15  1997/02/20  11:42:06  ram
 ;# patch55: made 'perl -cw' clean and fixed a couple of typos
 ;#
@@ -954,6 +958,7 @@ sub shell_command {
 		&add_log("WARNING program returned non-zero status") if $loglvl > 5;
 		return 1;
 	} elsif ($msg) {
+		$msg =~ s/\n$//;			# Not sure it's there... don't chop!
 		&add_log("ERROR $msg") if $loglvl > 0;
 		return 1;					# Failed
 	}
@@ -1294,7 +1299,7 @@ sub annotate_header {
 	}
 	local($annotation) = '';		# Annotation made
 	$annotation = "$field: " . &header'fake_date . "\n" unless $opt'sw_d;
-	$annotation .= &header'format("$field: $value") . "\n" if $value;
+	$annotation .= &header'format("$field: $value") . "\n" if $value ne '';
 	&header_append($annotation);	# Add field into %Header
 	0;
 }

@@ -1,4 +1,4 @@
-# $Id: patbounce.pl,v 3.0.1.2 1997/01/07 18:37:43 ram Exp $
+# $Id: patbounce.pl,v 3.0.1.3 1997/09/15 15:20:33 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -9,6 +9,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: patbounce.pl,v $
+# Revision 3.0.1.3  1997/09/15  15:20:33  ram
+# patch57: also handle bounced output from @SH package
+#
 # Revision 3.0.1.2  1997/01/07  18:37:43  ram
 # patch52: strip out trailing > on addresses, since matching is greedy
 #
@@ -176,6 +179,12 @@ sub pbounce_failaddr {
 # Subject: Patch 42 for mailagent version 3.0 has been released.
 # Subject: mailagent 3.0 patch #45
 #
+# If the above fail, then it may be an "@SH package" command that failed.
+# They requested 'mailpatches' or 'notifypatches' and our reply to them
+# failed miserably. Look for:
+#
+#	package xxx@yyy mailagent 3.0 ...
+#
 # Returns ($package, $version) or an empty array if we can't figure it out.
 #
 sub pbounce_package {
@@ -184,6 +193,8 @@ sub pbounce_package {
 		/^Subject:\s+Patch.*for\s+([\w-]+)\s+version\s+([\d.]+)/;
 	return ($1, $2) if $header{'Body'} =~
 		/^Subject:\s+([\w-]+)\s+([\d.]+)\s+patch #\d+/;
+	return ($1, $2) if $header{'Body'} =~
+		/^\s+package\s+\S+\s+([\w-]+)\s+([\d.]+)/;
 	return ();
 }
 

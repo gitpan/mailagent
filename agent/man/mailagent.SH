@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.18 1997/02/20 11:40:44 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.19 1997/09/15 15:07:18 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,11 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.19  1997/09/15  15:07:18  ram
+''' patch57: new -t and -f options for BEGIN and NOP
+''' patch57: all command options should now be output in bold
+''' patch57: documented _CALLOUT_ working state for callout queue
+'''
 ''' Revision 3.0.1.18  1997/02/20  11:40:44  ram
 ''' patch55: documents new execsafe, groupsafe and lockwarn variables
 ''' patch55: the C filter can now redirect output via -o
@@ -985,7 +990,8 @@ List the mailagent queue. Recently queued mails which are waited for by the
 This may be configured via the \fIqueuehold\fR variable. Really old messages
 (more than \fIqueuelost\fR seconds old) are flagged with a '#' character.
 Messages out of the queue (\fIqueue\fR variable) are flagged with a '*', whilst
-old messages out of the queue are signaled by an '@'.
+old messages out of the queue are signaled by an '@'. Locked messages have
+a '*' appended to their status.
 .TP
 .B \-L\fI level\fR
 Override the log level specified in the configuration file.
@@ -1643,11 +1649,11 @@ and RESTART. For every command returning such an exit status, the failure
 or success conditions are given at the end of each description. If nothing is
 specified, then the command does not return a meaningful status.
 .TP 10
-ABORT [-tf] [\fImode\fR]
+ABORT [\fB\-tf\fR] [\fImode\fR]
 Abort application of filtering rules immediately. See REJECT for the meaning
 of the optional parameters. (Does not modify existing status)
 .TP
-AFTER [-sanc] \fI(time) action\fR
+AFTER [\fB\-sanc\fR] \fI(time) action\fR
 Records a callback for after the specified \fItime\fR, where \fIaction\fR will
 be performed. By default, a mailagent filtering action is assumed (\fB\-a\fR
 option), on the current mail message. A shell command (\fB\-c\fR) may be
@@ -1656,16 +1662,29 @@ a plain shell command may be run (with no input) using the \fB\-s\fR option.
 The option \fB-n\fR may be used when the current mail message does not need
 to be kept for input. For instance:
 .Ex
-AFTER \fB-an\fR (1 day) DO ~/process:proc'run(%u)
+AFTER \fB\-an\fR (1 day) DO ~/process:proc'run(%u)
 .Ef
 would call \fIproc'run\fR defined in the \fI~/process\fR file in one day
 from now, without giving any input (the action here does not require any).
+.sp
+When running mailagent commands, the initial working mode is set to
+_CALLOUT_. This may matter if you call APPLY for instance. If the recorded
+time is less or equal than the current time (which is \fInow\fR), the callback
+will occur when mailagent is done with the messages in its queue, before
+exiting. This allows for the following cute trick, found out by Randal Schwartz:
+.Ex
+AFTER (now)		# fork a copy I can mangle
+	STRIP Reply-To \\\\; RESYNC \\\\;
+	ANNOTATE -du Reply-To %2 \\\\; RESYNC \\\\;
+	NOTIFY message %r \\\\; DELETE \\\\;
+	;
+.Ef
 Note that the command is not called \fIAT\fR because the call will only
 be performed at the next mailagent invocation after the specified time has
 elapsed. Dates are specified using the same format as in SELECT.
 (Fails if the action cannot be recorded in the callout queue).
 .TP
-ANNOTATE [-du] \fIfield value\fR
+ANNOTATE [\fB\-du\fR] \fIfield value\fR
 Annotate message by adding \fIfield\fR into the mail header, with the
 supplied \fIvalue\fR. This is like the MH command \fIanno\fR, but the
 annotation is performed at the end of the header, whereas MH does it at the
@@ -1720,7 +1739,7 @@ the command is taken as filter actions, which means the semantics of PASS,
 for instance, is changed: we do not take a body back but commands.
 (The execution status is that of the \fIcommand\fR)
 .TP
-BEEP [-l] \fIcount\fR
+BEEP [\fB\-l\fR] \fIcount\fR
 This command may be used to tune the amount of beeps emitted when biffing on
 the terminal, for each \fI%a\fR expansion. By default, that amount is set to 1.
 Using the \fB\-l\fR option alters the beep count locally for the rule.
@@ -1738,12 +1757,14 @@ to enable consecutive bells. Otherwise, \fIxterm\fR will swallow them during
 200 ms, hence making the BEEP command ineffective, apparently.
 (Does not modify existing status)
 .TP
-BEGIN \fIstate\fR
+BEGIN [\fB\-ft\fR] \fIstate\fR
 Enter a new state. An explicit REJECT or RESTART is necessary to abort the
 processing of the current rule. The processing begins in state INITIAL.
+If the \fB\-f\fR (resp. \fB\-t\fR) flag is specified, then the state change
+only occurs if the last command status indicated a failure (resp. a success).
 (Does not modify existing status)
 .TP
-BIFF [-l] \fIon|off|path\fR
+BIFF [\fB\-l\fR] \fIon|off|path\fR
 Allow or disallow biffing dynamically. When biffing is turned on via the
 configuration file or via this command, a message is printed on some of
 the terminals where the user is logged when mail is received,
@@ -1825,7 +1846,7 @@ Leave incoming mail in the system mailbox. This is the default action if no
 rule matched or if no saving occurred.
 (Fails if mail cannot be saved)
 .TP
-MACRO [-rdp] \fIname\fR [= (\fIvalue\fR, \fItype\fR)]
+MACRO [\fB\-rdp\fR] \fIname\fR [= (\fIvalue\fR, \fItype\fR)]
 Lets you specify user-defined macros, of the form %-(\fIname\fR). See the
 paragraph on user-defined macros for explanation about the available types
 (SCALAR, EXPR, CONST, FN, PROG, PROGC).
@@ -1845,9 +1866,10 @@ header of the message). The text of the message is run through the macro
 substitution mechanism (described later on).
 (Fails if message cannot be sent)
 .TP
-NOP
+NOP [\fB\-ft\fR]
 No operation. If this seems a bit odd, think of it in terms of a ONCE command.
-(Does not alter existing status)
+(Does not alter existing status unless \fB\-f\fR or \fB\-t\fR is used, in
+which case it forces a \fIfalse\fR \-\-failure\-\- or \fItrue\fR success status)
 .TP
 NOTIFY \fIfile\fR \fIaddress(es)\fR
 Send a notification message \fIfile\fR to a given address list. The text of the
@@ -1877,7 +1899,7 @@ Pipe the whole message to the specified program, but do not get anything
 back. Any output is mailed to the user who runs the \fImailagent\fR.
 (Returns the status of \fIprogram\fR)
 .TP
-POST [-l] \fInewsgroup(s)\fR
+POST [\fB\-l\fR] \fInewsgroup(s)\fR
 Post the message to the specified newsgroup(s) after having cleaned-up the
 header (by removing mail-related fields like Received: or To:). This acts
 as a saving. If the first name is \fB\-l\fR as in "POST -l comp.mail.mh",
@@ -1895,7 +1917,7 @@ The action associated by default to a mail having [Cc]ommand as its
 subject is PROCESS.
 (Always returns success)
 .TP
-PROTECT [-lu] \fImode\fR
+PROTECT [\fB\-lu\fR] \fImode\fR
 Sets the default protection mode that should be set on created folders
 (or created files when saving into an MH folder or a directory). By default,
 permissions are governed by the UMASK command, but this lets you override
@@ -1925,7 +1947,7 @@ that unless mailagent is invoked on a regular basis by \fIcron\fR, the
 mail will remain in the queue until another mail arrives.
 (Fails when mail cannot be queued)
 .TP
-RECORD [-acr] [\fImode\fR] [\fI(tag-list)\fR]
+RECORD [\fB\-acr\fR] [\fImode\fR] [\fI(tag-list)\fR]
 Record message in the history and enters mode _SEEN_ if the message was
 already present there. If the message is recorded for the first time, processing
 continues normally. Otherwise a REJECT is performed. This behavior may be
@@ -1939,7 +1961,7 @@ specifying any tag list means any occurrence, whether it is tagged or not.
 See paragraph \fBUsing Tags in Record and Unique\fR for more information.
 (Returns a failure status if mail was already recorded)
 .TP
-REJECT [-tf] [\fImode\fR]
+REJECT [\fB\-tf\fR] [\fImode\fR]
 Abort execution of current action, and continue matching. If \fB\-t\fR is
 specified, the reject will occur only if the previous action was successfully
 completed (return status of true), whilst \fB\-f\fR would cause the reject only
@@ -1957,7 +1979,7 @@ equivalent, the file "value" is not important, i.e. it does not have to end
 with a statement returning a true value.
 (Fails if file cannot be loaded)
 .TP
-RESTART [-tf] [\fImode\fR]
+RESTART [\fB\-tf\fR] [\fImode\fR]
 Abort execution of current action and restart the matching process from the
 beginning. To avoid loops, each rule may be walked through once in a given
 mode. See REJECT for the meaning of the optional parameters. RESTART resets
@@ -1996,7 +2018,7 @@ been more elaborated if only I had known about this Berkeley \fIyacc\fR
 producing a \fIperl\fR parser...). (Returns the status of \fIcommand\fR, if run,
 otherwise returns true).
 .TP
-SERVER [-t] [-d \fIdisabled commands\fR]
+SERVER [\fB\-t\fR] [\fB\-d \fIdisabled commands\fR]
 Activate server processing. The body of the message is interpreted as a list
 of commands to execute. See section \fBGENERIC MAIL SERVER\fR for more
 information about the server itself. The \fB\-t\fR option turns the server
@@ -2004,7 +2026,7 @@ into \fItrusted mode\fR, where \fIpowers\fR may be gained. The \fB\-d\fR
 option must be followed by a list of disabled commands, separated by commas
 with no intervening spaces between them.
 .TP
-SPLIT [-adeiw] \fIfolder\fR
+SPLIT [\fB\-adeiw\fR] \fIfolder\fR
 Split a mail in digest format into the specified folder (same naming
 conventions as in SAVE). If no folder is
 specified, each digest item is queued and will be analyzed as a single mail
@@ -2061,7 +2083,7 @@ instance, 'TR 1 /A-Z/a-z/' would canonicalize content of reference 1 into
 lowercase. See also ASSIGN and SUBST.
 (Fails if error in \fItranslation\fR)
 .TP
-UMASK [-l] \fImode\fR
+UMASK [\fB\-l\fR] \fImode\fR
 Changes the process's umask to the specified \fImode\fR, which can be decimal,
 octal (if preceded by '0') or hexadecimal (starting with '0x'). The octal
 notation is the clearest way to specify the umask anyway. Aren't rumors saying
@@ -2071,7 +2093,7 @@ action rule only. Note that the default umask specified in your config file
 is used to reset \fImailagent\fR's umask at the start of each mail processing.
 (Does not alter execution status)
 .TP
-UNIQUE [-acr] [\fImode\fR] [\fI(tag-list)\fR]
+UNIQUE [\fB\-acr\fR] [\fImode\fR] [\fI(tag-list)\fR]
 Record message in the history and tag message as saved if it was
 already present there. If the message is recorded for the first time, processing
 continues normally. Otherwise a REJECT is performed. If \fB\-r\fR was used,
@@ -2087,7 +2109,7 @@ See also RECORD, and the paragraph entitled \fBUsing Tags in Record and
 Unique\fR for more information about the \fItag-list\fR.
 (Fails if mail was already recorded)
 .TP
-VACATION [-l] \fIon|off|path\fR [\fIperiod\fR]
+VACATION [\fB\-l\fR] \fIon|off|path\fR [\fIperiod\fR]
 Allow or disallow a vacation message. When vacation mode is turned on via the
 configuration file, a message is sent whenever the user receives a mail
 meeting some requirements, as explained under the section \fBVACATION MODE\fR.

@@ -1,6 +1,6 @@
 # The SPLIT command
 
-# $Id: split.t,v 3.0.1.1 1994/10/10 10:26:05 ram Exp $
+# $Id: split.t,v 3.0.1.2 1997/09/15 15:18:10 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: split.t,v $
+# Revision 3.0.1.2  1997/09/15  15:18:10  ram
+# patch57: fixed overzealous unlinks
+#
 # Revision 3.0.1.1  1994/10/10  10:26:05  ram
 # patch19: added various escapes in strings for perl5 support
 #
@@ -27,6 +30,7 @@ do '../pl/cmd.pl';
 # A single 'SPLIT here' is run
 &add_header('X-Tag: split #1', 'digest');
 `cp digest mail`;
+unlink 'mail.lock';
 `$cmd`;
 $? == 0 || print "1\n";
 -f "$user" && print "2\n";			# Was not split in-place, but also saved
@@ -37,7 +41,7 @@ $? == 0 || print "1\n";
 &check_log('^X-Tag: digest #3', 9) == 2 || print "10\n";
 &check_log('^X-Tag: split #1', 11) == 2 || print "12\n";
 &check_log('^X-Filter-Note:', 13) == 2 || print "14\n";
-unlink 'here';
+unlink 'here', 'mail.lock';
 
 # Seconde time: a single 'SPLIT -id here' is run
 &replace_header('X-Tag: split #2', 'digest');
@@ -53,7 +57,7 @@ $? == 0 || print "15\n";
 &not_log('^X-Tag: split #2', 25);	# Header was deleted by -d
 &check_log('^X-Filter-Note:', 26) == 2 || print "27\n";
 &check_log('^X-Digest-To:', 84) == 3 || print "85\n";
-unlink 'here';
+unlink 'here', 'mail.lock';
 
 # Third time: a single 'SPLIT -iew here' is run
 &replace_header('X-Tag: split #3', 'digest');
@@ -69,7 +73,7 @@ $? == 0 || print "28\n";
 &not_log('^X-Tag: split #3', 38);	# Header was deleted by -e
 &check_log('^X-Filter-Note:', 39) == 3 || print "40\n";	# Trailing garbage...
 &check_log('anticonstitutionellement', 41) == 1 || print "42\n";
-unlink 'here';
+unlink 'here', 'mail.lock';
 
 # Fourth time: a single 'SPLIT -iew' is run. All the digest items will still
 # be saved in 'here' because they all bear a X-Tag: header. The trailing
@@ -90,7 +94,7 @@ $? == 0 || print "43\n";
 &get_log(57, "$user");
 &check_log('anticonstitutionellement', 58) == 1 || print "59\n";
 &check_log('^X-Filter-Note:', 60) == 1 || print "61\n";
-unlink 'here', "$user";
+unlink 'here', "$user", 'mail.lock';
 
 # Fifth time: a single 'SPLIT -iew here', but this time header is not empty...
 # Besides, there will be an empty message between encapsulation boundaries
@@ -114,6 +118,7 @@ $? == 0 || print "62\n";
 &check_log('^Message-Id:', 75) == 1 || print "76\n";
 &check_log('^>From', 80) == 2 || print "81\n";
 &check_log('^From which', 82) == 1 || print "83\n";
+unlink 'here', 'mail.lock';
 
 # Sixth time: mail is not in digest format.
 `cp ../mail .`;

@@ -1,4 +1,4 @@
-;# $Id: runcmd.pl,v 3.0.1.5 1995/08/07 16:25:05 ram Exp $
+;# $Id: runcmd.pl,v 3.0.1.6 1997/09/15 15:17:32 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,11 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: runcmd.pl,v $
+;# Revision 3.0.1.6  1997/09/15  15:17:32  ram
+;# patch57: NOP now returns a status
+;# patch57: added -t and -f switches for BEGIN and NOP
+;# patch57: $lastcmd now global from analyze_mail()
+;#
 ;# Revision 3.0.1.5  1995/08/07  16:25:05  ram
 ;# patch37: new BIFF command
 ;#
@@ -91,7 +96,6 @@ sub xeqte {
 	local($line) = shift(@_);		# Commands to execute
 	local(@cmd);					# The commands to be ran
 	local($status) = $FT_CONT;		# Status returned by run_command
-	local($lastcmd) = 0;			# Failure status from last command
 	local($_);
 
 	# Normally, a ';' separates each action. However, an escaped one as in \;
@@ -255,8 +259,10 @@ sub init_filter {
 		'AFTER',	'acns',
 		'ANNOTATE',	'du',
 		'BEEP',		'l',
+		'BEGIN',	'ft',
 		'BIFF',		'l',
 		'MACRO',	'rdp',
+		'NOP',		'tf',
 		'POST',		'l',
 		'PROTECT',	'lu',
 		'RECORD',	'acr',
@@ -294,7 +300,6 @@ sub init_filter {
 		'BEGIN', 1,
 		'KEEP', 1,
 		'MACRO', 1,
-		'NOP', 1,
 		'PROTECT', 1,
 		'REJECT', 1,
 		'RESTART', 1,

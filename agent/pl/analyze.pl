@@ -1,4 +1,4 @@
-;# $Id: analyze.pl,v 3.0.1.7 1997/01/31 18:07:47 ram Exp $
+;# $Id: analyze.pl,v 3.0.1.8 1997/09/15 15:13:15 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: analyze.pl,v $
+;# Revision 3.0.1.8  1997/09/15  15:13:15  ram
+;# patch57: $lastcmd now global from analyze_mail() for BACK processing
+;# patch57: indication of relaying hosts now selectively emitted
+;#
 ;# Revision 3.0.1.7  1997/01/31  18:07:47  ram
 ;# patch54: esacape metacharacter '{' in regexps for perl5.003_20
 ;#
@@ -85,7 +89,7 @@ sub analyze_mail {
 
 	# Parse the mail message in file
 	&parse_mail($file);			# Parse the mail and fill-in H tables
-	return 0 unless defined $Header{'All'};		# Mail not parsed correctly
+	return 1 unless defined $Header{'All'};		# Mail not parsed correctly
 	&reception if $loglvl > 8;	# Log mail reception
 	&run_builtins;				# Execute builtins, if any
 
@@ -126,6 +130,7 @@ sub analyze_mail {
 		}
 	}
 
+	local($lastcmd) = 0;		# Failure status from last command
 	&apply_rules($mode, 1);		# Now apply the filtering rules on it.
 
 	# Deal with vacation mode. It applies only on mail not previously seen.
@@ -433,17 +438,52 @@ sub special_user {
 	0;	# Not from special user!
 }
 
+# Compare a machine and an e-mail address and return true if the domain
+# for that address matches the domain of the machine. We allow an extra
+# level of "domain indirection".
+sub fuzzy_domain {
+	local($first, $fhost) = @_;
+	$fhost =~ s/^\S+@([\w-.]+)/$1/;					# Keep hostname part
+	$fhost =~ tr/A-Z/a-z/;							# perl4 misses lc()
+	$first =~ tr/A-Z/a-z/;
+	local(@fhost) = split(/\./, $fhost);
+	local(@first) = split(/\./, $first);
+	if (@fhost > @first) {
+		shift(@fhost);					# Allow extra machine name
+	} elsif (@first > @fhost) {
+		shift(@first);
+	} elsif (@fhost >= 3) {				# Has at least machine.domain.top
+		shift(@first);					# Allow server1.domain.top to match
+		shift(@fhost);					# server2.domain.top
+	}
+	$fhost = join('.', @fhost);
+	$first = join('.', @first);
+	return $fhost eq $first;
+}
+
 # Log reception of mail (sender and subject fields). This is mainly intended
 # for people like me who parse the logfile once in a while to do more 
-# statistics about mail reception. Hence the another distinction between
+# statistics about mail reception. Hence the other distinction between
 # original mails and answers.
 sub reception {
 	local($subject) = $Header{'Subject'};
 	local($sender) = $Header{'Sender'};
 	local($from) = $Header{'From'};
 	&add_log("FROM $from");
-	&add_log("VIA $sender") if $sender ne '' &&
-		(&parse_address($sender))[0] ne (&parse_address($from))[0];
+	local($faddr) = (&parse_address($from))[0];		# From address
+	local($saddr) = '';
+
+	if ($sender ne '') {
+		$saddr = (&parse_address($sender))[0];
+		&add_log("VIA $sender") if $saddr ne $faddr;
+	}
+
+	# Trace relaying hosts as well if the first host is unrelated to sender
+	local($relayed) = $Header{'Relayed'};
+	local($first) = (split(/,\s+/, $relayed))[0];	# First relaying host
+	&add_log("RELAYED $relayed") if $relayed ne '' &&
+		!(&fuzzy_domain($first, $saddr) || &fuzzy_domain($first, $faddr));
+
 	if ($subject ne '') {
 		if ($subject =~ s/^Re:\s*//) {
 			&add_log("REPLY $subject");

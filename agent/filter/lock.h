@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: lock.h,v 3.0.1.1 1995/08/07 16:10:17 ram Exp $
+ * $Id: lock.h,v 3.0.1.2 1997/09/15 15:02:36 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: lock.h,v $
+ * Revision 3.0.1.2  1997/09/15  15:02:36  ram
+ * patch57: new generic file_lock() and file_unlock() routines
+ *
  * Revision 3.0.1.1  1995/08/07  16:10:17  ram
  * patch37: exported check_lock() for external mailagent lock checks in io.c
  *
@@ -37,6 +40,8 @@ extern int filter_lock();		/* Lock filter */
 extern void release_lock();		/* Release lock if necessary */
 extern int check_lock();		/* Check lock for excessive lifetime */
 extern int is_locked();			/* Do we have a lock file? */
+extern int file_lock();			/* Lock arbitrary file */
+extern void file_unlock();		/* Unlock arbitrary file */
 
 /*
  * Returned values for check_lock().

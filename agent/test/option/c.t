@@ -1,6 +1,6 @@
 # -c : specify alternate configuration file
 
-# $Id: c.t,v 3.0 1993/11/29 13:50:13 ram Exp $
+# $Id: c.t,v 3.0.1.1 1997/09/15 15:18:45 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: c.t,v $
+# Revision 3.0.1.1  1997/09/15  15:18:45  ram
+# patch57: uses an empty file instead of /dev/null
+#
 # Revision 3.0  1993/11/29  13:50:13  ram
 # Baseline for mailagent 3.0 netwide release.
 #
@@ -24,9 +27,10 @@ chdir '../out';
 $user = $ENV{'USER'};
 unlink "$user";
 `cp .mailagent alternate`;
-$output = `$mailagent -c alternate /dev/null 2>/dev/null`;
+open(EMPTY, '>empty'); close EMPTY;
+$output = `$mailagent -c alternate empty 2>/dev/null`;
 $? == 0 || print "3\n";
 $output eq '' || print "4\n";
 -s "$user" || print "5\n";
-unlink "$user", 'alternate';
+unlink "$user", 'alternate', 'empty';
 print "0\n";

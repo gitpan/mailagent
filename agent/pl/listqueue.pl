@@ -1,4 +1,4 @@
-;# $Id: listqueue.pl,v 3.0.1.3 1995/01/25 15:24:09 ram Exp $
+;# $Id: listqueue.pl,v 3.0.1.4 1997/09/15 15:15:40 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: listqueue.pl,v $
+;# Revision 3.0.1.4  1997/09/15  15:15:40  ram
+;# patch57: now clearly spot locked files in queue with a '*'
+;#
 ;# Revision 3.0.1.3  1995/01/25  15:24:09  ram
 ;# patch27: avoid problems on slow machines in test mode for queue timestamps
 ;#
@@ -33,7 +36,7 @@ sub list_queue {
 	}
 	local(@dir) = readdir DIR;		# Slurp the whole directory
 	closedir DIR;
-	local(@files) = grep(s!^(q|f|c)m!$cf'queue/${1}m!, @dir);
+	local(@files) = grep(s!^(q|f|c)m!$cf'queue/${1}m! && !/$lockext$/o, @dir);
 	undef @dir;
 	if (-f "$cf'queue/$agent_wait") {
 		if (open(WAITING, "$cf'queue/$agent_wait")) {
@@ -168,6 +171,9 @@ $file     $size $star $queued  $status   $sender
 			$star = '#';
 			$star = '@' if $directory ne $cf'queue;
 		}
+
+		$status .= '*' if -f ($_ . $lockext);	# Locked file
+
 		write(STDOUT);
 	}
 }

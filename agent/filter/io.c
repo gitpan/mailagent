@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.11 1997/02/20 11:35:20 ram Exp $
+ * $Id: io.c,v 3.0.1.12 1997/09/15 15:01:35 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.12  1997/09/15  15:01:35  ram
+ * patch57: factorized code to derive a unique filename
+ *
  * Revision 3.0.1.11  1997/02/20  11:35:20  ram
  * patch55: new io_redirect() routine to handle the -o switch
  *
@@ -73,12 +76,6 @@
 #include "config.h"
 #include "portable.h"
 #include <sys/types.h>
-#include "hash.h"
-#include "parser.h"
-#include "lock.h"
-#include "logfile.h"
-#include "environ.h"
-#include "sysexits.h"
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -140,6 +137,12 @@
 #define R_OK	4			/* Test for read permission */
 #endif
 
+#include "hash.h"
+#include "parser.h"
+#include "lock.h"
+#include "logfile.h"
+#include "environ.h"
+#include "sysexits.h"
 #include "confmagic.h"
 
 #define BUFSIZE		1024			/* Amount of bytes read in a single call */
@@ -488,6 +491,49 @@ private void release_agent()
 		add_log(5, "NOTICE removed mailagent's lock");
 }
 
+private int unique_filename(buf, format, dir, base)
+char buf[];
+char *format;
+char *dir;
+char *base;
+{
+	/* Compute unique filename in directory dir and store it in buf. The
+	 * generated file name will be something like dir/base<pid>, but it
+	 * really depends on the value of the sprintf format, usually "%s%d".
+	 * A trailing %c may be appended to the format to help getting a unique
+	 * name.
+	 * Returns opened file descriptor on the elected file, or -1.
+	 */
+
+	char fmt[MAX_STRING];	/* Final sprintf() format string */
+	int try = 0;			/* Count attempts to find a unique queue name */
+	char trailer = '\0';	/* Trailer character after pid */
+	int alternate = 0;		/* True when alternate naming was chosen */
+	int fd;					/* Opened file */
+
+	sprintf(fmt, "%s%s%s", "%s/", format, "%c");
+
+	for (;;) {
+		sprintf(buf, fmt, dir, base, progpid + try, trailer);
+		fd = open(buf, O_WRONLY | O_CREAT | O_EXCL, 0600);
+		if (fd != -1)
+			return fd;
+		if (errno != EEXIST) {
+			add_log(1, "SYSERR open: %m (%e)");
+			add_log(2, "ERROR can't create %s", buf);
+			return -1;
+		}
+		if (++try > MAX_TRYS) {
+			if (alternate > ('z' - 'a'))
+				fatal("unable to find unique queue filename");
+			try = 0;
+			trailer = 'a' + alternate++;	/* ASCII-dependant */
+		}
+	}
+
+	return -1;				/* Unable to find unique filename in dir */
+}
+
 private void queue_mail(queue)
 char *queue;				/* Location of the queue directory */
 {
@@ -495,10 +541,8 @@ char *queue;				/* Location of the queue directory */
 	char real[MAX_STRING];	/* Real queue mail */
 	char *base;				/* Pointer to base name */
 	struct stat buf;		/* To make sure queued file remains */
-	int try = 0;			/* Count attempts to find a unique queue name */
 	char *type;				/* "qm" or "fm" mails */
-	char trailer;			/* Trailer character after pid */
-	int alternate = 0;		/* True when alternate naming was chosen */
+	int fd;					/* fd from unique_filename() */
 
 	where = write_file(queue, "Tm");
 	if (where == (char *) 0) {
@@ -516,19 +560,10 @@ char *queue;				/* Location of the queue directory */
 	 */
 
 	type = is_main() ? "qm" : "fm";
-	trailer = '\0';
 
-	for (;;) {
-		sprintf(real, "%s/%s%d%c", queue, type, progpid + try, trailer);
-		if (-1 == stat(real, &buf))		/* File does not exist */
-			break;
-		if (++try > MAX_TRYS) {
-			if (alternate > ('z' - 'a'))
-				fatal("unable to find unique queue filename");
-			try = 0;
-			trailer = 'a' + alternate++;	/* ASCII-dependant */
-		}
-	}
+	if (-1 == (fd = unique_filename(real, "%s%d", queue, type)))
+		fatal("unable to find unique queue filename");
+	(void) close(fd);
 
 	if (-1 == rename(where, real)) {
 		add_log(1, "SYSERR rename: %m (%e)");
@@ -934,13 +969,8 @@ char *template;			/* First part of the file name */
 	int status;						/* Status from write_fd() */
 	struct stat buf;				/* Stat buffer */
 
-	sprintf(path, "%s/%s.%d", dir, template, progpid);
-
-	if (-1 == (fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0600))) {
-		add_log(1, "SYSERR open: %m (%e)");
-		add_log(2, "ERROR cannot create file %s", path);
+	if (-1 == (fd = unique_filename(path, "%s.%d", dir, template)))
 		return (char *) 0;
-	}
 
 	status = write_fd(fd, path);		/* Write mail to file descriptor fd */
 	close(fd);

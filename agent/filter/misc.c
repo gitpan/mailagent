@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: misc.c,v 3.0.1.2 1996/12/24 13:59:15 ram Exp $
+ * $Id: misc.c,v 3.0.1.3 1997/09/15 15:03:04 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: misc.c,v $
+ * Revision 3.0.1.3  1997/09/15  15:03:04  ram
+ * patch57: cosmetic change
+ *
  * Revision 3.0.1.2  1996/12/24  13:59:15  ram
  * patch45: new my_exit() to allow exit code tracing for debugging
  *
@@ -35,8 +38,8 @@
 
 #include "config.h"
 #include "portable.h"
-#include "sysexits.h"
 #include <ctype.h>
+#include "sysexits.h"
 #include "confmagic.h"
 
 extern char *malloc();				/* Memory allocation */

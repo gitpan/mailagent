@@ -1,3 +1,109 @@
+Mon Sep 15 17:31:05 METDST 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	Internal changes to the C filter program, mainly for future
+	extensions I plan to add someday.
+
+	Mail messages in the queue are now *locked* before being processed,
+	thereby avoiding duplicate processing in some weird race conditions.
+	The 'mailagent -q' command now reports locked messages with a '*'.
+
+	Fixed typo in -r usage summary.
+
+	New -t and -f options for BEGIN and NOP:
+		BEGIN -f only occurs if the last command status is false.
+		BEGIN -t only occurs if the last command status is true.
+		NOP -f forces a false command status (i.e. a failure).
+		NOP -t forces a true command status (i.e. a success).
+	As a consequence NOP now returns a status or propagates the existing
+	one.
+
+	All command options should now be output in bold in the man page.
+
+	Documented _CALLOUT_ working state for callout queue triggers.
+
+	Annotation was not performed for value "0". The use of an
+		if $value;
+	instead of
+		if defined $value;
+	was the cause.
+	
+	The $lastcmd variabe is now global from analyze_mail() for BACK
+	processing. It was otherwise impossible to have success/failure
+	conditions propagate outside of the BACK execution environment.
+
+	Improved Received: line parsing logic.
+
+	Indication of relaying hosts (RELAYED log) now selectively emitted
+	only when the first relaying host is apparently not related to that
+	of the sended.
+
+	Fixed ASSGINED -> ASSIGNED typo in log message
+
+	Insert user e-mail address if no address is given for NOTIFY.
+
+	Some small fixes in the regression test suite.
+
+	PATBOUNCE can now handle bounced output from @SH package commands.
+
+	File misc/pbounce/rules now shows how I use PATBOUNCE in my
+	own ~/.rules.
+
+. Files changed:
+
+	* agent/filter/io.c: Factorized code to derive a unique filename.
+
+	* agent/filter/lock.c: Added more generic file_lock() and
+	file_unlock() routines.
+
+	* agent/filter/lock.h: New generic file_lock() and file_unlock()
+	routines.
+
+	* agent/filter/misc.c: Cosmetic change.
+
+	* agent/filter/parser.c: Changed ordering of include files.
+
+	* agent/magent.sh: Call new pmail() routine to process main message. 
+	Fixed typo in -r usage.
+
+	* agent/man/mailagent.SH: New -t and -f options for BEGIN and NOP. 
+	All command options should now be output in bold.  Documented
+	_CALLOUT_ working state for callout queue.
+
+	* agent/pl/acs_rqst.pl: Code factorized within acs_lock().
+
+	* agent/pl/actions.pl: Don't blindly chop command error message,
+	remove trailing \n.  Annotation was not performed for value "0".
+
+	* agent/pl/analyze.pl: $lastcmd now global from analyze_mail() for
+	BACK processing.  Indication of relaying hosts now selectively
+	emitted.
+
+	* agent/pl/filter.pl: Fixed ASSGINED -> ASSIGNED typo in log message.
+	Implemented new -t and -f flags for BEGIN and NOP.  Insert user
+	e-mail address if no address for NOTIFY.
+
+	* agent/pl/listqueue.pl: Now clearly spot locked files in queue with
+	a '*'.
+
+	* agent/pl/parse.pl: Improved Received: line parsing logic.
+
+	* agent/pl/pqueue.pl: Messages in the queue are now locked before
+	processing.  New pmail() routine to factorize locking/processing code.
+
+	* agent/pl/runcmd.pl: NOP now returns a status.  Added -t and -f
+	switches for BEGIN and NOP.  $lastcmd now global from analyze_mail().
+
+	* agent/test/cmd/split.t: Fixed overzealous unlinks.
+
+	* agent/test/option/c.t: Uses an empty file instead of /dev/null.
+
+	* agent/test/pl/mail.pl: Forgot to unlink mail.lock in cp_mail().
+
+	* misc/pbounce/patbounce.pl: Also handle bounced output from @SH
+	package.
+
 Thu Feb 20 12:55:50 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

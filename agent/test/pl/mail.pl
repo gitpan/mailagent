@@ -1,6 +1,6 @@
 # Utilities to twinkle default mail message
 
-;# $Id: mail.pl,v 3.0.1.1 1994/07/01 15:11:46 ram Exp $
+;# $Id: mail.pl,v 3.0.1.2 1997/09/15 15:19:30 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -11,6 +11,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: mail.pl,v $
+;# Revision 3.0.1.2  1997/09/15  15:19:30  ram
+;# patch57: forgot to unlink mail.lock in cp_mail()
+;#
 ;# Revision 3.0.1.1  1994/07/01  15:11:46  ram
 ;# patch8: fixed RCS leading comment string
 ;# patch8: now defines the cp_mail routine
@@ -79,5 +82,6 @@ sub cp_mail {
 	print HERE while <MAIL>;
 	close MAIL;
 	close HERE;
+	unlink 'mail.lock';
 }
 

@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.9 1997/02/20 11:45:34 ram Exp $
+;# $Id: parse.pl,v 3.0.1.10 1997/09/15 15:16:00 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.10  1997/09/15  15:16:00  ram
+;# patch57: improved Received: line parsing logic
+;#
 ;# Revision 3.0.1.9  1997/02/20  11:45:34  ram
 ;# patch55: improved Received: header parsing
 ;#
@@ -303,11 +306,14 @@ sub relay_list {
 		next if s/^by\s+//i;		# Host name missing
 
 		# Look for host1, which must be there somehow since we found a 'from'
-		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s+//) {
+		# Some sendmails like to add a leading 'login@' before the address,
+		# so strip that out before being fancy...
+		s/^\w+\@//;
+		if (s/^(\[\d+\.\d+\.\d+\.\d+\])\s*//) {
 			$host = $1;				# IP address [xx.yy.zz.tt]
-		} elsif (s/^([\w-.]+)(\(\S+\))?\s+//) {
+		} elsif (s/^([\w-.]+)(\(\S+\))?\s*//) {
 			$host = $1;				# host name
-		} elsif (s/^\(\w+\@([\w-.]+)\)\s+//) {
+		} elsif (s/^\(\w+\@([\w-.]+)\)\s*//) {
 			$host = $1;				# host name
 		} else {
 			&add_log("WARNING invalid from in Received: line '$received'")
@@ -332,6 +338,7 @@ sub relay_list {
 			s/\(([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*// ||
 			s/\(\w+\s+([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*//;
 		$real =~ s/^.*\@//;
+		$real = '' if $real =~ /^[\d.]+$/;		# A sendmail version number!
 		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
 
 		# If we have not recognized anything above, then we don't want to
