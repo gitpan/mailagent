@@ -1,4 +1,4 @@
-;# $Id: header.pl,v 3.0.1.2 2001/01/10 16:55:29 ram Exp $
+;# $Id: header.pl,v 3.0.1.3 2001/03/13 13:14:01 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: header.pl,v $
+;# Revision 3.0.1.3  2001/03/13 13:14:01  ram
+;# patch71: added rule to suppress () and {} in message ids
+;#
 ;# Revision 3.0.1.2  2001/01/10 16:55:29  ram
 ;# patch69: new mta_date() routine replaces old fake_date()
 ;# patch69: added msgid_cleanup() and parsedate() routines
@@ -175,7 +178,8 @@ sub msgid_cleanup {
 	s/>\s</>\01</g;				# Protect spaces between IDs for References
 	$fixup++ if s/\s/-/g;		# No spaces
 	$fixup++ if s/_/-/g;		# No _ in names
-	$fixup++ if s/\.+>\b/>/g;	# No trailing dot(s)
+	$fixup++ if s/[(){}]//g;	# No () nor {} in names and ID
+	$fixup++ if s/\.+>/>/g;		# No trailing dot(s)
 	$fixup++ if s/\.\.+/./g;	# No consecutive dots
 	s/>\01</> </g;				# Restore spaces between IDs
 	$$mref = $_ if $fixup;

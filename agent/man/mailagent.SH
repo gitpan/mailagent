@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.24 2001/01/10 16:51:38 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.25 2001/03/13 13:10:47 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,9 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.25  2001/03/13 13:10:47  ram
+''' patch71: documented SUBST/TR on header fields
+'''
 ''' Revision 3.0.1.24  2001/01/10 16:51:38  ram
 ''' patch69: changed semantics of "tome"
 ''' patch69: updated POST to current practices
@@ -2157,18 +2160,43 @@ header field name if you wish, but that is not strictly necessary. Headers
 may be specified via shell-style regular expressions or via "file" inclusion.
 (Does not alter execution status)
 .TP
-SUBST \fIvar expression\fR
+SUBST \fIvar/header expression\fR
 Substitutes the expression on the specified user-defined variable (name
-starting with a #) or back-reference (digit). For instance, 'SUBST #foo /w/y/g'
+starting with a #) or back-reference (digit), or header field (optionally
+ending with ':').  For instance
+.Ex
+SUBST #foo /w/y/g
+.Ef
 would substitute in user-defined variable \fIfoo\fR all the \fIw\fR by \fIy\fR.
 See also ASSIGN and TR.
+
+For substitutions on header fields, like:
+.Ex
+SUBST Subject: /\\\\[foo\\\\\]\\\\s+//;
+.Ef
+matching header lines will be reformatted when the substitution is successful,
+which likely means original continuations will not be preserved.  The target
+of the substitution is the whole header, with continuations normalized to
+one space.  You are therefore guaranteed to be independent from the actual
+header formatting in the original.
+
+Do not forget to issue a RESYNC after a header field SUBST, since some
+routines (like POST) probe into the parsed header hash table to generate
+the saved message.
+
 (Fails if error in \fIexpression\fR)
 .TP
-TR \fIvar translation\fR
-Perform the translation on the specified variable or back-reference. For
-instance, 'TR 1 /A-Z/a-z/' would canonicalize content of reference 1 into
-lowercase. See also ASSIGN and SUBST.
-(Fails if error in \fItranslation\fR)
+TR \fIvar/header translation\fR
+Perform the translation on the specified variable, back-reference or header
+field. For instance
+.Ex
+TR 1 /A-Z/a-z/
+.Ef
+would canonicalize content of reference 1 into
+lowercase.
+Successfully transliterated headers are reformatted, even when their overall
+size is not changed.
+See also ASSIGN and SUBST.  (Fails if error in \fItranslation\fR)
 .TP
 UMASK [\fB\-l\fR] \fImode\fR
 Changes the process's umask to the specified \fImode\fR, which can be decimal,

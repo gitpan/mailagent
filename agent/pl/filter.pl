@@ -1,4 +1,4 @@
-;# $Id: filter.pl,v 3.0.1.10 1998/03/31 15:22:19 ram Exp $
+;# $Id: filter.pl,v 3.0.1.11 2001/03/13 13:13:37 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,7 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: filter.pl,v $
-;# Revision 3.0.1.10  1998/03/31 15:22:19  ram
+;# Revision 3.0.1.11  2001/03/13 13:13:37  ram
+;# patch71: changed SUBST/TR parameter parsing to support header fields
+;#
+;# Revision 3.0.1.10  1998/03/31  15:22:19  ram
 ;# patch59: when "vacfixed" is on, forbid any change of vacation message
 ;# patch59: new ON command to process commands on certain days only
 ;#
@@ -593,13 +596,13 @@ sub run_assign {
 
 # Run the TR command
 sub run_tr {
-	local($variable, $tr) = $cms =~ m|^(#?:?\w+)\s+(.*)|;
+	local($variable, $tr) = $cms =~ m|^(\S+)\s+(.*)|;
 	&alter_value($variable, "tr$tr");
 }
 
 # Run the SUBST command
 sub run_subst {
-	local($variable, $s) = $cms =~ m|^(#?:?\w+)\s+(.*)|;
+	local($variable, $s) = $cms =~ m|^(\S+)\s+(.*)|;
 	&alter_value($variable, "s$s");
 }
 

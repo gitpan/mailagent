@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.14 2001/01/10 16:55:56 ram Exp $
+;# $Id: parse.pl,v 3.0.1.15 2001/03/13 13:15:43 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.15  2001/03/13 13:15:43  ram
+;# patch71: added fix for broken continuations in parse_mail()
+;#
 ;# Revision 3.0.1.14  2001/01/10 16:55:56  ram
 ;# patch69: allow direct IP numbers in Received fields
 ;#
@@ -128,12 +131,12 @@ sub parse_mail {
 		$Header{'All'} .= $_;
 		if (1../^$/) {						# EOH is a blank line
 			next if /^$/;					# Skip EOH marker
-			$Header{'Head'} .= $_;			# Record line in header
+			chop;
 
 			if (/^\s/) {					# It is a continuation line
-				s/^\s+/ /;					# Swallow multiple spaces
-				chop;						# Remove final new-line
-				$Header{$last_header} .= $_ if $last_header ne '';
+				my $val = $_;
+				$val =~ s/^\s+/ /;			# Swallow multiple spaces
+				$Header{$last_header} .= $val if $last_header ne '';
 				&add_log("WARNING bad continuation in header, line $.")
 					if $last_header eq '' && $loglvl > 4;
 			} elsif (($field, $value) = /^([\w-]+)\s*:\s*(.*)/) {
@@ -156,7 +159,24 @@ sub parse_mail {
 				}
 			} elsif (/^From\s+(\S+)/) {		# The very first From line
 				$first_from = $1;
+			} else {
+				# Did not identify a header field nor a continuation
+				# Maybe there was a wrong header split somewhere?
+				# If we did not encounter a header yet, we're seeing garbage.
+				if ($last_header eq '') {
+					&add_log("ERROR ignoring header garbage, line $.: $_")
+						if $loglvl > 1;
+					next;					# Skip insertion to 'Head'
+				} else {
+					&add_log("WARNING ".
+						"faking continuation for $last_header, line $."
+					) if $loglvl > 4;
+					$_ = " " . $_;			# Patch line for 'Head'
+					$Header{$last_header} .= $_;
+				}
 			}
+
+			$Header{'Head'} .= $_ . "\n";	# Record line in header
 
 		} else {
 			last if $head_only;		# Stop parsing if only header wanted

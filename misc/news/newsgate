@@ -3,7 +3,7 @@
 		if $running_under_some_shell;
 
 #
-# $Id: newsgate,v 3.0.1.1 2001/01/10 16:59:58 ram Exp $
+# $Id: newsgate,v 3.0.1.2 2001/03/13 13:17:03 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -14,6 +14,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: newsgate,v $
+# Revision 3.0.1.2  2001/03/13 13:17:03  ram
+# patch71: the in-reply-to field is now computed via a regexp
+#
 # Revision 3.0.1.1  2001/01/10 16:59:58  ram
 # patch69: created
 #
@@ -156,8 +159,7 @@ logsay "newsgroups @newsgroups";
 # Last reference is the replied-to message, if it's a reply at all
 #
 
-my @refs = split /\s+/, $header{References};
-my $in_reply_to = pop @refs;
+my ($in_reply_to) = $header{References} =~ /(<[^>]+>)\s*$/;
 
 #
 # Parse newsgroup mapping file

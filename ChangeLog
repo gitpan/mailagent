@@ -1,3 +1,64 @@
+Tue Mar 13 14:27:14 MET 2001   Raphael Manfredi <Raphael_Manfredi@pobox.com>
+
+. Description:
+
+	Made fixup of header fields in POST be a warning in the
+	logs, instead of a mere notice.
+
+	Added fix for broken continuations in parse_mail().  I have
+	started receiving messages with invalid header continuations,
+	and this led to failure in POST: the remote news server is
+	much more strict on headers than mail agents.
+
+	Fixed RESYNC, copied continuation fix from parse_mail().
+
+	Added support for SUBST/TR on mail headers: it is now possible
+	to say something like:
+
+	    SUBST Subject: /foo/bar/g;
+
+	to alter header field in place.  See the updated manual page
+	for details.
+
+	Added rule to suppress () and {} in message ids, since again
+	it led to failures when using POST.
+
+	Added test cases for SUBST/TR on header fields.
+
+	The newsgate program now computes the In-Reply-To field via a
+	regexp instead of a split on References to cope with bad
+	References line that dont have a space between message ids.
+
+. Files changed:
+
+	* agent/man/mailagent.SH: Documented SUBST/TR on header fields.
+
+	* agent/pl/actions.pl: Made fixup of header fields in POST be a
+	warning.  Fixed RESYNC, copied continuation fix from parse_mail(). 
+	Added support for SUBST/TR on mail headers.
+
+	* agent/pl/filter.pl: Changed SUBST/TR parameter parsing to support
+	header fields.
+
+	* agent/pl/header.pl: Added rule to suppress () and {} in message ids.
+
+	* agent/pl/history.pl: Message ids are now cleaned-up via
+	msgid_cleanup().
+
+	* agent/pl/parse.pl: Added fix for broken continuations in
+	parse_mail().
+
+	* agent/test/actions: Added test cases for SUBST/TR on header fields.
+
+	* agent/test/cmd/subst.t: Added test cases for SUBST on header fields.
+
+	* agent/test/cmd/tr.t: Added test cases for TR on header fields.
+
+	* misc/news/ml.map: Typo fixes in leading comment.
+
+	* misc/news/newsgate: The in-reply-to field is now computed via a
+	regexp.
+
 Wed Jan 10 18:10:29 MET 2001   Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 . Description:
