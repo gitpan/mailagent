@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.17 2001/01/10 16:48:56 ram Exp $
+ * $Id: io.c,v 3.0.1.18 2001/03/17 18:05:04 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.18  2001/03/17 18:05:04  ram
+ * patch72: forgot to increment buf in pool_read() -- from Debian
+ *
  * Revision 3.0.1.17  2001/01/10 16:48:56  ram
  * patch69: switched to dynamic init of standard file array for GNU libc
  *
@@ -230,11 +233,11 @@ private struct pool *pool_alloc(size)
 	lp = (struct pool *) malloc(sizeof(struct pool));
 	if (!lp)
 		goto failed;
-	
+
 	lp->arena = malloc(size);
 	if (!lp->arena)
 		goto failed;
-	
+
 	lp->size = size;
 	lp->offset = 0;				/* Nothing read yet */
 	lp->next = 0;				/* Assume we're at the end of chain */
@@ -298,6 +301,7 @@ int len;				/* Amount of data in buf to transfer */
 			fit = lp->size - lp->offset;
 
 		bcopy(buf, lp->arena + lp->offset, fit);
+		buf += fit;
 		lp->offset += fit;
 		mail.len += fit;
 
@@ -326,7 +330,7 @@ struct pool *pool;
 	register3 int amount;			/* Amount of bytes written by last call */
 	register4 int n;				/* Result from the write system call */
 	register5 int len;				/* Bytes remaining to be written */
-	
+
 	for (
 		mailptr = pool->arena, length = 0, len = pool->offset;
 		length < len;
@@ -667,7 +671,7 @@ char *path;			/* The path under which we should look for program */
 	 * data with the full path of the program when found, or a null pointer
 	 * otherwise.
 	 */
-	
+
 	static char progpath[MAX_STRING + 1];
 	char *cp;					/* Current path pointer */
 	char *ep;					/* End of current path component */
@@ -718,7 +722,7 @@ char *location;
 	 * harmless, because we know the mail was safely queued, otherwise we would
 	 * not be here trying to make the mailagent process it.
 	 */
-	
+
 	char **envp;			/* Environment pointer */
 #ifdef UNION_WAIT
 	union wait status;		/* Waiting status */
@@ -775,7 +779,7 @@ char *location;
 	 * users, or that would defeat all sanity checks performed on the config
 	 * and rule files.
 	 */
-	
+
 	mailagent = locate("mailagent", path);
 	if (!mailagent) {
 		add_log(1, "ERROR cannot locate mailagent anywhere in PATH");
@@ -813,7 +817,7 @@ char *location;
 		add_log(1, "ERROR cannot run perl to start %s", mailagent);
 		my_exit(EX_UNAVAILABLE);
 	}
-	
+
 	/* Parent process */
 
 	while (pid != (res = wait(&status)))
@@ -871,7 +875,7 @@ char *location;
 		}
 	}
 #endif
-	
+
 	add_log(19, "mailagent ok");
 
 	return 0;

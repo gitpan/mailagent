@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.20 2001/03/13 13:13:15 ram Exp $
+;# $Id: actions.pl,v 3.0.1.21 2001/03/17 18:10:47 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.21  2001/03/17 18:10:47  ram
+;# patch72: use the "email" config var verbatim in FORWARD
+;# patch72: removed unused var in POST
+;#
 ;# Revision 3.0.1.20  2001/03/13 13:13:15  ram
 ;# patch71: made fixup of header fields in POST be a warning
 ;# patch71: fixed RESYNC, copied continuation fix from parse_mail()
@@ -654,7 +658,7 @@ sub send_message {
 # The "FORWARD" command
 sub forward {
 	local($addresses) = @_;			# Address(es) mail should be forwarded to
-	local($address) = &email_addr;	# Address of user
+	local($address) = $cf'email;	# Address of user
 	# Any address included withing "" is in fact a file name where actual
 	# forwarding addresses are found.
 	$addresses =
@@ -724,7 +728,6 @@ sub post {
 	local($newsgroups) = @_;		# Newsgroup(s) mail should be posted to
 	local($localdist) = $opt'sw_l;	# Local distribution if POST -l
 	local($wantbiff) = $opt'sw_b;	# Biffing activated upon success
-	local($address) = &email_addr;	# Address of user
 	unless (open(NEWS,"|$cf'sendnews $cf'newsopt -h")) {
 		&add_log("ERROR cannot run $cf'sendnews to post message: $!")
 			if $loglvl;

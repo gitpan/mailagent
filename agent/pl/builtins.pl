@@ -1,4 +1,4 @@
-;# $Id: builtins.pl,v 3.0.1.1 1994/09/22 14:10:40 ram Exp $
+;# $Id: builtins.pl,v 3.0.1.2 2001/03/17 18:11:16 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,7 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: builtins.pl,v $
-;# Revision 3.0.1.1  1994/09/22 14:10:40  ram
+;# Revision 3.0.1.2  2001/03/17 18:11:16  ram
+;# patch72: hostname computed via domain_addr() to honour hidenet
+;#
+;# Revision 3.0.1.1  1994/09/22  14:10:40  ram
 ;# patch12: added escapes in strings for perl5 support
 ;# patch12: builtins are now looked for in &run_builtins
 ;#
@@ -42,10 +45,8 @@ sub send_receipt {
 	$ack_dest = "" if $ack_dest =~ /[=\$^&*([{}`\\|;><?]/;
 	$ack_dest = $dest if ($ack_dest eq '' || $ack_dest =~ /PATH/);
 
-	# Compute host name (fully qualified, i.e. with domain name)
-	chop($hostname = `$phostname`);
-	$hostname .= $mydomain if $hostname =~ /^\w+$/;
-
+	my $hostname = &domain_addr;
+	my $date;
 	chop($date = `date`);
 	open(MAILER,"|$cf'sendmail $cf'mailopt $ack_dest");
 	print MAILER <<EOM;

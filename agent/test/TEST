@@ -2,7 +2,7 @@
 	eval 'exec perl -S $0 "$@"'
 		if $running_under_some_shell;
 
-# $Id: TEST,v 3.0.1.3 1995/08/07 16:26:39 ram Exp $
+# $Id: TEST,v 3.0.1.4 2001/03/17 18:14:23 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,7 +13,10 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: TEST,v $
-# Revision 3.0.1.3  1995/08/07 16:26:39  ram
+# Revision 3.0.1.4  2001/03/17 18:14:23  ram
+# patch72: try to run tests as nobody when super-user -- from Debian
+#
+# Revision 3.0.1.3  1995/08/07  16:26:39  ram
 # patch37: added support for locking on filesystems with short filenames
 #
 # Revision 3.0.1.2  1994/09/22  14:40:10  ram
@@ -25,6 +28,15 @@
 # Revision 3.0  1993/11/29  13:49:22  ram
 # Baseline for mailagent 3.0 netwide release.
 #
+
+if ($> == 0) {
+	print "Oh, you naughty person. You are superuser!\n";
+	$nouid = (getpwnam('nobody'))[2];
+	$nouid || die "Cannot run tests as super-user.[$<,$>]\n";
+	$> = $nouid;
+	$< = $nouid;
+	print "Trying to run as user nobody [$nouid]\n";
+}
 
 chop($pwd = `pwd`);
 $ENV{'HOME'} = "$pwd/out";
@@ -52,7 +64,7 @@ $ENV{'PATH'} = "$pwd/..:.:" . $ENV{'PATH'};
 
 -f "../$mailagent" && -x _ || die "No $mailagent.\n";
 -f '../filter/filter' && -x _ || die "No filter.\n";
-$> || die "Cannot run tests as super-user.\n";
+$> || die "Cannot run tests as super-user. [$<,$>]\n";
 
 &load_ok;		# Don't rerun successful tests if up to date
 

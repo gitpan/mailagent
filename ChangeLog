@@ -1,3 +1,91 @@
+Sat Mar 17 19:29:59 MET 2001   Raphael Manfredi <Raphael_Manfredi@pobox.com>
+
+. Description:
+
+	Added credits for Manoj Srivastava, the Debian packager, for
+	his wonderful work.
+
+	Added two variables: domain and hidenet, in order to address
+	the Debian bug #72737.  The values hardwired at Configure time
+	in mailagent are now used only up to the moment where we have
+	parsed the user configuration.
+
+	Forgot to increment buf in pool_read(), in the C filter.
+	This was an important bug, which had never hit me however.
+	I noticed it by looking a the Debian patches.
+
+	Use the "email" config var verbatim in FORWARD.  It used to
+	determine the Resent-From: by constructing a full email address,
+	but this is wrong.  We should use whatever the user said, and
+	it is up to MTAs to fix the address should it be unqualified.
+
+	Removed unused var in POST.
+
+	Fixed longstanding lie in man; "To: gue@eiffel.fr" now works
+	as advertised in the man page.  It also means you can write:
+
+	    To Cc: user@example.com
+
+	instead of the heavier:
+
+	    To Cc: /^user@example\.com$/
+
+	However, if you wish to use more complex patterns, you still
+	have to use the /^/ anchored form.
+
+	Create a new filter/address test to test various matching
+	patterns on address selectors.
+
+	Try to run tests as nobody when super-user -- from Debian.
+
+	Fixed test rules for UNIQUE, removing spurious REJECT -f.  The
+	error present in the man page had also propagated to the test
+	cases.
+
+. Files changed:
+
+	* agent/files/setup.cf, agent/files/mailagent.cf: Added two
+	variables: domain and hidenet.
+
+	* agent/filter/io.c: Forgot to increment buf in pool_read() -- from
+	Debian.
+
+	* agent/magent.sh: Mydomain and hiddennet now superseded by config
+	vars.  Changed email_addr() and domain_addr() to honour new config
+	vars.
+
+	* agent/man/mailagent.SH: Documented new config vars: domain and
+	hidenet.  Various fixes from bug reports on Debian.
+
+	* agent/pl/actions.pl: Use the "email" config var verbatim in
+	FORWARD.  Removed unused var in POST.
+
+	* agent/pl/builtins.pl: Hostname computed via domain_addr() to honour
+	hidenet.
+
+	* agent/pl/matching.pl: Fixed longstanding lie in man; "To:
+	gue@eiffel.fr" now works.
+
+	* agent/pl/parse.pl: Use the "domain" config var instead of mydomain.
+
+	* agent/pl/read_conf.pl: Computes suitable defaults for new "domain"
+	and "hidenet".
+
+	* agent/pl/rfc822.pl: Use "domain" config var instead of mydomain.
+
+	* agent/test/TEST: Try to run tests as nobody when super-user -- from
+	Debian.
+
+	* agent/test/actions: Fixed test rules for UNIQUE, removing spurious
+	REJECT -f.
+
+	* agent/test/filter/address.t: Created.
+
+	* agent/test/filter/list.t: Unlink files we expect to be created
+	before running command.
+
+	* agent/test/rules: Added new filter/address tests.
+
 Tue Mar 13 14:27:14 MET 2001   Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 . Description:

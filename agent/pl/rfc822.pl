@@ -1,4 +1,4 @@
-;# $Id: rfc822.pl,v 3.0.1.5 2001/01/10 16:57:11 ram Exp $
+;# $Id: rfc822.pl,v 3.0.1.6 2001/03/17 18:14:00 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: rfc822.pl,v $
+;# Revision 3.0.1.6  2001/03/17 18:14:00  ram
+;# patch72: use "domain" config var instead of mydomain
+;#
 ;# Revision 3.0.1.5  2001/01/10 16:57:11  ram
 ;# patch69: dropped support of '_' and '.' stripping in last_name()
 ;# patch69: added gen_message_id()
@@ -113,7 +116,7 @@ sub internet_info {
 	# We use the login name to anchor the last '!' or the first '@' or '%'
 	($internet) = /([^!]*)!$login/i;
 	($internet) = /$login[@%]([\w.-]*)/i unless $internet;
-	$internet = &myhostname . $mydomain unless $internet;
+	$internet = &myhostname . ".$cf::domain" unless $internet;
 	$internet =~ tr/A-Z/a-z/;				# Always lower-cased
 	local(@parts) = split(/\./, $internet);	# Break on dots
 	if (@parts == 1) {						# Only a host name
@@ -121,7 +124,7 @@ sub internet_info {
 		# it is local if there is an '@' sign, as in 'ram@lyon'. Otherwise, it
 		# is a uucp name, as in 'eiffel!ram'.
 		push(@parts, 'uucp') if /!$login/;	# UUCP name
-		push(@parts, split(/\./, $mydomain)) if @parts == 1;
+		push(@parts, split(/\./, $cf::domain)) if @parts == 1;
 	}
 	unshift(@parts, '') if @parts == 2;		# No host name
 	@parts[($#parts - 2) .. $#parts];		# ($host, $domain, $country)

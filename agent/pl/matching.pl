@@ -1,4 +1,4 @@
-;# $Id: matching.pl,v 3.0.1.4 1999/07/12 13:52:50 ram Exp $
+;# $Id: matching.pl,v 3.0.1.5 2001/03/17 18:12:50 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,7 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: matching.pl,v $
-;# Revision 3.0.1.4  1999/07/12 13:52:50  ram
+;# Revision 3.0.1.5  2001/03/17 18:12:50  ram
+;# patch72: fixed longstanding lie in man; "To: gue@eiffel.fr" now works
+;#
+;# Revision 3.0.1.4  1999/07/12  13:52:50  ram
 ;# patch66: specialized <3> to mean <3,3> in mrange()
 ;#
 ;# Revision 3.0.1.3  1996/12/24  14:56:12  ram
@@ -270,15 +273,28 @@ sub match_single {
 	unless (defined $buffer) {		# No buffer for matching was supplied
 		$buffer = $Header{$selector};
 	}
+	#
 	# If we attempt a match on a field holding e-mail addresses and the pattern
 	# is anchored at the beginning with a /^, then we only keep the address
-	# part and remove the comment if any. Otherwise, the field is left alone.
-	# Of course, if the pattern is only a single name, we extract the login
-	# name for matching purposes...
+	# part and remove the comment if any.
+	#
+	# If the field holds a full e-mail address and only that, we automatically
+	# select the address part of the field for matching. -- RAM, 17/03/2001
+	#
+	# Otherwise, the field is left alone.
+	#
+	# If the pattern is only a single name, we extract the login name for
+	# matching purposes...
+	#
 	if ($Amatcher{$selector}) {					# Field holds an e-mail address
-		$buffer = (&parse_address($buffer))[0] if $pattern =~ m|^/\^|;
-		if ($pattern =~ m|^[-\w.*?]+\s*$|) {	# Single name may have - or .
+		if (
+			$pattern =~ m|^/\^| ||
+			$pattern =~ m|^[-\w.*?]+(\\\@[-\w.*?]+)?\s*$|
+		) {
 			$buffer = (&parse_address($buffer))[0];
+			&add_log("matching buffer reduced to '$buffer'") if $loglvl > 18;
+		}
+		if ($pattern =~ m|^[-\w.*?]+\s*$|) {	# Single name may have - or .
 			$buffer = &login_name($buffer);		# Match done only on login name
 			$pattern =~ tr/A-Z/a-z/;	# Cannonicalize name to lower case
 		}

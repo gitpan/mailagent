@@ -155,8 +155,14 @@ for their active contributions, with a special mention to Jean-Marc Eurin
 for carefully reviewing the release, installing it and proofreading the (long)
 manual page before my official posting to comp.sources.misc.
 
+I would also like to thank Manoj Srivastava <srivasta@datasync.com>, who
+did a wonderful job as Debian packager for mailagent.
+
 Finally, thank you Shigeya Suzuki <shigeya@foretune.co.jp> for hosting the
 agent-users mailing list. Send mail to majordomo@foretune.co.jp to subscribe.
 
 	Raphael Manfredi <ram@acri.fr>
 	Lyon, France, December 1993
+
+	Raphael Manfredi <Raphael_Manfredi@pobox.com>
+	Grenoble, France, March 2001

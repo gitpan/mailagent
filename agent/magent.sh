@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.16 1999/01/13 18:08:48 ram Exp $
+# $Id: magent.sh,v 3.0.1.17 2001/03/17 18:07:49 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,7 +35,11 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
-# Revision 3.0.1.16  1999/01/13 18:08:48  ram
+# Revision 3.0.1.17  2001/03/17 18:07:49  ram
+# patch72: mydomain and hiddennet now superseded by config vars
+# patch72: changed email_addr() and domain_addr() to honour new config vars
+#
+# Revision 3.0.1.16  1999/01/13  18:08:48  ram
 # patch64: changed agent_wait to AGENT_WAIT, now holding full path
 #
 # Revision 3.0.1.15  1997/09/15  15:05:06  ram
@@ -260,6 +264,7 @@ $file_name = shift;				# File name to be processed (null if stdin)
 $ENV{'IFS'}='' if $ENV{'IFS'};	# Shell separation field
 &init_constants;				# Constants definitions
 &get_configuration;				# Get a suitable configuration package (cf)
+&patch_constants;				# Change some constants after config
 select(STDERR); $| = 1;			# In case we get perl warnings...
 select(STDOUT);					# and because the -t option writes on STDOUT,
 $| = 1;							# make sure it is flushed before we fork().
@@ -507,6 +512,13 @@ sub init_constants {
 	$MAX_LINKS = 100;			# Maximum number of symbolic link levels
 }
 
+# Change some constants after configuration file was parsed
+sub patch_constants {
+	local($address) = &email_addr;	# Will prefer cf vars to hardwired ones
+	$FILTER =
+		"X-Filter: mailagent [version $mversion PL$patchlevel] for $address";
+}
+
 # Initializes environment. All the variables are initialized in XENV array
 # The sole purpose of XENV is to be able to know what changes wrt the invoking
 # environment when dumping the rules. It also avoid modifying the environment
@@ -620,7 +632,13 @@ sub mbox_unlock {
 # Can't rely on the value of $cf'user since config file may not have
 # been parsed when this routine is first called. This routine is also used
 # to set a default value for $cf'email.
+# Once $cf'email exists however, its value is used.
 sub email_addr {
+	if (defined $cf'email) {
+		my $mail = $cf'email;
+		$mail .= '@' . &domain_addr unless $mail =~ /@/;
+		return $mail;
+	}
 	return $email_addr_cached if defined $email_addr_cached;
 	local($user);
 	($user) = getpwuid($>);
@@ -631,12 +649,21 @@ sub email_addr {
 }
 
 # Domain name address for current host
+# Use $cf'domain and $cf'hidenet when available.
 sub domain_addr {
 	local($_);							# Our host name
-	$_ = $hiddennet if $hiddennet ne '';
-	if ($_ eq '') {
-		$_ = &hostname;					# Must fork to get hostname, grr...
-		$_ .= $mydomain unless /\./;	# We want something fully qualified
+	if (defined $cf'domain) {
+		$_ = $cf'domain;
+		if (lc($cf'hidenet) ne "on" || $_ eq '') {
+			$_ = &hostname;
+			$_ .= ".$cf::domain" unless /\./;
+		}
+	} else {
+		$_ = $hiddennet if $hiddennet ne '';
+		if ($_ eq '') {
+			$_ = &hostname;					# Must fork to get hostname, grr...
+			$_ .= $mydomain unless /\./;	# We want something fully qualified
+		}
 	}
 	$_;
 }

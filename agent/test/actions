@@ -2,7 +2,7 @@
 # Mailagent rules for action regression tests
 #
 
-# $Id: actions,v 3.0.1.14 2001/03/13 13:15:56 ram Exp $
+# $Id: actions,v 3.0.1.15 2001/03/17 18:15:08 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: actions,v $
+# Revision 3.0.1.15  2001/03/17 18:15:08  ram
+# patch72: fixed test rules for UNIQUE, removing spurious REJECT -f
+#
 # Revision 3.0.1.14  2001/03/13 13:15:56  ram
 # patch71: added test cases for SUBST/TR on header fields
 #
@@ -454,10 +457,10 @@ X-Tag: /unique #3/				{ UNIQUE -a; SAVE %u.1 };
 X-Tag: /unique #4/				{ UNIQUE -c; REJECT -f UNIQUE; SAVE %u.1 };
 <UNIQUE> X-Tag: /unique #4/		{ SAVE %u.2 };
 X-Tag: /unique #5/			{ UNIQUE -a (tag1,tag2); SAVE %u.1; REJECT };
-X-Tag: /unique #5/			{ UNIQUE (tag2); REJECT -f; SAVE %u.2; REJECT };
+X-Tag: /unique #5/			{ UNIQUE (tag2); SAVE %u.2; REJECT };
 X-Tag: /unique #5/			{ UNIQUE -a; SAVE %u.3 };
-X-Tag: /unique #6/			{ UNIQUE (tag); REJECT -f; SAVE %u.1; REJECT };
-X-Tag: /unique #6/			{ UNIQUE (other); REJECT -f; SAVE %u.2; REJECT };
+X-Tag: /unique #6/			{ UNIQUE (tag); SAVE %u.1; REJECT };
+X-Tag: /unique #6/			{ UNIQUE (other); SAVE %u.2; REJECT };
 X-Tag: /unique #6/			{ UNIQUE -a; SAVE %u.3 };
 
 X-Tag: /vacation #2/		{ DELETE };

@@ -1,4 +1,4 @@
-;# $Id: read_conf.pl,v 3.0.1.10 1997/01/07 18:33:25 ram Exp $
+;# $Id: read_conf.pl,v 3.0.1.11 2001/03/17 18:13:41 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,7 +9,10 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: read_conf.pl,v $
-;# Revision 3.0.1.10  1997/01/07 18:33:25  ram
+;# Revision 3.0.1.11  2001/03/17 18:13:41  ram
+;# patch72: computes suitable defaults for new "domain" and "hidenet"
+;#
+;# Revision 3.0.1.10  1997/01/07  18:33:25  ram
 ;# patch52: new execsafe variable defaults to OFF when missing
 ;#
 ;# Revision 3.0.1.9  1996/12/24  14:59:00  ram
@@ -166,7 +169,12 @@ EOM
 
 	$mboxlock = '%f.lock' unless defined $mboxlock;
 
+	# Backward compatibility -- RAM, 17/03/2001
+	$domain = $main::hiddennet || $main::mydomain unless defined $domain;
+	$hidenet = $main::hiddennet eq '' ? 'OFF' : 'ON' unless defined $hidenet;
+
 	$umask = oct($umask) if $umask =~ /^0/;	 # Translate umask into decimal
+	$domain =~ s/^\.*//;					 # Strip leading '.'
 
 	# Update @INC perlib search path with the perlib variable. Paths not
 	# starting by a '/' are supposed to be under the mailagent private lib

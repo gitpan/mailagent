@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.15 2001/03/13 13:15:43 ram Exp $
+;# $Id: parse.pl,v 3.0.1.16 2001/03/17 18:13:15 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.16  2001/03/17 18:13:15  ram
+;# patch72: use the "domain" config var instead of mydomain
+;#
 ;# Revision 3.0.1.15  2001/03/13 13:15:43  ram
 ;# patch71: added fix for broken continuations in parse_mail()
 ;#
@@ -337,7 +340,8 @@ sub relay_list {
 				/\bby\s+([\w-.]+)/i
 			) {
 				$host = $1;
-				$host .= $mydomain if $host =~ /^\w/ && $host !~ /\.\w{2,4}$/;
+				$host .= ".$cf::domain"
+					if $host =~ /^\w/ && $host !~ /\.\w{2,4}$/;
 				push(@hosts, $host);
 			} else {
 				&add_log("WARNING no by in first Received: line '$received'")

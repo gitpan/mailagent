@@ -2,7 +2,7 @@
 # Mailagent rules for filter regression tests
 #
 
-# $Id: rules,v 3.0.1.4 1999/07/12 13:58:02 ram Exp $
+# $Id: rules,v 3.0.1.5 2001/03/17 18:16:21 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,7 +13,10 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: rules,v $
-# Revision 3.0.1.4  1999/07/12 13:58:02  ram
+# Revision 3.0.1.5  2001/03/17 18:16:21  ram
+# patch72: added new filter/address tests
+#
+# Revision 3.0.1.4  1999/07/12  13:58:02  ram
 # patch66: fixed wrong semantics for <2>, and rewrote tests accordingly
 #
 # Revision 3.0.1.3  1996/12/24  15:03:48  ram
@@ -33,6 +36,25 @@ maildir = ~;
 mailfilter = ~;
 
 Subject: /test/		{ DELETE };
+
+# filter/address
+X-Tag: /address #1/				{ BEGIN ADDR; REJECT };
+<ADDR> To: ram					{ SAVE ok.1; REJECT };
+<ADDR> To: ramx					{ SAVE bad.1; REJECT };
+<ADDR> To: am					{ SAVE bad.2; REJECT };
+<ADDR> To: /^ram@/				{ SAVE ok.2; REJECT };
+<ADDR> To: ram@eiffel.com		{ SAVE ok.3; REJECT };
+<ADDR> To: am@eiffel.com		{ SAVE bad.3; REJECT };
+<ADDR> To: xram@eiffel.com		{ SAVE bad.4; REJECT };
+<ADDR> To: ramx@eiffel.com		{ SAVE bad.5; REJECT };
+<ADDR> To: RAM@eiffel.COM		{ SAVE ok.4; REJECT };
+<ADDR> To: ram@eiffe..com		{ SAVE bad.6; REJECT };
+<ADDR> To: ram@eiffel			{ SAVE bad.7; REJECT };
+<ADDR> To: ram@eif				{ SAVE bad.8; REJECT };
+<ADDR> To: ram*					{ SAVE ok.5; REJECT };
+<ADDR> To: ra*					{ SAVE ok.6; REJECT };
+<ADDR> To: ra*@eif*				{ SAVE ok.7; REJECT };
+<ADDR>							{ DELETE };
 
 # filter/default
 X-Tag: /default #1/ { DELETE };
@@ -62,6 +84,7 @@ X-Tag: /list #1/				{ BEGIN LIST; REJECT };
 <LIST> Newsgroups: news.lists	{ SAVE %u.7 };
 <LIST> To <3>: /^root@local/	{ SAVE %u.8 };
 <LIST> To: !ram					{ SAVE %u.9 };
+<LIST>							{ DELETE };
 
 X-Tag: /list #2/						{ BEGIN LIST; REJECT };
 <LIST> Relayed: ursa-major.spdcc.com	{ SAVE ok.1; REJECT LIST_OK };

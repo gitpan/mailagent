@@ -2,7 +2,7 @@
 # Configuration file for mailagent
 #
 
-# $Id: mailagent.cf,v 3.0.1.12 1998/07/28 16:56:21 ram Exp $
+# $Id: mailagent.cf,v 3.0.1.13 2001/03/17 18:03:59 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,7 +13,10 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
-# Revision 3.0.1.12  1998/07/28 16:56:21  ram
+# Revision 3.0.1.13  2001/03/17 18:03:59  ram
+# patch72: added two variables: domain and hidenet
+#
+# Revision 3.0.1.12  1998/07/28  16:56:21  ram
 # patch62: added servshell variable
 #
 # Revision 3.0.1.11  1998/03/31  14:35:29  ram
@@ -75,6 +78,8 @@ p_rome   : ~/bin:~/bin/sun4:/base/common/GENERAL/sun4/bin
 user     : ram
 name     : Raphael
 email    : you@your.domain.top	# Your accurate e-mail address
+domain   : domain.top			# Your domain name (no leading '.')
+hidenet  : OFF					# Prefix domain with hostname when OFF
 
 # Vacation mode (on/off), vacation file and period
 vacation : OFF					# Vacation mode on/off
