@@ -1,4 +1,4 @@
-;# $Id: cmdserv.pl,v 3.0.1.3 1996/12/24 14:50:16 ram Exp $
+;# $Id: cmdserv.pl,v 3.0.1.4 1997/02/20 11:43:12 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: cmdserv.pl,v $
+;# Revision 3.0.1.4  1997/02/20  11:43:12  ram
+;# patch55: made 'perl -cw' clean
+;#
 ;# Revision 3.0.1.3  1996/12/24  14:50:16  ram
 ;# patch45: all power-sensitive actions can now be logged separately
 ;# patch45: launch sendmail only when session is done to avoid timeouts
@@ -236,7 +239,7 @@ sub process {
 	# Make sure sender address is not hostile
 	unless (&addr'valid($cmdenv'uid)) {
 		&add_log("ERROR $cmdenv'uid is an hostile sender address")
-			if $loglvl > 1;
+			if $'loglvl > 1;
 		return 1;	# Failed, will discard whole mail message then
 	}
 
@@ -564,10 +567,15 @@ sub exec_shell {
 		# 'exec 3>&2 2>&1', meaning the file #3 is the original MAILER and
 		# stdout and stderr for the script go to the same trace file, as
 		# intiallly attached to stdout.
+		#
 		open(STDOUT, '>&TRACE');	# Redirect stdout to the trace file
 		open(STDERR, '>&MAILER');	# Temporarily mapped to the MAILER file
 		close(STDIN);				# Make sure there is no input
-		exec "sh $cmdfile";			# Don't let perl use sh -c
+
+		# Using a sub-block ensures exec() is followed by nothing
+		# and makes mailagent "perl -cw" clean, whatever that means ;-)
+		{ exec "sh $cmdfile" }		# Don't let perl use sh -c
+
 		&'add_log("SYSERR exec: $!") if $'loglvl;
 		&'add_log("ERROR cannot exec /bin/sh $cmdfile") if $'loglvl;
 		print MAILER "Cannot exec command file ($!).\n";

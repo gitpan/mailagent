@@ -1,3 +1,97 @@
+Thu Feb 20 12:55:50 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
+
+. Description:
+
+	Regenerated Configure for getopt() and dup2() checking.
+
+	Updated copyright notice to include year 1997.
+
+	New groupsafe, execskip and lockwarn variables. See the manual
+	page entries for a description. Roughly speaking, they
+	resepectively control group-writable secure checks, exec-safe
+	secure checks and locking warnings when too much time is spent
+	waiting for a lock.
+
+	New -o switch for the C filter to redirect output directly from
+	the .forward in case shell redirection is not available there...
+	See the man page for details.
+
+	The C filter now prefer open(O_APPEND) to fopen("a") for stdio
+	append bugs (reported on SUN platforms).
+
+	Made it explicit in the man page that /pattern/i is legal to
+	perform a case-insensitive match, as in Perl.
+
+	Made mailagent 'perl -cw' clean and fixed a couple of typos.
+
+	Improved Received: header parsing to avoid warnings.
+
+	The 'unmime -e' un-escape was overzealous for uuencoded parts...
+	Made unmime die if an error occurs to prevent feedback from
+	occurring in mailagent.
+
+. Files changed:
+
+	* agent/files/mailagent.cf: New groupsafe, execskip and lockwarn
+	variables.
+
+	* agent/filter/Jmakefile: Added getopt.c and dup2.c files.
+
+	* agent/filter/getopt.c, agent/filter/dup2.c: Created.
+
+	* agent/filter/io.c: New io_redirect() routine to handle the -o
+	switch.
+
+	* agent/filter/io.h: Declared io_redirect().
+
+	* agent/filter/logfile.c: Prefer open(O_APPEND) to fopen("a") for
+	stdio append bugs.
+
+	* agent/filter/main.c: Now uses getopt() to parse command line
+	switches.  New -o switch to redirect output.
+
+	* agent/filter/parser.c: Skip group-writable and exec-safe checks if
+	told to.
+
+	* agent/magent.sh: Used $* variable for no purpose.
+
+	* agent/man/mailagent.SH: Documents new execsafe, groupsafe and
+	lockwarn variables.  The C filter can now redirect output via -o. 
+	Made it explicit that /pattern/i is legal.
+
+	* agent/pl/acs_rqst.pl: Now supports the lockwarn variable.
+
+	* agent/pl/actions.pl: Made 'perl -cw' clean and fixed a couple of
+	typos.
+
+	* agent/pl/callout.pl: Ensure %Header and $wmode are localized in the
+	main package.
+
+	* agent/pl/cmdserv.pl: Made 'perl -cw' clean.
+
+	* agent/pl/context.pl: Removed the 'do' workaround for perl5.001.
+
+	* agent/pl/hook.pl: Used $wmode and $loglvl from the wrong package.
+
+	* agent/pl/install.pl: Missed a '$' in front of a variable in
+	create().
+
+	* agent/pl/interface.pl: Made use of local $lastcmd instead of main's.
+
+	* agent/pl/parse.pl: Improved Received: header parsing.
+
+	* agent/pl/secure.pl: Now honours groupsafe and execsafe
+	configuration variables.
+
+	* agent/pl/stats.pl: Typo fixes and print() call cleanup to avoid
+	run-time warnings.
+
+	* agent/test/basic/config.t: Avoid exec-safe checks and
+	group-writable directories.
+
+	* misc/mime/unmime: The -e un-escape was overzealous for uuencoded
+	parts...  Made the filter die if an error occurs to prevent feedback.
+
 Fri Jan 31 19:11:21 MET 1997   Raphael Manfredi <Raphael_Manfredi@grenoble.hp.com>
 
 . Description:

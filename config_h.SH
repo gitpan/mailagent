@@ -25,7 +25,7 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  * that running config_h.SH again will wipe out any changes you've made.
  * For a more permanent change edit config.sh and rerun config_h.SH.
  *
- * \$Id: config_h.SH,v 3.0.1.9 1996/12/26 10:47:12 ram Exp $
+ * \$Id: config_h.SH,v 3.0.1.10 1997/02/20 11:48:26 ram Exp $
  */
 
 /*
@@ -61,6 +61,18 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  */
 #$d_bcopy HAS_BCOPY	/**/
 
+/* HAS_DUP2:
+ *	This symbol, if defined, indicates that the dup2 routine is
+ *	available to duplicate file descriptors.
+ */
+#$d_dup2 HAS_DUP2	/**/
+
+/* HAS_FCNTL:
+ *	This symbol, if defined, indicates to the C program that
+ *	the fcntl() function exists.
+ */
+#$d_fcntl HAS_FCNTL		/**/
+
 /* FLEXFILENAMES:
  *	This symbol, if defined, indicates that the system supports filenames
  *	longer than 14 characters.
@@ -87,6 +99,11 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
 #$d_gethname HAS_GETHOSTNAME	/**/
 #$d_uname HAS_UNAME		/**/
 #$d_phostname PHOSTNAME "$aphostname"	/* How to get the host name */
+
+/* HAS_GETOPT:
+ *	This symbol, if defined, indicates that the getopt() routine exists.
+ */
+#$d_getopt HAS_GETOPT		/**/
 
 /* HAS_RENAME:
  *	This symbol, if defined, indicates that the rename routine is available
@@ -307,6 +324,18 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  *	If defined, this macro indicates that the C compiler can handle
  *	function prototypes.
  */
+/* NXT_ARG:
+ *	This macro is used to separate arguments in the declared argument list.
+ */
+/* V_FUNC:
+ *	This macro is used to declare "public" (non-static) functions.
+ *	It takes three arguments: the function type and name, a parenthesized
+ *	traditional (comma separated) argument list, and the declared argument
+ *	list (in which arguments are separated with NXT_ARG, and additional
+ *	arbitrary arguments are specified with DOTS).  For example:
+ *
+ *		V_FUNC(int main, (argc, argv), int argc NXT_ARG char *argv[])
+ */
 /* _:
  *	This macro is used to declare function parameters for folks who want
  *	to make declarations with prototypes using a different style than
@@ -316,8 +345,12 @@ sed <<!GROK!THIS! >config.h -e 's!^#undef!/\*#define!' -e 's!^#un-def!#undef!'
  */
 #$prototype	CAN_PROTOTYPE	/**/
 #ifdef CAN_PROTOTYPE
+#define	NXT_ARG ,
+#define	V_FUNC(name, arglist, args)name(args)
 #define	_(args) args
 #else
+#define	NXT_ARG ;
+#define	V_FUNC(name, arglist, args)name arglist args;
 #define	_(args) ()
 #endif
 

@@ -1,4 +1,4 @@
-;# $Id: install.pl,v 3.0.1.2 1996/12/24 14:54:05 ram Exp $
+;# $Id: install.pl,v 3.0.1.3 1997/02/20 11:44:47 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: install.pl,v $
+;# Revision 3.0.1.3  1997/02/20  11:44:47  ram
+;# patch55: missed a '$' in front of a variable in create()
+;#
 ;# Revision 3.0.1.2  1996/12/24  14:54:05  ram
 ;# patch45: new prefix() routine
 ;#
@@ -360,7 +363,7 @@ sub exists {
 # Create file/directory, using type sepcification from the setup.cf file.
 sub create {
 	local($path, $type, $var) = @_;
-	return &exists(path, $type, $var) if -e $path;
+	return &exists($path, $type, $var) if -e $path;
 	local($what) = $type =~ /^D/ ? 'directory' : 'file';
 	local($file) = $type =~ /^\w\s*(.*)/;
 	local($from) = $file ? "from default $file" : '(empty)';

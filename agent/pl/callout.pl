@@ -1,4 +1,4 @@
-;# $Id: callout.pl,v 3.0.1.2 1995/02/03 18:01:12 ram Exp $
+;# $Id: callout.pl,v 3.0.1.3 1997/02/20 11:42:52 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: callout.pl,v $
+;# Revision 3.0.1.3  1997/02/20  11:42:52  ram
+;# patch55: ensure %Header and $wmode are localized in the main package
+;#
 ;# Revision 3.0.1.2  1995/02/03  18:01:12  ram
 ;# patch30: order of arguments was wrong when calling &spawn
 ;# patch30: could loop forever in &run when flushing the whole queue
@@ -247,7 +250,7 @@ sub spawn {
 	local($type, $action, $file) = @_;
 	local($sub) = 'spawn_' . $type;
 	local($file_name) = $file;		# Where mail is held (within queue usually)
-	local(%Header);					# Where filtering information is stored
+	local(%'Header);				# Where filtering information is stored
 	&'add_log("spawning $action on $file ($type)") if $'loglvl > 14;
 	# File name is absolute if not within mailagent's queue, otherwise it
 	# is only a relative path name, as returned by &qmail. Shell commands
@@ -274,7 +277,7 @@ sub spawn {
 sub spawn_agent {
 	local($action) = @_;
 	local($mode) = '_CALLOUT_';	# Initial working mode
-	local($wmode) = $mode;		# Needed for statistics routines
+	local($'wmode) = $mode;		# Needed for statistics routines
 	umask($cf'umask);			# Reset default umask
 	&'xeqte($action);			# Run action
 	umask($cf'umask);			# Reset umask anyway

@@ -1,4 +1,4 @@
-;# $Id: interface.pl,v 3.0.1.4 1995/08/07 16:19:24 ram Exp $
+;# $Id: interface.pl,v 3.0.1.5 1997/02/20 11:45:12 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: interface.pl,v $
+;# Revision 3.0.1.5  1997/02/20  11:45:12  ram
+;# patch55: made use of local $lastcmd instead of main's
+;#
 ;# Revision 3.0.1.4  1995/08/07  16:19:24  ram
 ;# patch37: new BIFF command interface routine for PERL hooks
 ;# patch37: fixed symbol table lookups for perl5 support
@@ -128,7 +131,7 @@ sub dispatch {
 	# $lastcmd records a failure status.
 
 	$name =~ tr/a-z/A-Z/;					# Stored upper-cased
-	$'Nostatus{$name} ? 1 : !$lastcmd;		# Propagate status
+	$'Nostatus{$name} ? 1 : !$'lastcmd;		# Propagate status
 }
 
 # Perload ON

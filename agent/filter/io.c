@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: io.c,v 3.0.1.10 1996/12/26 10:46:11 ram Exp $
+ * $Id: io.c,v 3.0.1.11 1997/02/20 11:35:20 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: io.c,v $
+ * Revision 3.0.1.11  1997/02/20  11:35:20  ram
+ * patch55: new io_redirect() routine to handle the -o switch
+ *
  * Revision 3.0.1.10  1996/12/26  10:46:11  ram
  * patch51: include <unistd.h> for R_OK and define fallbacks
  * patch51: declared strsave() in case it's not done in <string.h>
@@ -1066,6 +1069,99 @@ private void goto_daemon()
 		add_log(1, "SYSERR setsid: %m (%e)");
 		add_log(6, "WARNING did not become session leader");
 	}
+}
+
+public int io_redirect(filename, is_setid, ruid)
+char *filename;			/* Filename for redirection */
+int is_setid;			/* True when set[ug]id */
+int ruid;				/* Real uid */
+{
+	/* Redirect stdout and stderr to specified filename. When is_setid
+	 * is true, we don't create the file but only append to it, and
+	 * only if the file is owned by the real uid.
+	 * Returns true if operation succeeded, false otherwise.
+	 */
+
+	int fd;					/* New fd created for new stdout/stderr */
+	int stdfd;				/* Saved stderr file descriptor */
+	struct stat buf;		/* Stat buffer */
+
+	if (is_setid) {			/* Pre-check file when running set[ug]id */
+		if (-1 == stat(filename, &buf)) {
+			if (errno != ENOENT) {
+				add_log(1, "SYSERR stat: %m (%e)");
+				add_log(2, "ERROR cannot stat %s", filename);
+				return 0;	/* Failed */
+			}
+			add_log(1, "ERROR cannot create %s when running set[ug]id",
+				filename);
+			return 0;
+		}
+		if (buf.st_uid != ruid) {
+			add_log(1, "ERROR cannot append to %s (not owned by UID %d)",
+				filename, ruid);
+			return 0;
+		}
+	}
+
+	/*
+	 * Now open the specified file.
+	 *
+	 * The pre-checking above, meant to spot errors, also opens a
+	 * race-condition wrt. the file ownership, when running set[ug]id.
+	 * Closing it would mean using the real uid to perform the open, which
+	 * is hard to do portably (need to switch to the real uid and back to
+	 * the effective later on).
+	 *
+	 * Workaround: we open the file, and re-check the opened fd via a fstat().
+	 * We close it without writing anything if the ownership is not right.
+	 * Note that we forbid the creation explicitely when running set[ug]id.
+	 */
+
+	fd = open(filename, O_WRONLY | O_APPEND | (is_setid ? 0 : O_CREAT), 0600);
+	if (fd == -1) {
+		add_log(1, "SYSERR open: %m (%e)");
+		return 0;
+	}
+
+	if (is_setid) {			/* Re-check file when running set[ug]id */
+		if (-1 == fstat(fd, &buf)) {	/* Note we stat() the fd! */
+			close(fd);
+			add_log(1, "SYSERR stat: %m (%e)");
+			add_log(2, "ERROR can't locate %s after opening", filename);
+			return 0;
+		}
+		if (buf.st_uid != ruid) {
+			close(fd);
+			add_log(1, "ERROR cannot append to %s (not owned by UID %d)",
+				filename, ruid);
+			return 0;
+		}
+	}
+
+	/*
+	 * Time to redirect the new fd to 1 and 2.
+	 * Keep the original stderr file descriptor around, in case there is
+	 * a dup2() failure.
+	 */
+
+	stdfd = dup(2);
+	fflush(stderr);		/* In case we have to force a write() on 2 below */
+
+	if (-1 == dup2(fd, 1) || -1 == dup2(fd, 2)) {
+		add_log(1, "SYSERR dup2: %m (%e)");
+		if (-1 == dup2(stdfd, 2)) {		/* #2 may have been closed by dup2 */
+			char *msg = "Emergency restore of stderr failed...";
+			write(stdfd, msg, strlen(msg));		/* They might see this */
+		}
+		close(stdfd);
+		close(fd);
+		return 0;
+	}
+
+	close(stdfd);
+	close(fd);
+	return 1;		/* OK -- stderr and stdout redirected */
 }
 
 #ifndef HAS_RENAME

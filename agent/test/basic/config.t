@@ -1,6 +1,6 @@
 # This MUST be the first test ever run
 
-# $Id: config.t,v 3.0.1.6 1997/01/07 18:36:24 ram Exp $
+# $Id: config.t,v 3.0.1.7 1997/02/20 11:48:11 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -11,6 +11,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: config.t,v $
+# Revision 3.0.1.7  1997/02/20  11:48:11  ram
+# patch55: avoid exec-safe checks and group-writable directories
+#
 # Revision 3.0.1.6  1997/01/07  18:36:24  ram
 # patch52: force execsafe to OFF when running tests
 #
@@ -83,6 +86,8 @@ plsave   : \$spool/plsave
 authfile : \$spool/auth
 secure   : ON
 execsafe : OFF			# Don't be too paranoid while running tests
+execskip : ON			# Skip all exec()-related sanity checks
+groupsafe: OFF			# Don't bother with writable group checks
 sendmail : msend
 sendnews : nsend
 EOF

@@ -1,4 +1,4 @@
-;# $Id: secure.pl,v 3.0.1.5 1997/01/07 18:35:52 ram Exp $
+;# $Id: secure.pl,v 3.0.1.6 1997/02/20 11:46:00 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: secure.pl,v $
+;# Revision 3.0.1.6  1997/02/20  11:46:00  ram
+;# patch55: now honours groupsafe and execsafe configuration variables
+;#
 ;# Revision 3.0.1.5  1997/01/07  18:35:52  ram
 ;# patch52: now only perform extended exec() checks iff execsafe is ON
 ;#
@@ -92,7 +95,7 @@ sub file_secure {
 	# Extra checks for secure mode (or if root user). We make sure the
 	# file is not writable by group and then we conduct the same secure tests
 	# on the directory itself
-	if ($st_mode & $S_IWGRP) {
+	if (($st_mode & $S_IWGRP) && $cf'groupsafe !~ /^off/i) {
 		&add_log("WARNING $type file $file is group writable!") if $loglvl > 5;
 		return 0;		# Unsecure file
 	}
@@ -226,7 +229,7 @@ sub check_st_mode {
 		return 0;		# Unsecure directory
 	}
 	return 1 unless $both;
-	if ($st_mode & $S_IWGRP) {
+	if (($st_mode & $S_IWGRP) && $cf'groupsafe !~ /^off/i) {
 		&add_log("WARNING directory $dir of $type file is group writable!")
 			if $loglvl > 5;
 		return 0;		# Unsecure directory
@@ -244,6 +247,8 @@ sub exec_secure {
 		&add_log("ERROR lacking execute rights on $file") if $loglvl > 1;
 		return 0;
 	}
+
+	return 1 if $cf'execskip =~ /^on/i;	# Assume safe to be exec'ed
 
 	local($cf'secure) = $cf'execsafe;	# Use exec settings for file_secure()
 

@@ -1,4 +1,4 @@
-;# $Id: hook.pl,v 3.0.1.2 1996/12/24 14:52:38 ram Exp $
+;# $Id: hook.pl,v 3.0.1.3 1997/02/20 11:44:12 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: hook.pl,v $
+;# Revision 3.0.1.3  1997/02/20  11:44:12  ram
+;# patch55: used $wmode and $loglvl from the wrong package
+;#
 ;# Revision 3.0.1.2  1996/12/24  14:52:38  ram
 ;# patch45: perform security checks on hook programs
 ;#
@@ -120,11 +123,11 @@ sub rules {
 	local($hook) = @_;
 	&'add_log("hook contains mailagent rules") if $'loglvl > 17;
 	die("unsecure hook") unless &'file_secure($hook, 'rule hook');
-	local($wmode) = 'INITIAL';		# Force working mode of INITIAL
+	local($'wmode) = 'INITIAL';		# Force working mode of INITIAL
 	local($failed, $saved) = &'apply($hook);
 	die("cannot apply rules") if $failed;
 	unless ($saved) {
-		&'add_log("NOTICE not saved, leaving in mailbox") if $loglvl > 5;
+		&'add_log("NOTICE not saved, leaving in mailbox") if $'loglvl > 5;
 		&'xeqte("LEAVE");
 	}
 }

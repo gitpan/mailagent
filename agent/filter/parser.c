@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: parser.c,v 3.0.1.11 1997/01/31 18:07:11 ram Exp $
+ * $Id: parser.c,v 3.0.1.12 1997/02/20 11:38:07 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: parser.c,v $
+ * Revision 3.0.1.12  1997/02/20  11:38:07  ram
+ * patch55: skip group-writable and exec-safe checks if told to
+ *
  * Revision 3.0.1.11  1997/01/31  18:07:11  ram
  * patch54: forgot one more get_confval vs get_confstr translation
  *
@@ -303,13 +306,20 @@ char *file;
 	/* Same checks as secure(), but without file/directory ownership.
 	 * We propagate SECURE_ON only when execsafe is ON or when the
 	 * user is the superuser.
+	 *
+	 * When execskip is ON, we don't perform the exec() checks at all.
+	 * This variable if OFF by default, i.e. they must explicitely
+	 * turn it ON to disable checking.
 	 */
 
 	char *execsafe = get_confstr("execsafe", CF_DEFAULT, "OFF");
+	char *execskip = get_confstr("execskip", CF_DEFAULT, "OFF");
 	int flag = (0 == strcasecmp(execsafe, "ON") || ROOTID == geteuid()) ?
 		SECURE_ON : 0;
 
 	stat_check(file);
+	if (0 == strcasecmp(execskip, "ON"))
+		return 1;
 	return check_perm(file, flag);		/* Check permissions */
 }
 
@@ -351,6 +361,7 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 	char *cfsecure;				/* Config value for the 'secure' parameter */
 	char *c;					/* Last slash position in file name */
 	int wants_secure = 0;		/* Set to true for extra security checks */
+	int wants_group = 1;		/* Set to true unless 'groupsafe' is OFF */
 
 	if (-1 == stat(file, &buf))
 		return 0;				/* Missing file is not secure! */
@@ -402,7 +413,10 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 
 	add_log(17, "performing additional checks on %s", file);
 
-	if (buf.st_mode & S_IWGRP) {
+	if (0 == strcasecmp(get_confstr("groupsafe", CF_DEFAULT, "ON"), "OFF"))
+		wants_group = 0;			/* They trust all the groups! */
+
+	if (wants_group && (buf.st_mode & S_IWGRP)) {
 		check_fatal(flags, "file %s is group writable!", file);
 		return 0;			/* Failed checks */
 	}
@@ -433,7 +447,7 @@ int flags;	/* MAY_PANIC | MUST_OWN */
 		return 0;			/* Failed checks */
 	}
 
-	if (buf.st_mode & S_IWGRP) {
+	if (wants_group && (buf.st_mode & S_IWGRP)) {
 		check_fatal(flags, "directory %s is group writable!", parent);
 		return 0;			/* Failed checks */
 	}

@@ -1,4 +1,4 @@
-;# $Id: acs_rqst.pl,v 3.0.1.2 1994/10/04 17:42:43 ram Exp $
+;# $Id: acs_rqst.pl,v 3.0.1.3 1997/02/20 11:41:19 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: acs_rqst.pl,v $
+;# Revision 3.0.1.3  1997/02/20  11:41:19  ram
+;# patch55: now supports the lockwarn variable
+;#
 ;# Revision 3.0.1.2  1994/10/04  17:42:43  ram
 ;# patch17: added support for customized lockfile names
 ;#
@@ -64,12 +67,16 @@ sub acs_rqst {
 	}
 	local($lockfile) = $file . $lockext;
 	$lockfile = &lock'file($file, $format) if defined $format;
+	local($waited) = 0;					# amount of time spent sleeping
+	local($lastwarn) = 0;				# last time we warned them...
+	local($wmin, $wafter);				# busy lock warn limits
+	if ($cf'lockwarn =~ /(\d+),\s*(\d+)/)	{ ($wmin, $wafter) = ($1, $2) }
+	elsif ($cf'lockwarn =~ /(\d+)/)			{ ($wmin, $wafter) = ($1, $1) }
+	else									{ ($wmin, $wafter) = (20, 300) }
 	while ($max) {
 		$max--;
-		if (-f $lockfile) {
-			sleep($delay);				# busy: wait
-			next;
-		}
+		next if -f $lockfile;
+
 		# Attempt to create lock
 		$mask = umask(0333);			# no write permission
 		if (open(FILE, ">$lockfile")) {
@@ -83,10 +90,26 @@ sub acs_rqst {
 			last if $_ eq $stamp;		# lock is ok
 		} else {
 			umask($mask);				# restore old umask
-			sleep($delay);				# busy: wait
+			next;
+		}
+	} continue {
+		sleep($delay);				# busy: wait
+		$waited += $delay;
+		# Warn them once after $wmin seconds and then every $wafter seconds
+		if (
+			(!$lastwarn && $waited > $wmin) ||
+			($waited - $lastwarn) > $wafter
+		) {
+			local($waiting) = $lastwarn ? 'still waiting' : 'waiting';
+			local($after) = $lastwarn ? 'after' : 'since';
+			&add_log("WARNING $waiting for $file lock $after $waited seconds")
+				if $loglvl > 3;
+			$lastwarn = $waited;
 		}
 	}
 	if ($max) {
+		&add_log("NOTICE got $file lock after $waited seconds")
+			if $lastwarn && $loglvl > 6;
 		$result = 0;	# ok
 	} else {
 		$result = -1;	# could not lock

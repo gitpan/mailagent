@@ -24,7 +24,7 @@ $startperl
 # via the filter. Mine looks like this:
 #   "|exec /users/ram/mail/filter >>/users/ram/.bak 2>&1"
 
-# $Id: magent.sh,v 3.0.1.13 1996/12/24 14:06:02 ram Exp $
+# $Id: magent.sh,v 3.0.1.14 1997/02/20 11:39:31 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -35,6 +35,9 @@ $startperl
 #  of the source tree for mailagent 3.0.
 #
 # $Log: magent.sh,v $
+# Revision 3.0.1.14  1997/02/20  11:39:31  ram
+# patch55: used $* variable for no purpose
+#
 # Revision 3.0.1.13  1996/12/24  14:06:02  ram
 # patch45: rule file path is now absolute, so caching can be safe
 # patch45: changed queue processing/sleeping logic for better interactivity
@@ -169,7 +172,6 @@ while ($ARGV[0] =~ /^-/) {
 		++$dump_rule;
 	}
 	elsif ($_ eq '-e') {	# Rule supplied on command line
-		local($*) = 1;
 		$_ = shift;
 		s/\n/ /g;
 		push(@Linerules, $_);

@@ -1,4 +1,4 @@
-;# $Id: parse.pl,v 3.0.1.8 1997/01/07 18:33:09 ram Exp $
+;# $Id: parse.pl,v 3.0.1.9 1997/02/20 11:45:34 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: parse.pl,v $
+;# Revision 3.0.1.9  1997/02/20  11:45:34  ram
+;# patch55: improved Received: header parsing
+;#
 ;# Revision 3.0.1.8  1997/01/07  18:33:09  ram
 ;# patch52: now pre-extend memory by using existing message size
 ;# patch52: enhanced Received: lines parsing
@@ -316,14 +319,29 @@ sub relay_list {
 		# supersede the current $host if found. Note that some (local) mailers
 		# insert host as login@host, so we remove the login part.
 		# Also handle things like (really foo.com) or (actually real.host), i.e
-		# allow an adjective to qualify the real host name
+		# allow an adjective to qualify the real host name.
+		#
+		# Note: we don't anchor the match at the beginning of the string
+		# since we want to parse the 'user@255.190.143.3' as in:
+		#   from foo.net (HELO master.foo.org) (user@255.190.143.3) by bar.net
+		# but it may not come first... Later on, we'll remove all remaining
+		# leading unrecognized () information.
 
 		$real = '';
 		$real = $1 eq '' ? $2 : $1 if
-			s/^\(([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*// ||
-			s/^\(\w+\s+([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*//;
+			s/\(([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*// ||
+			s/\(\w+\s+([\w-.@]*)?\s*(\[\d+\.\d+\.\d+\.\d+\])?\)\s*//;
 		$real =~ s/^.*\@//;
 		$host = $real if $real =~ /\.\w{2,4}$/ || $real =~ /^\[[\d.]+\]$/;
+
+		# If we have not recognized anything above, then we don't want to
+		# handle anything between () that may follow the original host name.
+		# There are just too many formats out there and we can't definitively
+		# parse them all. There may even be multiple such occurrences like:
+		#   from foo.net (HELO master.foo.org) (user@255.190.143.3) by bar.net
+		# Just skip them.
+
+		s/^\([^)]*\)\s+//g;
 
 		# At this point, we should have a 'by ' string somewhere, or an EOS.
 		# We're not checking the 'by' immediately (as in /^by/) because some

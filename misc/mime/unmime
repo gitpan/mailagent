@@ -2,7 +2,7 @@
 		eval 'exec perl -S $0 ${1+"$@"}'
 				if $running_under_some_shell;
 
-# $Id: unmime,v 3.0.1.1 1996/12/24 15:04:50 ram Exp $
+# $Id: unmime,v 3.0.1.2 1997/02/20 11:49:29 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -17,6 +17,10 @@
 # Integrated into mailagent and modified with Eryq's permission.
 #
 # $Log: unmime,v $
+# Revision 3.0.1.2  1997/02/20  11:49:29  ram
+# patch55: the -e un-escape was overzealous for uuencoded parts...
+# patch55: made the filter die if an error occurs to prevent feedback
+#
 # Revision 3.0.1.1  1996/12/24  15:04:50  ram
 # patch45: created
 #
@@ -80,7 +84,7 @@ sub dump_entity {
 					if defined $path && -f $path;
 
 			} else {						   # d'oh!
-				print "$0: couldn't find/open '$file': $!";
+				die "$me: couldn't find/open '$file': $!";
 			}
 		} else {							   # binary: just summarize it...
 			my $size = ($path ? (-s $path) : '???');
@@ -94,13 +98,43 @@ sub dump_entity {
 }
 
 #------------------------------------------------------------
+# smart_pack
+#------------------------------------------------------------
+sub smart_pack {
+	my ($hexa) = @_;
+	my $val = hex($hexa);
+	return "=$hexa" if $val >= 128;	# We're smart right there!
+	return pack('C', $val);
+}
+
+#------------------------------------------------------------
 # unquote_stdin
 #------------------------------------------------------------
 sub unquote_stdin {
-	use MIME::QuotedPrint;
 	local $_;
+	my $encoded = 0;
 	while (<STDIN>) {
-		print decode_qp($_);
+		# Avoid decoding inlined uuencoded/btoa stuff... since they might
+		# accidentally bear valid =xx escapes... The leading \w character
+		# is there in case the thing is shar'ed...
+		# Likewise, all the lines longer than 60 chars and with no space
+		# in them are treated as being encoded.
+
+		$encoded = 1 if /^\w?begin\s+\d+\s+\S+\s*$/ || /^\w?xbtoa Begin\s*$/;
+		$encoded = 0 if /^\w?end\s*$/ || /^\w?xbtoa End/;
+
+		if ($encoded || (length > 60 && !/ /)) {
+			print $_;
+		} else {
+			# Can't use decode_qp from MIME::QuotedPrint because we
+			# might not face a real quoted-printable message...
+			# Inline an alternate version.
+
+			s/\s+(\r?\n)/$1/g;		# Trailing white spaces
+			s/=\r?\n//g;			# Soft line breaks
+			s/=([\da-fA-F]{2})/smart_pack($1)/ge;	# Hehe
+			print $_;
+		}
 	}
 	return 1;	# OK
 }
@@ -119,7 +153,8 @@ sub main {
 	$parser->output_dir($TMPDIR);
 	
 	# Read the MIME message:
-	$entity = $parser->read(\*STDIN) or die "couldn't parse MIME stream";
+	$entity = $parser->read(\*STDIN) or
+		die "$me: couldn't parse MIME stream";
 
 	# Dump it out:
 	dump_entity($entity);

@@ -1,4 +1,4 @@
-;# $Id: actions.pl,v 3.0.1.14 1997/01/07 18:31:14 ram Exp $
+;# $Id: actions.pl,v 3.0.1.15 1997/02/20 11:42:06 ram Exp $
 ;#
 ;#  Copyright (c) 1990-1993, Raphael Manfredi
 ;#  
@@ -9,6 +9,9 @@
 ;#  of the source tree for mailagent 3.0.
 ;#
 ;# $Log: actions.pl,v $
+;# Revision 3.0.1.15  1997/02/20  11:42:06  ram
+;# patch55: made 'perl -cw' clean and fixed a couple of typos
+;#
 ;# Revision 3.0.1.14  1997/01/07  18:31:14  ram
 ;# patch52: allow for @SH help to be understood, whatever the case
 ;#
@@ -600,7 +603,7 @@ sub send_message {
 	print MAILER "\n";			# Header separated from body
 	# Now write the body
 	local($tmp);				# Because of a bug in perl 4.0 PL19
-	while ($tmp = <MSG>) {
+	while (defined ($tmp = <MSG>)) {
 		next if $tmp =~ /^$/ && $. == 1;	# Escape sequence to protect header
 		&macros_subst(*tmp);		# In-place macro substitutions
 		print MAILER $tmp;			# Write message line
@@ -1016,12 +1019,14 @@ sub execute_command {
 		unless (open(STDOUT, ">$trace")) {	# Where output goes
 			&add_log("WARNING couldn't create $trace: $!") if $loglvl > 5;
 			if ($feedback == $FEEDBACK) {	# Need trace if feedback
-				kill 'SIGPIPE', $ppid;		# Parent still waiting
+				kill 'SIGPIPE', getppid;	# Parent still waiting
 				exit 1;
 			}
 		}
 		open(STDERR, ">&STDOUT");			# Make it follow pipe
-		exec $program;						# Run the program now
+		# Using a sub-block ensures exec() is followed by nothing
+		# and makes mailagent "perl -cw" clean, whatever that means ;-)
+		{ exec $program }					# Run the program now
 		&add_log("ERROR couldn't exec '$program': $!") if $loglvl > 1;
 		exit 1;
 	} elsif ($pid == -1) {
@@ -1469,7 +1474,6 @@ sub after {
 	local($time, $action) = @_;
 	local($no_input) = $opt'sw_n;
 	local($shell_cmd) = $opt'sw_s;
-	local($cmd_cmd) = $opt'sw_c;
 	local($agent_cmd) = $opt'sw_a || !($opt'sw_n || $opt'sw_s || $opt'sw_c);
 	local($now) = time;					# Current time
 	local($start);						# Action's starting time

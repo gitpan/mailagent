@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: main.c,v 3.0.1.5 1997/01/31 18:06:43 ram Exp $
+ * $Id: main.c,v 3.0.1.6 1997/02/20 11:36:56 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,10 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: main.c,v $
+ * Revision 3.0.1.6  1997/02/20  11:36:56  ram
+ * patch55: now uses getopt() to parse command line switches
+ * patch55: new -o switch to redirect output
+ *
  * Revision 3.0.1.5  1997/01/31  18:06:43  ram
  * patch54: also trap fatal SIGSEGV and SIGBUS signals
  *
@@ -71,9 +75,11 @@ private Signal_t handler();	/* Signal handler */
 private void set_signal();	/* Set up the signal handler */
 private int set_real_uid();	/* Reset real uid */
 private int set_real_gid();	/* Reset real gid */
+private void no_setid();	/* Option not allowed when running set[ug]id */
 
 extern void env_home();		/* Only for tests */
 extern int errno;
+
 
 public void main(argc, argv, envp)
 int argc;
@@ -85,6 +91,9 @@ char **envp;
 	char *value;						/* Symbol value */
 	int euid, uid;						/* Current effective and real uid */
 	int egid, gid;						/* Effective and real gid */
+	int c;								/* Current switch value */
+	extern char *optarg;				/* getopt() globals */
+	extern int optind;
 
 	/* Compute program name, removing any leading path to keep only the name
 	 * of the executable file.
@@ -100,25 +109,39 @@ char **envp;
 	euid = geteuid();
 	egid = getegid();
 
-	/* The '-t' option means we are in test mode: set the home directory by
+	/*
+	 * The '-o' switch allows redirection of both stderr and stdout to the
+	 * specified file. This can be used on systems forbiding shell redirection
+	 * in the .forward. When running set[ug]id, we only append to existing
+	 * files owned by the real uid, for security reasons.
+	 *
+	 * The '-t' option means we are in test mode: set the home directory by
 	 * using the environment HOME variable, so that we may provide our own
 	 * configuration file elsewhere. Of course, this cannot be used if the
-	 * filter is setuid and invoked by an uid different than the owner of the
+	 * filter is setuid and invoked by an uid different from the owner of the
 	 * filter program.
 	 *
 	 * The '-V' option prints out the version and patchlevel, for sanity
 	 * checks (to make sure the latest filter is installed, for instance).
 	 */
-	if (argc > 1) {
-		if (0 == strcmp(argv[1], "-t")) {
-			if (uid != euid || gid != egid) {
-				say("no option allowed when set%s", uid != euid ? "uid":"gid");
-				my_exit(EX_USAGE);
-			}
+
+	while ((c = getopt(argc, argv, "o:tV")) != EOF) {
+		switch (c) {
+		case 'o':			/* output redirection */
+			if (!io_redirect(optarg, uid != euid || gid != egid, uid))
+				say("unable to redirect output to %s, continuing...", optarg);
+			break;
+		case 't':			/* test mode */
+			no_setid(c, uid, euid, gid, egid);
 			env_home();					/* Get HOME from environment */
-		} else if (0 == strcmp(argv[1], "-V")) {
+			break;
+		case 'V':			/* version number */
 			printf("filter %.1f PL%d\n", VERSION, PATCHLEVEL);
 			exit(EX_OK);
+			/* NOTRECHED */
+		default:
+			say("unknown switch -%c", c);
+			exit(EX_USAGE);
 		}
 	}
 
@@ -198,6 +221,19 @@ private void set_signal()
 #ifdef SIGBUS
 	signal(SIGBUS, handler);
 #endif
+}
+
+private void no_setid(opt, uid, euid, gid, egid)
+int opt, uid, euid, gid, egid;
+{
+	/* Don't allow switch '-opt' when running set[ug]id */
+
+	if (uid == euid && gid == egid)
+		return;
+
+	say("option -%c not allowed when running set%s",
+		opt, uid != euid ? "uid":"gid");
+	exit(EX_USAGE);
 }
 
 private Signal_t handler(sig)

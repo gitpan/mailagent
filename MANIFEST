@@ -33,7 +33,7 @@ agent/files/commands       Allowed commands for mailagent
 agent/files/compressors    Default sample compressors available
 agent/files/distribs       Example of distribution list
 agent/files/filter.sh      Shell script version of the mail filter
-agent/files/help               Directory holding SERVER help files
+agent/files/help/              Directory holding SERVER help files
 agent/files/help/Jmakefile     Generic makefile for help directory
 agent/files/help/Makefile.SH   Generated makefile
 agent/files/help/README        States what this directory is about
@@ -61,8 +61,10 @@ agent/filter/              The C version of the mail filter
 agent/filter/Jmakefile     Generic makefile template
 agent/filter/Makefile.SH   Makefile for C filter
 agent/filter/README        Introduction to filter
+agent/filter/dup2.c        Emulation of the dup2() system call
 agent/filter/environ.c     Environment management routines
 agent/filter/environ.h     Declarations for environment management routines
+agent/filter/getopt.c      Replacement for libc's getopt()
 agent/filter/hash.c        Symbol table handling
 agent/filter/hash.h        Declarations for symbol table
 agent/filter/io.c          I/O routines

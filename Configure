@@ -18,9 +18,9 @@
 # archive site. Check with Archie if you don't know where that can be.)
 #
 
-# $Id: Configure,v 3.0.1.13 1996/12/26 10:44:52 ram Exp $
+# $Id: Configure,v 3.0.1.14 1997/02/20 11:32:53 ram Exp $
 #
-# Generated on Thu Dec 26 09:12:15 MET 1996 [metaconfig 3.0 PL60]
+# Generated on Mon Feb 10 12:01:16 MET 1997 [metaconfig 3.0 PL60]
 
 cat >/tmp/c1$$ <<EOF
 ARGGGHHHH!!!!!
@@ -223,12 +223,15 @@ cpprun=''
 cppstdin=''
 d_access=''
 d_bcopy=''
+d_dup2=''
+d_fcntl=''
 d_flexfnam=''
 d_flock=''
 aphostname=''
 d_gethname=''
 d_phostname=''
 d_uname=''
+d_getopt=''
 d_hidnet=''
 hiddennet=''
 d_open3=''
@@ -3437,6 +3440,14 @@ set d_bsdpgrp
 eval $setvar
 $rm -f set set.c
 
+: see if dup2 exists
+set dup2 d_dup2
+eval $inlibc
+
+: see if this is an fcntl system
+set fcntl d_fcntl
+eval $inlibc
+
 : see if we can have long filenames
 echo " "
 rmlist="$rmlist /tmp/cf$$"
@@ -3855,6 +3866,10 @@ esac
 case "$d_phostname" in
 '') d_phostname="$undef";;
 esac
+
+: see if getopt exists
+set getopt d_getopt
+eval $inlibc
 
 : see which of string.h or strings.h is needed
 echo " "
@@ -5885,11 +5900,14 @@ d_bcopy='$d_bcopy'
 d_berknames='$d_berknames'
 d_bsd='$d_bsd'
 d_bsdpgrp='$d_bsdpgrp'
+d_dup2='$d_dup2'
 d_eunice='$d_eunice'
+d_fcntl='$d_fcntl'
 d_flexfnam='$d_flexfnam'
 d_flock='$d_flock'
 d_flockonly='$d_flockonly'
 d_gethname='$d_gethname'
+d_getopt='$d_getopt'
 d_hidnet='$d_hidnet'
 d_index='$d_index'
 d_lockflock='$d_lockflock'

@@ -81,7 +81,7 @@ all:: .FORCE_DEPEND
 ########################################################################
 # Start of Jmakefile
 
-# $X-Id: Jmakefile,v 3.0.1.1 1995/03/21 12:51:20 ram Exp ram $
+# $X-Id: Jmakefile,v 3.0.1.2 1997/02/20 11:34:01 ram Exp ram $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -92,6 +92,9 @@ all:: .FORCE_DEPEND
 #  of the source tree for mailagent 3.0.
 #
 # $X-Log: Jmakefile,v $
+# Revision 3.0.1.2  1997/02/20  11:34:01  ram
+# patch55: added getopt.c and dup2.c files
+#
 # Revision 3.0.1.1  1995/03/21  12:51:20  ram
 # patch35: now creates the private library directory before installing
 #
@@ -101,7 +104,7 @@ all:: .FORCE_DEPEND
 
 # Files used to build the application
 SRC = environ.c hash.c io.c lock.c logfile.c main.c misc.c msg.c parser.c \
-	user.c
+	user.c getopt.c dup2.c
 
 # Derived object file names
 OBJ = \
@@ -114,7 +117,9 @@ OBJ = \
 	misc.o \
 	msg.o \
 	parser.o \
-	user.o 
+	user.o \
+	getopt.o \
+	dup2.o 
 
 # File config.h is in the top-level directory
 CFLAGS = -I$(TOP)

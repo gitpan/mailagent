@@ -11,7 +11,7 @@
 */
 
 /*
- * $Id: logfile.c,v 3.0.1.2 1996/12/24 13:58:03 ram Exp $
+ * $Id: logfile.c,v 3.0.1.3 1997/02/20 11:36:23 ram Exp $
  *
  *  Copyright (c) 1990-1993, Raphael Manfredi
  *  
@@ -22,6 +22,9 @@
  *  of the source tree for mailagent 3.0.
  *
  * $Log: logfile.c,v $
+ * Revision 3.0.1.3  1997/02/20  11:36:23  ram
+ * patch55: prefer open(O_APPEND) to fopen("a") for stdio append bugs
+ *
  * Revision 3.0.1.2  1996/12/24  13:58:03  ram
  * patch45: log onto stderr if logfile not opened correctly
  *
@@ -49,6 +52,20 @@
 # include <sys/time.h>
 # undef KERNEL
 #endif
+
+/* Get the O_* constants */
+#ifdef I_FCNTL
+#include <fcntl.h>
+#endif
+#ifdef I_SYS_FILE
+#include <sys/file.h>
+#endif
+#ifndef I_FCNTL
+#ifndef I_SYS_FILE
+#include <sys/fcntl.h>	/* Try this one in last resort */
+#endif
+#endif
+
 #include "confmagic.h"
 
 #define MAX_STRING	1024			/* Maximum length for logging string */
@@ -119,7 +136,27 @@ char *name;
 	if (logfile != (FILE *) 0)
 		fclose(logfile);
 	
+	/*
+	 * We used to perform an:
+	 *		fopen(name, "a");
+	 * at this point, but Sudish Joseph <joseph@cis.ohio-state.edu> has
+	 * mentionned a possible stdio library bug whereby "a" would do a seek
+	 * at the end before writing, hence being the target for a possible race
+	 * condition. Use O_APPEND to fix this, if available.
+	 */
+
+#ifdef O_APPEND
+	{
+		int fd;
+		fd = open(name, O_WRONLY | O_CREAT | O_APPEND, 0600);
+		if (fd == -1)
+			return -1;
+		logfile = fdopen(fd, "a");
+	}
+#else
 	logfile = fopen(name, "a");		/* Append to existing file */
+#endif
+
 	logname = strsave(name);		/* Save file name */
 
 	if (logfile == (FILE *) 0)

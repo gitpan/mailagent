@@ -20,7 +20,7 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 .TH MAILAGENT $manext "Version $VERSION PL$PATCHLEVEL"
 ''' @(#) Manual page for mailagent's filter -- (c) ram February 1991
 '''
-''' $Id: mailagent.SH,v 3.0.1.17 1997/01/07 18:29:18 ram Exp $
+''' $Id: mailagent.SH,v 3.0.1.18 1997/02/20 11:40:44 ram Exp $
 '''
 '''  Copyright (c) 1990-1993, Raphael Manfredi
 '''  
@@ -31,6 +31,11 @@ $spitshell >mailagent.$manext <<!GROK!THIS!
 '''  of the source tree for mailagent 3.0.
 '''
 ''' $Log: mailagent.SH,v $
+''' Revision 3.0.1.18  1997/02/20  11:40:44  ram
+''' patch55: documents new execsafe, groupsafe and lockwarn variables
+''' patch55: the C filter can now redirect output via -o
+''' patch55: made it explicit that /pattern/i is legal
+'''
 ''' Revision 3.0.1.17  1997/01/07  18:29:18  ram
 ''' patch52: documented new execsafe configuration variable
 '''
@@ -407,6 +412,11 @@ Whether to be strict before using \fIexec()\fR to launch a new process or
 not. The value of this variable is used in place of \fIsecure\fR when checking
 executable files. (defaults to OFF, suggested: ON if possible).
 .TP
+.I execskip
+Whether to skip the \fIexec()\fR security checks alltogether. Don't turn
+this ON unless you really trust all the users having access to your machine
+or file server. (optional, default to OFF, suggested: OFF).
+.TP
 .I fromall
 Whether or not \fImailagent\fR should escape all the \fIFrom\fR lines in the
 message, not only those it thinks should appear dangerous (i.e. a \fIFrom\fR
@@ -425,6 +435,12 @@ those lines to separate messages, then you may set it to OFF. (suggested: ON)
 Whether or not \fImailagent\fR should fake a From: line into the message
 header when it is absent. Naturally, it requires a valid leading From line to
 operate! (optional, defaults to ON, suggested: ON).
+.TP
+.I groupsafe
+If turned OFF, then group-writable files will be managed as if they were
+secure, from a security point of view. Leave it to ON if possible, or
+you may pass by a huge security hole without your noticing (optional,
+defaults to ON, suggested: ON).
 .TP
 .I hash
 The directory used for name hashing by the built-in database used by ONCE,
@@ -471,6 +487,21 @@ to be. Set it to OFF to let mailagent continue its mailbox delivery even
 though no locking was done, to ON if you want strict locking, to PARTIAL if
 you can live with partial locking. Messages not saved in a folder are
 dumped to an emergency mailbox. (optional, defaults to ON).
+.TP
+.I lockwarn
+This variable controls the time after which \fImailagent\fR should
+start emiting a warning when busy trying to acquire a lock.
+It is a comma separated list of values, in seconds. If two values are
+given, the first is the initial time threshold, the second is the
+repeat period. For instance, a value of "15,60" would cause a warning
+after 15 seconds, then every 60 seconds until the lock is taken or
+the locking attempt time is expired (see
+.I lockmax
+and
+.IR lockdelay ).
+If only one value is given, it is taken as being both the initial
+threshold and the period.
+(optional, defaults to: 20,300).
 .TP
 .I log
 Name of the log file which will be put in Log directory. (suggested: agentlog).
@@ -767,6 +798,17 @@ and if a recipient has a \fI.forward\fR, its literal content is used in place
 of his e-mail address. Therefore, two local recipients with the same
 filtering string will be considered as one unique recipient and only one
 of them will get the message...
+.PP
+If your system does not allow shell redirection from within the .forward,
+you can use this instead (only supported by the C filter):
+.Ex
+"| exec /users/ram/mail/filter -o /users/ram/.bak"
+.Ef
+which in effect redirects \fIstdout\fR and \fIstderr\fR to the specified file
+for you, appending data at the end of the file.  If the filter runs setuid or
+setgid, you will not be allowed to create the file, nor to append to it
+unless the owner of the file is the \fIreal\fR uid invoking the program (for
+security reasons).
 .PP
 Note that the \fI.forward\fR file only pipes the mail to the \fIfilter\fR
 program and does not leave any copy in the mailbox. It is up to you to decide
@@ -1203,7 +1245,8 @@ used and your pattern will not be modified in any way. The other special
 selector "Newsgroups:" works as "To:", excepted that newsgroups names are
 expected and a match is attempted on every item in the list. Every pattern
 match on a single name for an address-type field (i.e. "Newsgroups:" excluded),
-are made in case-insensitive mode.
+are made in case-insensitive mode. Otherwise, you can force a case-insensitive
+match by appending a trailing \fIi\fR option, as in \fI/pattern/i\fR.
 .PP
 There is also a little magic involved when matching on an address field. Namely,
 if the pattern is not a single word and is \fIanchored at the beginning\fR,

@@ -2,7 +2,7 @@
 # Configuration file for mailagent
 #
 
-# $Id: mailagent.cf,v 3.0.1.9 1997/01/07 18:26:06 ram Exp $
+# $Id: mailagent.cf,v 3.0.1.10 1997/02/20 11:33:49 ram Exp $
 #
 #  Copyright (c) 1990-1993, Raphael Manfredi
 #  
@@ -13,6 +13,9 @@
 #  of the source tree for mailagent 3.0.
 #
 # $Log: mailagent.cf,v $
+# Revision 3.0.1.10  1997/02/20  11:33:49  ram
+# patch55: new groupsafe, execskip and lockwarn variables
+#
 # Revision 3.0.1.9  1997/01/07  18:26:06  ram
 # patch52: new execsafe configuration variable
 #
@@ -99,10 +102,13 @@ timezone : PST8PDT				# Time zone location
 statfile : $spool/mailagent.st	# Statistics file
 rules    : ~/.rules				# Filter's rules location (optional)
 rulecache: $spool/rulecache		# Cache for compiled rules (optional)
-nfslock  : OFF					# NFS-secure locking (optional)
+
+# Security checks
 secure   : ON					# Make extended checks on sensitive files
 linkdirs : ON					# Also carefully check symlinks to dirs
+groupsafe: ON					# Allow group-writable files when OFF
 execsafe : OFF					# Make extended checks on exec()ed files
+execskip : OFF					# Turn to ON to avoid all checks on exec()
 
 # Mailbox parameters
 maildrop : /usr/mail			# System mail drop directory (optional)
@@ -136,6 +142,8 @@ lockmax  : 20					# Maximum number of locking attempts
 lockdelay: 2					# Amount of seconds between two lock attempts
 lockhold : 3600					# Amount of seconds before breaking lock
 locksafe : ON					# Locking style on mailboxes
+lockwarn : 20,300				# Warn on busy locks after 20s, then every 300
+nfslock  : OFF					# NFS-secure locking (optional)
 
 # Timeout parameters
 queuewait: 60					# Delay for filter before calling mailagent
