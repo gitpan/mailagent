@@ -1,0 +1,6 @@
+This directory contains:
+
+	- unkit: an example of filtering command extension
+	- shell: an example of server command
+
+Those files are not installed, they are only provided as living examples.
